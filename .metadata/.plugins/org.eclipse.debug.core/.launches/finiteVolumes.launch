@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<launchConfiguration type="org.eclipse.cdt.launch.applicationLaunchType">
+<intAttribute key="org.eclipse.cdt.launch.ATTR_BUILD_BEFORE_LAUNCH_ATTR" value="2"/>
+<stringAttribute key="org.eclipse.cdt.launch.DEBUGGER_START_MODE" value="run"/>
+<stringAttribute key="org.eclipse.cdt.launch.PROGRAM_NAME" value="Debug/finiteVolumes"/>
+<stringAttribute key="org.eclipse.cdt.launch.PROJECT_ATTR" value="finiteVolumes"/>
+<booleanAttribute key="org.eclipse.cdt.launch.PROJECT_BUILD_CONFIG_AUTO_ATTR" value="false"/>
+<stringAttribute key="org.eclipse.cdt.launch.PROJECT_BUILD_CONFIG_ID_ATTR" value="cdt.managedbuild.config.gnu.exe.debug.418208583"/>
+<booleanAttribute key="org.eclipse.cdt.launch.use_terminal" value="true"/>
+<listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_PATHS">
+<listEntry value="/finiteVolumes"/>
+</listAttribute>
+<listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_TYPES">
+<listEntry value="4"/>
+</listAttribute>
+<stringAttribute key="org.eclipse.linuxtools.callgraph.launch.ARGUMENTS" value=""/>
+<stringAttribute key="org.eclipse.linuxtools.callgraph.launch.BINARY_ARGUMENTS" value=""/>
+<stringAttribute key="org.eclipse.linuxtools.callgraph.launch.BINARY_PATH" value=""/>
+<intAttribute key="org.eclipse.linuxtools.callgraph.launch.BUFFER_BYTES" value="0"/>
+<booleanAttribute key="org.eclipse.linuxtools.callgraph.launch.BULK_MODE" value="false"/>
+<intAttribute key="org.eclipse.linuxtools.callgraph.launch.COMMAND_VERBOSE" value="0"/>
+<stringAttribute key="org.eclipse.linuxtools.callgraph.launch.C_DIRECTIVES" value=""/>
+<booleanAttribute key="org.eclipse.linuxtools.callgraph.launch.DISABLE_WARNINGS" value="false"/>
+<booleanAttribute key="org.eclipse.linuxtools.callgraph.launch.GURU" value="false"/>
+<booleanAttribute key="org.eclipse.linuxtools.callgraph.launch.IGNORE_DWARF" value="false"/>
+<booleanAttribute key="org.eclipse.linuxtools.callgraph.launch.KEEP_TEMPORARY" value="false"/>
+<booleanAttribute key="org.eclipse.linuxtools.callgraph.launch.LEAVE_RUNNING" value="false"/>
+<booleanAttribute key="org.eclipse.linuxtools.callgraph.launch.NO_CODE_ELISION" value="false"/>
+<stringAttribute key="org.eclipse.linuxtools.callgraph.launch.OUTPUT_PATH" value=""/>
+<stringAttribute key="org.eclipse.linuxtools.callgraph.launch.PARSER_CLASS" value=""/>
+<intAttribute key="org.eclipse.linuxtools.callgraph.launch.PASS" value="0"/>
+<booleanAttribute key="org.eclipse.linuxtools.callgraph.launch.PROLOGUE_SEARCH" value="false"/>
+<stringAttribute key="org.eclipse.linuxtools.callgraph.launch.SCRIPT_PATH" value=""/>
+<booleanAttribute key="org.eclipse.linuxtools.callgraph.launch.SKIP_BADVARS" value="false"/>
+<booleanAttribute key="org.eclipse.linuxtools.callgraph.launch.TAPSET_COVERAGE" value="false"/>
+<intAttribute key="org.eclipse.linuxtools.callgraph.launch.TARGET_PID" value="0"/>
+<booleanAttribute key="org.eclipse.linuxtools.callgraph.launch.TIMING_INFO" value="false"/>
+<booleanAttribute key="org.eclipse.linuxtools.callgraph.launch.USE_COLOUR" value="false"/>
+<stringAttribute key="org.eclipse.linuxtools.callgraph.launch.VIEW_CLASS" value=""/>
+<stringAttribute key="process_factory_id" value="org.eclipse.cdt.dsf.gdb.GdbProcessFactory"/>
+<stringAttribute key="provider" value="org.eclipse.linuxtools.callgraph.launch.provider"/>
+</launchConfiguration>

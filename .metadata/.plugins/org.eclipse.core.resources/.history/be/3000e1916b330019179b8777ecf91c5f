@@ -1,0 +1,39 @@
+#include <iostream>
+#include <vector>
+
+#define _USE_MATH_DEFINES
+#include <cmath>
+
+class unit{
+	public:
+		//The neighboring volumes
+		unit right, left, top, bottom;
+
+		//The position in the plane
+		double posX;
+		double posY;
+};
+
+std::vector<double> shearField(double x, double y){
+	std::vector<double> temp;
+	temp.push_back(-sin(M_PI*x)*cos(M_PI*y));
+	temp.push_back(cos(M_PI*x)*sin(M_PI*y));
+	return temp;
+}
+
+void calculateNextTimestep(double double dt) {
+
+}
+
+int main() {
+	//Number of cells
+	int x = 100;
+	int y = 100;
+	double lenX = 1.0;
+	double lenY = 1.0;
+
+	double Phi[x][y];
+
+
+	return 0;
+}
