@@ -9,7 +9,11 @@
 #include <cmath>
 
 std::array<double, 2> operator*(double a, std::array<double, 2> vec) {
-	return { vec[0]*a, vec[1]*a};
+  return { vec[0]*a, vec[1]*a};
+}
+
+double operator* (std::array<double, 2> vecA, std::array<double, 2> vecB) {
+  return { vecA[0]*vecB[0] + vecA[1]*vecB[1]};
 }
 
 
@@ -23,7 +27,6 @@ void calculateNextTimestep(std::vector <std::vector<double>> Phi, double dt, dou
 	const std::array<double, 2> downNormal = {0,-1};
 	const std::array<double, 2> rightNormal = {1, 0};
 	const std::array<double, 2> leftNormal = {-1, 0};
-
 
 	for (int x = 0; x < numX; x++){
 		for (int y = 0; y < numY; y++){
@@ -40,24 +43,22 @@ void calculateNextTimestep(std::vector <std::vector<double>> Phi, double dt, dou
 						case 1:
 							temp1 = Phi[x][y]*shearField(x*dx + (k-1)*h, y*dx);
 							temp2 = Phi[x][y]*shearField(x*dx + k*h, y*dx);
+							flux += h/2*temp1*temp2;
 							break;
 						case 2:
 							temp1 = Phi[x][y]*shearField((x+1)*dx + (k-1)*h, (y+1)*dx);
 							temp2 = Phi[x][y]*shearField(x*dx + k*h, (y+1)*dx);
-							flux += std::inner_product(temp1.front(), temp1.back(), upNormal.begin(), 0)
-								  + std::inner_product(temp2.front(), temp2.back(), upNormal.begin(), 0);
+							flux += h/2*temp1*temp2;
 							break;
 						case 3:
 							temp1 = Phi[x][y]*shearField(x*dx, y*dx + (k-1)*h);
 							temp2 = Phi[x][y]*shearField(x*dx, y*dx +  k*h);
-							flux += std::inner_product(temp1.front(), temp1.back(), leftNormal.begin(), 0)
-								  + std::inner_product(temp2.front(), temp2.back(), leftNormal.begin(), 0);
+							flux += h/2*temp1*temp2;
 							break;
 						case 4:
 							temp1 = Phi[x][y]*shearField((x+1)*dx, y*dx + (k-1)*h);
 							temp2 = Phi[x][y]*shearField((x+1)*dx, y*dx +  k*h);
-							flux += std::inner_product(temp1.front(), temp1.back(), rightNormal.begin(), 0)
-								  + std::inner_product(temp2.front(), temp2.back(), rightNormal.begin(), 0);
+							flux += h/2*temp1*temp2;
 							break;
 
 					}
@@ -81,7 +82,7 @@ int main() {
 	double dt = time/timesteps;
 
 	auto field = shearField;
-
++-
 	std::vector< std::vector<double> > Phi;
 
 	//test simulation
