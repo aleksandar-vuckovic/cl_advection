@@ -1,46 +1,69 @@
 #include <iostream>
+#include <array>
 #include <vector>
+#include <numeric>
+#include <functional>
+#include <algorithm>
 
 #define _USE_MATH_DEFINES
 #include <cmath>
 
-class unit{
-	public:
-		//The neighboring volumes
-		unit right, left, top, bottom;
-
-		//The position in the plane
-		double posX;
-		double posY;
-};
-
-std::vector<double> shearField(double x, double y){
-	std::vector<double> temp;
-	temp.push_back(-sin(M_PI*x)*cos(M_PI*y));
-	temp.push_back(cos(M_PI*x)*sin(M_PI*y));
-	return temp;
+std::array<double, 2> operator*(double a, std::array<double, 2> vec) {
+	return { vec[0]*a, vec[1]*a};
 }
 
-void calculateNextTimestep(double Phi, double dt, double dx, int numX, int numY) {
-	const std::vector<double> upNormal = {0,1};
-	const std::vector<double> downNormal = {0,-1};
-	const std::vector<double> rightNormal = {1, 0};
-	const std::vector<double> leftNormal = {-1, 0};
+
+std::array<double, 2> shearField(double x, double y){
+	return {-sin(M_PI*x)*cos(M_PI*y),
+			 cos(M_PI*x)*sin(M_PI*y)};
+}
+
+void calculateNextTimestep(std::vector <std::vector<double>> Phi, double dt, double dx, int numX, int numY) {
+	const std::array<double, 2> upNormal = {0,1};
+	const std::array<double, 2> downNormal = {0,-1};
+	const std::array<double, 2> rightNormal = {1, 0};
+	const std::array<double, 2> leftNormal = {-1, 0};
+
 
 	for (int x = 0; x < numX; x++){
 		for (int y = 0; y < numY; y++){
-			//Iterate over all 4 sides of the square
+			//Calculate the flux of the fluid through all sides of the square
+			double flux = 0;
+			//Temporary variables for integration
+			std::array<double, 2> temp1;
+			std::array<double, 2> temp2;
 			for (int dir = 0; dir < 4; dir++){
-				//Calculate the integral
-				double integ = 0;
 				int integSteps = 100;
 				double h = dx/integSteps;
-				for (int i = 0; i < integSteps; i++){
+				for (int k = 1; k < integSteps; k++){
+					switch(dir) {
+						case 1:
+							temp1 = Phi[x][y]*shearField(x*dx + (k-1)*h, y*dx);
+							temp2 = Phi[x][y]*shearField(x*dx + k*h, y*dx);
+							break;
+						case 2:
+							temp1 = Phi[x][y]*shearField((x+1)*dx + (k-1)*h, (y+1)*dx);
+							temp2 = Phi[x][y]*shearField(x*dx + k*h, (y+1)*dx);
+							flux += std::inner_product(temp1.front(), temp1.back(), upNormal.begin(), 0)
+								  + std::inner_product(temp2.front(), temp2.back(), upNormal.begin(), 0);
+							break;
+						case 3:
+							temp1 = Phi[x][y]*shearField(x*dx, y*dx + (k-1)*h);
+							temp2 = Phi[x][y]*shearField(x*dx, y*dx +  k*h);
+							flux += std::inner_product(temp1.front(), temp1.back(), leftNormal.begin(), 0)
+								  + std::inner_product(temp2.front(), temp2.back(), leftNormal.begin(), 0);
+							break;
+						case 4:
+							temp1 = Phi[x][y]*shearField((x+1)*dx, y*dx + (k-1)*h);
+							temp2 = Phi[x][y]*shearField((x+1)*dx, y*dx +  k*h);
+							flux += std::inner_product(temp1.front(), temp1.back(), rightNormal.begin(), 0)
+								  + std::inner_product(temp2.front(), temp2.back(), rightNormal.begin(), 0);
+							break;
 
+					}
 				}
-
-
 			}
+			Phi[x][y] -= dt/(dx*dx)*flux;
 		}
 	}
 }
@@ -57,8 +80,14 @@ int main() {
 	int timesteps = 1000;
 	double dt = time/timesteps;
 
-	double Phi[numX][numY];
+	auto field = shearField;
 
+	std::vector< std::vector<double> > Phi;
+
+	//test simulation
+
+
+	std::cout << rand();
 
 
 	return 0;
