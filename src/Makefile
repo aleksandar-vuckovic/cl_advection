@@ -10,7 +10,7 @@ finiteVolumes: finiteVolumes.o vecMath2D.o
 	g++ finiteVolumes.o vecMath2D.o -o finiteVolumes
 
 clean:
-	rm finiteVolumes.o finiteVolumes
+	rm finiteVolumes.o vecMath2D.o finiteVolumes
 run:
 	./finiteVolumes
 
