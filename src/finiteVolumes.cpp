@@ -1,27 +1,29 @@
 #include <iostream>
 #include <ctime>
 #include <sstream>
-#include "vecMath2D.h"
+#include "vecMath2D.hpp"
+#include <stdlib.h>
 
 std::array<double, 2> shearField(double x, double y) {
   return {-sin(M_PI*x)*cos(M_PI*y), cos(M_PI*x)*sin(M_PI*y)};
 }
 
 void printField(const std::vector <std::vector<double>>& Phi, double epsilon) {
-  std::ostringstream strs;
-  for (int i = 0; i < Phi.size(); i++) {
-    for (int j = 0; j < Phi[0].size(); j++) {
-      if (Phi[i][j] < epsilon) {
+  for (int i = Phi[0].size() - 1; i >= 0; i--) {
+    std::ostringstream strs;
+    for (int j = 0; j < Phi.size(); j++) {
+      if (abs(Phi[j][i]) < epsilon) {
 	strs << "x";
-	strs << "  ";
+	//strs << " ";
       } else {
 	strs << ".";
-	strs << "  ";
+	//strs << " ";
       }
     }
-    strs << std::endl << std::endl;
     std::cout << strs.str();
+    std::cout << std::endl;
   }
+  std::cout << std::endl;
 }
   
 double sumField(const std::vector <std::vector<double>>& Phi) {
@@ -38,13 +40,12 @@ std::vector <std::vector<double>>& initDroplet(std::vector <std::vector<double>>
   for (int i = 0; i < Phi.size(); i++) {
     for (int j = 0; j < Phi[0].size(); j++) {
       std::array<int, 2> temp = {i, j};
-      std::cout << "test";
-      if (abs(center - temp*dx) < epsilon) {
+      if (abs(center - temp*dx) < radius + epsilon &&  abs(center - temp*dx) > radius - epsilon) {
 	Phi[i][j] = 0.0;
-      } else if (abs(center - temp*dx) > 0) {
-	Phi[i][j] = -1.0;
+      } else if (abs(center - temp*dx) > radius + epsilon) {
+	Phi[i][j] = -10.0; 
       } else {
-	Phi[i][j] = 1.0;
+	Phi[i][j] = 10.0;
       }
     }
   }
@@ -92,7 +93,7 @@ std::vector <std::vector<double>>& calculateNextTimestep(std::vector <std::vecto
 	  }
 	}
       }
-      Phi[x][y] -= dt/(dx*dx)*flux;
+      Phi[x][y] = Phi[x][y] - dt/(dx*dx)*flux;
     }
   }
   return Phi;
@@ -100,13 +101,14 @@ std::vector <std::vector<double>>& calculateNextTimestep(std::vector <std::vecto
 
 int main() {
 	//Number of cells
-	int numX = 10;
-	int numY = 10;
+        int numX = 40;
+	int numY = 40;
 	double lenX = 1.0;
 	double lenY = 1.0;
 	double dx = lenX/numX;
 
-	double time = 0.1;
+	//Start time is assumed to be 0s
+	double time = 10000;
 	int timesteps = 10;
 	double dt = time/timesteps;
 
@@ -117,7 +119,7 @@ int main() {
 	  std::vector<double> temp(numY);
 	  Phi[i] = temp;
 	}
-	std::array<double, 2> center = {0.7, 0.5};
+	std::array<double, 2> center = {0.7, 0.0};
 	double radius = 0.2;
 
 	//Create random field Phi for testing
@@ -130,16 +132,15 @@ int main() {
 	//Phi[i] = tempY;
 	//	}
 
-        Phi = initDroplet(Phi, center, radius, dx, 0.05);
+        Phi = initDroplet(Phi, center, radius, dx, 0.02);
 	
-	std::cout << "Sum of Phi at start " << sumField(Phi) << std::endl;
-	for (int i = 0; i < timesteps; i++)  {
-	  //printField(Phi, 0.01);
+	std::cout << "Sum of Phi at start: " << sumField(Phi) << std::endl;
+	for (int i = 0; i < timesteps; i++) {
+	  printField(Phi, 0.0001);
 	  Phi = calculateNextTimestep(Phi, dt, dx, field);
 	}
-	//printField(Phi);
 	std::cout << std::endl;
-	std::cout << "Sum of Phi at end " << sumField(Phi) << std::endl;
+	std::cout << "Sum of Phi at end: " << sumField(Phi) << std::endl;
 
 	return 0;
 }

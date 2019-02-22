@@ -1,5 +1,8 @@
-#Ignore all object files
+# object files
 *.o
 
-#Ignore main executable
+# auto-save files
+src/*~
+
+# main executable
 src/finiteVolumes
