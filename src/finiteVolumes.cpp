@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <ctime>
 #include <sstream>
 #include "vecMath2D.hpp"
@@ -12,7 +13,7 @@ void printField(const std::vector <std::vector<double>>& Phi, double epsilon) {
   for (int i = Phi[0].size() - 1; i >= 0; i--) {
     std::ostringstream strs;
     for (int j = 0; j < Phi.size(); j++) {
-      if (abs(Phi[j][i]) < epsilon) {
+      if (Phi[j][i] > epsilon) {
 	strs << "x";
 	//strs << " ";
       } else {
@@ -24,6 +25,15 @@ void printField(const std::vector <std::vector<double>>& Phi, double epsilon) {
     std::cout << std::endl;
   }
   std::cout << std::endl;
+}
+
+void writeInterfaceToFile(const std::vector <std::vector<double>>& Phi, double dx, double epsilon, int timestep) {
+  std::ofstream outFile("field.csv." + std::to_string(timestep));
+  outFile << "X,Y,Z,field" << std::endl;
+  for (int y = 0; y < Phi[0].size(); y++)
+    for (int x = 0; x < Phi.size(); x++)
+      if (abs(Phi[x][y]) < epsilon)
+	 outFile << std::to_string(x*dx) + "," + std::to_string(y*dx) +",0," << std::endl;
 }
   
 double sumField(const std::vector <std::vector<double>>& Phi) {
@@ -43,9 +53,9 @@ std::vector <std::vector<double>>& initDroplet(std::vector <std::vector<double>>
       if (abs(center - temp*dx) < radius + epsilon &&  abs(center - temp*dx) > radius - epsilon) {
 	Phi[i][j] = 0.0;
       } else if (abs(center - temp*dx) > radius + epsilon) {
-	Phi[i][j] = -10.0; 
+	Phi[i][j] = -1; 
       } else {
-	Phi[i][j] = 10.0;
+	Phi[i][j] = 1;
       }
     }
   }
@@ -53,6 +63,9 @@ std::vector <std::vector<double>>& initDroplet(std::vector <std::vector<double>>
 }
 
 std::vector <std::vector<double>>& calculateNextTimestep(std::vector <std::vector<double>>& Phi, double dt, double dx, auto field) {
+
+  std::vector <std::vector<double>> tempPhi(Phi);
+  
   const std::array<double, 2> upNormal = {0,1};
   const std::array<double, 2> downNormal = {0,-1};
   const std::array<double, 2> leftNormal = {-1, 0};
@@ -66,28 +79,32 @@ std::vector <std::vector<double>>& calculateNextTimestep(std::vector <std::vecto
       double temp1;
       double temp2;
       for (int dir = 0; dir < 4; dir++) {
-	int integSteps = 100;
+	int integSteps = 200;
 	double h = dx/integSteps;
+	//TODO: In the last continue-condition below, (y == Phi[0].size()-1 && dir == 0) was (y == 0  && dir == 0)
+	//Investigate why this did NOT 
+	if ((x == 0 && dir == 2) || (x == Phi.size()-1 && dir == 3) || (y == 0 && dir == 1) || (y == Phi[0].size()-1 && dir == 0))
+	  continue;	       
 	for (int k = 1; k <= integSteps; k++) {
 	  switch(dir) {
 	  case 0:
-	    temp1 = Phi[x][y]*field(x*dx + (k-1)*h, (y+1)*dx)*upNormal;
-	    temp2 = Phi[x][y]*field(x*dx + k*h, (y+1)*dx)*upNormal;
+	    temp1 = tempPhi[x][y+1]*field(x*dx + (k-1)*h, (y+1)*dx)*upNormal;
+	    temp2 = tempPhi[x][y+1]*field(x*dx + k*h, (y+1)*dx)*upNormal;
 	    flux += h/2*(temp1 + temp2);
 	    break;
 	  case 1:
-	    temp1 = Phi[x][y]*field(x*dx + (k-1)*h, y*dx)*downNormal;
-	    temp2 = Phi[x][y]*field(x*dx + k*h, y*dx)*downNormal;
+	    temp1 = tempPhi[x][y-1]*field(x*dx + (k-1)*h, y*dx)*downNormal;
+	    temp2 = tempPhi[x][y-1]*field(x*dx + k*h, y*dx)*downNormal;
 	    flux += h/2*(temp1 + temp2);
 	    break;
 	  case 2:
-	    temp1 = Phi[x][y]*field(x*dx, y*dx + (k-1)*h)*leftNormal;
-	    temp2 = Phi[x][y]*field(x*dx, y*dx +  k*h)*leftNormal;
+	    temp1 = tempPhi[x-1][y]*field(x*dx, y*dx + (k-1)*h)*leftNormal;
+	    temp2 = tempPhi[x-1][y]*field(x*dx, y*dx +  k*h)*leftNormal;
 	    flux += h/2*(temp1 + temp2);
 	    break;
 	  case 3:
-	    temp1 = Phi[x][y]*field((x+1)*dx, y*dx + (k-1)*h)*rightNormal;
-	    temp2 = Phi[x][y]*field((x+1)*dx, y*dx +  k*h)*rightNormal;
+	    temp1 = tempPhi[x+1][y]*field((x+1)*dx, y*dx + (k-1)*h)*rightNormal;
+	    temp2 = tempPhi[x+1][y]*field((x+1)*dx, y*dx +  k*h)*rightNormal;
 	    flux += h/2*(temp1 + temp2);
 	    break;
 	  }
@@ -101,18 +118,19 @@ std::vector <std::vector<double>>& calculateNextTimestep(std::vector <std::vecto
 
 int main() {
 	//Number of cells
-        int numX = 40;
-	int numY = 40;
+        int numX = 200;
+	int numY = 200;
 	double lenX = 1.0;
 	double lenY = 1.0;
 	double dx = lenX/numX;
 
 	//Start time is assumed to be 0s
-	double time = 10000;
-	int timesteps = 10;
+	double time = 0.5;
+	int timesteps = 100;
 	double dt = time/timesteps;
 
 	auto field = shearField;
+	
 	//Initialize empty field
 	std::vector< std::vector<double> > Phi(numX);
 	for (int i = 0; i < numX; i++) {
@@ -132,16 +150,22 @@ int main() {
 	//Phi[i] = tempY;
 	//	}
 
-        Phi = initDroplet(Phi, center, radius, dx, 0.02);
+        Phi = initDroplet(Phi, center, radius, dx, 0.005);
 	
-	std::cout << "Sum of Phi at start: " << sumField(Phi) << std::endl;
+	double sumAtStart = sumField(Phi);
 	for (int i = 0; i < timesteps; i++) {
-	  printField(Phi, 0.0001);
+	  std::cout << "Step " << i << std::endl;
+	  //Print field to terminal
+	  //intField(Phi, 0.3);
+	  //Write field to file
+	  writeInterfaceToFile(Phi, dx, 0.3, i);
 	  Phi = calculateNextTimestep(Phi, dt, dx, field);
 	}
 	std::cout << std::endl;
+        std::cout << "Sum of Phi at start: " << sumAtStart << std::endl;
 	std::cout << "Sum of Phi at end: " << sumField(Phi) << std::endl;
 
+       
 	return 0;
 }
 

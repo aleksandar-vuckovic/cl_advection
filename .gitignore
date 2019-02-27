@@ -6,3 +6,6 @@ src/*~
 
 # main executable
 src/finiteVolumes
+
+#output files
+field.csv*
