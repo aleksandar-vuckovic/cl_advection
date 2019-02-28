@@ -3,7 +3,6 @@
 #include <ctime>
 #include <sstream>
 #include "vecMath2D.hpp"
-#include <stdlib.h>
 
 std::array<double, 2> shearField(double x, double y) {
   return {-sin(M_PI*x)*cos(M_PI*y), cos(M_PI*x)*sin(M_PI*y)};
@@ -118,15 +117,15 @@ std::vector <std::vector<double>>& calculateNextTimestep(std::vector <std::vecto
 
 int main() {
 	//Number of cells
-        int numX = 200;
-	int numY = 200;
+        int numX = 40;
+	int numY = 40;
 	double lenX = 1.0;
 	double lenY = 1.0;
 	double dx = lenX/numX;
 
 	//Start time is assumed to be 0s
-	double time = 0.5;
-	int timesteps = 100;
+	double time = 0.3;
+	int timesteps = 500;
 	double dt = time/timesteps;
 
 	auto field = shearField;
@@ -139,26 +138,16 @@ int main() {
 	}
 	std::array<double, 2> center = {0.7, 0.0};
 	double radius = 0.2;
-
-	//Create random field Phi for testing
-	//	srand(std::time(NULL));
-	//for (int i = 0; i < numX; i++) {
-	//std::vector<double> tempY(numY);
-	//for (int j = 0; j < numY; j++) {
-	// tempY[j] = (rand()%100)/100.0;
-	//}
-	//Phi[i] = tempY;
-	//	}
-
+	
         Phi = initDroplet(Phi, center, radius, dx, 0.005);
 	
 	double sumAtStart = sumField(Phi);
 	for (int i = 0; i < timesteps; i++) {
 	  std::cout << "Step " << i << std::endl;
 	  //Print field to terminal
-	  //intField(Phi, 0.3);
+	  printField(Phi, 0.3);
 	  //Write field to file
-	  writeInterfaceToFile(Phi, dx, 0.3, i);
+	  //writeInterfaceToFile(Phi, dx, 0.3, i);
 	  Phi = calculateNextTimestep(Phi, dt, dx, field);
 	}
 	std::cout << std::endl;
