@@ -1,0 +1,14 @@
+numX=40
+numY=40
+lenX=1.0
+lenY=1.0
+
+time=0.3
+timesteps=200
+
+field=shearField
+
+centerX=0.7
+centerY=0.0
+radius=0.2
+

@@ -4,8 +4,9 @@
 # auto-save files
 src/*~
 
-# main executable
+# main executable and debug file
 src/finiteVolumes
+src/finiteVolumes.debug
 
 #output files
 field.csv*

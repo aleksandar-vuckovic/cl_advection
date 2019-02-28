@@ -61,7 +61,9 @@ std::vector <std::vector<double>>& initDroplet(std::vector <std::vector<double>>
   return Phi;
 }
 
-std::vector <std::vector<double>>& calculateNextTimestep(std::vector <std::vector<double>>& Phi, double dt, double dx, auto field) {
+std::vector <std::vector<double>>& calculateNextTimestep(std::vector <std::vector<double>>& Phi,
+							 double dt, double dx,
+							 std::array<double, 2> (*field) (double x, double y)) {
 
   std::vector <std::vector<double>> tempPhi(Phi);
   
@@ -78,36 +80,42 @@ std::vector <std::vector<double>>& calculateNextTimestep(std::vector <std::vecto
       double temp1;
       double temp2;
       for (int dir = 0; dir < 4; dir++) {
-	int integSteps = 200;
+	int integSteps = 100;
 	double h = dx/integSteps;
-	//TODO: In the last continue-condition below, (y == Phi[0].size()-1 && dir == 0) was (y == 0  && dir == 0)
-	//Investigate why this did NOT 
 	if ((x == 0 && dir == 2) || (x == Phi.size()-1 && dir == 3) || (y == 0 && dir == 1) || (y == Phi[0].size()-1 && dir == 0))
 	  continue;	       
-	for (int k = 1; k <= integSteps; k++) {
-	  switch(dir) {
-	  case 0:
+	
+	switch(dir) {
+	case 0:
+	  for (int k = 1; k <= integSteps; k++) {
 	    temp1 = tempPhi[x][y+1]*field(x*dx + (k-1)*h, (y+1)*dx)*upNormal;
 	    temp2 = tempPhi[x][y+1]*field(x*dx + k*h, (y+1)*dx)*upNormal;
 	    flux += h/2*(temp1 + temp2);
-	    break;
-	  case 1:
+	  }
+	  break;
+	case 1:
+	  for (int k = 1; k <= integSteps; k++) {
 	    temp1 = tempPhi[x][y-1]*field(x*dx + (k-1)*h, y*dx)*downNormal;
 	    temp2 = tempPhi[x][y-1]*field(x*dx + k*h, y*dx)*downNormal;
 	    flux += h/2*(temp1 + temp2);
-	    break;
-	  case 2:
+	  }
+	  break;
+	case 2:
+	  for (int k = 1; k <= integSteps; k++) {
 	    temp1 = tempPhi[x-1][y]*field(x*dx, y*dx + (k-1)*h)*leftNormal;
 	    temp2 = tempPhi[x-1][y]*field(x*dx, y*dx +  k*h)*leftNormal;
 	    flux += h/2*(temp1 + temp2);
-	    break;
-	  case 3:
+	  }
+	  break;
+	case 3:
+	  for (int k = 1; k <= integSteps; k++) {
 	    temp1 = tempPhi[x+1][y]*field((x+1)*dx, y*dx + (k-1)*h)*rightNormal;
 	    temp2 = tempPhi[x+1][y]*field((x+1)*dx, y*dx +  k*h)*rightNormal;
 	    flux += h/2*(temp1 + temp2);
-	    break;
 	  }
+	  break;
 	}
+	
       }
       Phi[x][y] = Phi[x][y] - dt/(dx*dx)*flux;
     }
@@ -116,19 +124,49 @@ std::vector <std::vector<double>>& calculateNextTimestep(std::vector <std::vecto
 }
 
 int main() {
-	//Number of cells
-        int numX = 40;
-	int numY = 40;
-	double lenX = 1.0;
-	double lenY = 1.0;
+
+        int numX, numY, timesteps;
+        double lenX, lenY, time, centerX, centerY, radius;
+	std::array<double, 2> (*field) (double x, double y);
+        
+        std::ifstream inFileStream("inputfile");
+	std::string line, varName, value;
+
+	while(std::getline(inFileStream, line)) {
+	  std::istringstream linestream(line);
+	  if(std::getline(linestream, varName, '=')) {
+	      if ( std::getline(linestream, value)) {
+	        if (varName == "numX")
+		  numX = std::stoi(value);
+		else if (varName == "numY")
+		  numY = std::stoi(value);  
+	        else if (varName == "lenX")
+		  lenX = std::stod(value); 
+		else if (varName == "lenY")
+		  lenY = std::stod(value);
+		else if (varName == "time")
+		  time = std::stod(value);
+		else if (varName == "timesteps")
+		  timesteps = std::stoi(value);
+		else if (varName == "field") {
+		  if (value == "shearField")
+		    field = shearField;
+		}
+		else if (varName == "centerX")
+		  centerX = std::stod(value);
+		else if (varName == "centerY")
+		  centerY = std::stod(value);
+		else if (varName == "radius")
+		  radius = std::stod(value);
+	      }
+	  }
+	}
+	    
+	
+
 	double dx = lenX/numX;
-
-	//Start time is assumed to be 0s
-	double time = 0.3;
-	int timesteps = 500;
 	double dt = time/timesteps;
-
-	auto field = shearField;
+	std::array<double, 2> center = {centerX, centerY};
 	
 	//Initialize empty field
 	std::vector< std::vector<double> > Phi(numX);
@@ -136,8 +174,6 @@ int main() {
 	  std::vector<double> temp(numY);
 	  Phi[i] = temp;
 	}
-	std::array<double, 2> center = {0.7, 0.0};
-	double radius = 0.2;
 	
         Phi = initDroplet(Phi, center, radius, dx, 0.005);
 	
