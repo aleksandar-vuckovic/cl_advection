@@ -1,6 +1,5 @@
 #include <iostream>
 #include <fstream>
-#include <ctime>
 #include <sstream>
 #include "vecMath2D.hpp"
 
@@ -27,12 +26,34 @@ void printField(const std::vector <std::vector<double>>& Phi, double epsilon) {
 }
 
 void writeInterfaceToFile(const std::vector <std::vector<double>>& Phi, double dx, double epsilon, int timestep) {
-  std::ofstream outFile("field.csv." + std::to_string(timestep));
-  outFile << "X,Y,Z,field" << std::endl;
+  std::ostringstream points;
+  int Npoints = 0;
   for (int y = 0; y < Phi[0].size(); y++)
-    for (int x = 0; x < Phi.size(); x++)
-      if (abs(Phi[x][y]) < epsilon)
-	 outFile << std::to_string(x*dx) + "," + std::to_string(y*dx) +",0," << std::endl;
+   for (int x = 0; x < Phi.size(); x++)
+     if (Phi[x][y] < epsilon) {
+       points << std::to_string(x*dx) + " " + std::to_string(y*dx) +" 0.0"                                  << std::endl;  
+       Npoints++;
+     }
+
+  std::ofstream outFile("data/field_t="+ std::to_string(timestep) +".xmf");
+  outFile << "<?xml version=\"1.0\" ?>"                                                                                          << std::endl
+	  <<   "<!DOCTYPE Xdmf SYSTEM \"Xdmf.dtd\" ["                                                                            << std::endl
+	  <<   "<!ENTITY Npoints   \" " + std::to_string(Npoints) + "\">"                                                        << std::endl
+	  <<   " ]>"                                                                                                             << std::endl
+          <<   "<Xdmf Version=\"2.0\" xmlns:xi=\"[http://www.w3.org/2001/XInclude]\">"                                           << std::endl
+          <<   "      <Domain>"                                                                                                  << std::endl
+	  <<   "          <Grid Name=\"interface\">"                                                                             << std::endl
+	  <<   "                  <Topology TopologyType=\"Polyvertex\" NumberOfElements=\"&Npoints;\"/>"                        << std::endl
+	  << "                    <Geometry GeometryType=\"XYZ\">"                                                               << std::endl
+	  << "                        <DataItem Name=\"points\" Format=\"XML\" NumberType=\"Float\" Dimensions=\"&Npoints; 3\">" << std::endl;
+  
+  outFile << points.str();
+  
+  outFile <<"                </DataItem>"                                                                                        << std::endl
+          <<"            </Geometry>"                                                                                            << std::endl
+	  <<"        </Grid>"                                                                                                    << std::endl
+	  <<"    </Domain>"                                                                                                      << std::endl
+	  <<"</Xdmf>"                                                                                                            << std::endl;
 }
   
 double sumField(const std::vector <std::vector<double>>& Phi) {
@@ -45,7 +66,7 @@ double sumField(const std::vector <std::vector<double>>& Phi) {
   return temp;
 }
 
-std::vector <std::vector<double>>& initDroplet(std::vector <std::vector<double>>& Phi, std::array<double, 2> center, double radius, double dx, double epsilon) {
+std::vector <std::vector<double>>& initDroplet(std::vector <std::vector<double>>& Phi, double dx, std::array<double, 2> center, double radius, double epsilon) {
   for (int x = 0; x < Phi.size(); x++) {
     for (int y = 0; y < Phi[0].size(); y++) {
       Phi[x][y] = pow(x*dx-center[0], 2) + pow(y*dx - center[1], 2) - pow(radius, 2);
@@ -55,7 +76,7 @@ std::vector <std::vector<double>>& initDroplet(std::vector <std::vector<double>>
 }
 
 std::vector <std::vector<double>>& calculateNextTimestep(std::vector <std::vector<double>>& Phi,
-							 double dt, double dx,
+							 double dx, double dt,
 							 std::array<double, 2> (*field) (double x, double y)) {
 
   std::vector <std::vector<double>> tempPhi(Phi);
@@ -73,7 +94,7 @@ std::vector <std::vector<double>>& calculateNextTimestep(std::vector <std::vecto
       double temp1;
       double temp2;
       for (int dir = 0; dir < 4; dir++) {
-	int integSteps = 10;
+	int integSteps = 2;
 	double h = dx/integSteps;
 	if ((x == 0 && dir == 2) || (x == Phi.size()-1 && dir == 3) || (y == 0 && dir == 1) || (y == Phi[0].size()-1 && dir == 0))
 	  continue;	       
@@ -118,7 +139,7 @@ std::vector <std::vector<double>>& calculateNextTimestep(std::vector <std::vecto
 
 int main() {
 
-        int numX, numY, timesteps;
+        int numX, numY, timesteps, writesteps;
         double lenX, lenY, time, centerX, centerY, radius;
 	std::array<double, 2> (*field) (double x, double y);
         
@@ -141,6 +162,8 @@ int main() {
 		  time = std::stod(value);
 		else if (varName == "timesteps")
 		  timesteps = std::stoi(value);
+		else if (varName == "writesteps")
+		  writesteps =std::stoi(value);
 		else if (varName == "field") {
 		  if (value == "shearField")
 		    field = shearField;
@@ -159,6 +182,12 @@ int main() {
 
 	double dx = lenX/numX;
 	double dt = time/timesteps;
+
+	if (dt/dx < 1) {
+	  std::cout << "The stability requirement is fullfilled" << std::endl;
+	} else {
+	  std::cout << "The stability requirement is NOT fullfilled" << std::endl;
+	}
 	std::array<double, 2> center = {centerX, centerY};
 	
 	//Initialize empty field
@@ -168,16 +197,18 @@ int main() {
 	  Phi[i] = temp;
 	}
 	
-        Phi = initDroplet(Phi, center, radius, dx, 0.005);
-	
+        Phi = initDroplet(Phi, dx, center, radius, 0.005);
+
+	system("mkdir data");
 	double sumAtStart = sumField(Phi);
 	for (int i = 0; i < timesteps; i++) {
 	  std::cout << "Step " << i << std::endl;
 	  //Print field to terminal
-	  printField(Phi, 0.01);
+	  //printField(Phi, 0.01);
 	  //Write field to file
-	  //writeInterfaceToFile(Phi, dx, 0.3, i);
-	  Phi = calculateNextTimestep(Phi, dt, dx, field);
+	  if (i % (timesteps/writesteps) == 0)
+	    writeInterfaceToFile(Phi, dx, 0.01, i);
+	  Phi = calculateNextTimestep(Phi, dx, dt, field);
 	}
 	std::cout << std::endl;
         std::cout << "Sum of Phi at start: " << sumAtStart << std::endl;

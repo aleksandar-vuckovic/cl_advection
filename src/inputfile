@@ -1,10 +1,11 @@
-numX=100
-numY=100
+numX=200
+numY=200
 lenX=1.0
 lenY=1.0
 
-time=0.8
-timesteps=300
+time=1.0
+timesteps=10000
+writesteps=300
 
 field=shearField
 

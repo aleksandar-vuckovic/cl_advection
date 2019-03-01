@@ -10,7 +10,7 @@ finiteVolumes: finiteVolumes.o vecMath2D.o
 	g++ finiteVolumes.o vecMath2D.o -o finiteVolumes
 
 clean:
-	rm finiteVolumes.o vecMath2D.o finiteVolumes finiteVolumes.debug *csv*
+	rm -r data/ finiteVolumes.o vecMath2D.o finiteVolumes finiteVolumes.debug *csv* *xmf*
 
 debug: finiteVolumes.cpp vecMath2D.cpp 
 	g++ -g finiteVolumes.cpp vecMath2D.cpp -o finiteVolumes.debug

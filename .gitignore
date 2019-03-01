@@ -9,4 +9,5 @@ src/finiteVolumes
 src/finiteVolumes.debug
 
 #output files
+src/data/*
 field.csv*
