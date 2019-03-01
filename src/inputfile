@@ -1,14 +1,14 @@
-numX=40
-numY=40
+numX=100
+numY=100
 lenX=1.0
 lenY=1.0
 
-time=0.3
-timesteps=200
+time=0.8
+timesteps=300
 
 field=shearField
 
 centerX=0.7
-centerY=0.0
+centerY=-0.1 
 radius=0.2
 

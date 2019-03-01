@@ -12,7 +12,7 @@ void printField(const std::vector <std::vector<double>>& Phi, double epsilon) {
   for (int i = Phi[0].size() - 1; i >= 0; i--) {
     std::ostringstream strs;
     for (int j = 0; j < Phi.size(); j++) {
-      if (Phi[j][i] > epsilon) {
+      if (Phi[j][i] < epsilon) {
 	strs << "x";
 	//strs << " ";
       } else {
@@ -46,16 +46,9 @@ double sumField(const std::vector <std::vector<double>>& Phi) {
 }
 
 std::vector <std::vector<double>>& initDroplet(std::vector <std::vector<double>>& Phi, std::array<double, 2> center, double radius, double dx, double epsilon) {
-  for (int i = 0; i < Phi.size(); i++) {
-    for (int j = 0; j < Phi[0].size(); j++) {
-      std::array<int, 2> temp = {i, j};
-      if (abs(center - temp*dx) < radius + epsilon &&  abs(center - temp*dx) > radius - epsilon) {
-	Phi[i][j] = 0.0;
-      } else if (abs(center - temp*dx) > radius + epsilon) {
-	Phi[i][j] = -1; 
-      } else {
-	Phi[i][j] = 1;
-      }
+  for (int x = 0; x < Phi.size(); x++) {
+    for (int y = 0; y < Phi[0].size(); y++) {
+      Phi[x][y] = pow(x*dx-center[0], 2) + pow(y*dx - center[1], 2) - pow(radius, 2);
     }
   }
   return Phi;
@@ -80,7 +73,7 @@ std::vector <std::vector<double>>& calculateNextTimestep(std::vector <std::vecto
       double temp1;
       double temp2;
       for (int dir = 0; dir < 4; dir++) {
-	int integSteps = 100;
+	int integSteps = 10;
 	double h = dx/integSteps;
 	if ((x == 0 && dir == 2) || (x == Phi.size()-1 && dir == 3) || (y == 0 && dir == 1) || (y == Phi[0].size()-1 && dir == 0))
 	  continue;	       
@@ -88,29 +81,29 @@ std::vector <std::vector<double>>& calculateNextTimestep(std::vector <std::vecto
 	switch(dir) {
 	case 0:
 	  for (int k = 1; k <= integSteps; k++) {
-	    temp1 = tempPhi[x][y+1]*field(x*dx + (k-1)*h, (y+1)*dx)*upNormal;
-	    temp2 = tempPhi[x][y+1]*field(x*dx + k*h, (y+1)*dx)*upNormal;
+	    temp1 = (tempPhi[x][y] + tempPhi[x][y+1])/2*field(x*dx + (k-1)*h, (y+1)*dx)*upNormal;
+	    temp2 = (tempPhi[x][y] + tempPhi[x][y+1])/2*field(x*dx + k*h, (y+1)*dx)*upNormal;
 	    flux += h/2*(temp1 + temp2);
 	  }
 	  break;
 	case 1:
 	  for (int k = 1; k <= integSteps; k++) {
-	    temp1 = tempPhi[x][y-1]*field(x*dx + (k-1)*h, y*dx)*downNormal;
-	    temp2 = tempPhi[x][y-1]*field(x*dx + k*h, y*dx)*downNormal;
+	    temp1 = (tempPhi[x][y] + tempPhi[x][y-1])/2*field(x*dx + (k-1)*h, y*dx)*downNormal;
+	    temp2 = (tempPhi[x][y] + tempPhi[x][y-1])/2*field(x*dx + k*h, y*dx)*downNormal;
 	    flux += h/2*(temp1 + temp2);
 	  }
 	  break;
 	case 2:
 	  for (int k = 1; k <= integSteps; k++) {
-	    temp1 = tempPhi[x-1][y]*field(x*dx, y*dx + (k-1)*h)*leftNormal;
-	    temp2 = tempPhi[x-1][y]*field(x*dx, y*dx +  k*h)*leftNormal;
+	    temp1 = (tempPhi[x][y] + tempPhi[x-1][y])/2*field(x*dx, y*dx + (k-1)*h)*leftNormal;
+	    temp2 = (tempPhi[x][y] + tempPhi[x-1][y])/2*field(x*dx, y*dx +  k*h)*leftNormal;
 	    flux += h/2*(temp1 + temp2);
 	  }
 	  break;
 	case 3:
 	  for (int k = 1; k <= integSteps; k++) {
-	    temp1 = tempPhi[x+1][y]*field((x+1)*dx, y*dx + (k-1)*h)*rightNormal;
-	    temp2 = tempPhi[x+1][y]*field((x+1)*dx, y*dx +  k*h)*rightNormal;
+	    temp1 = (tempPhi[x][y] + tempPhi[x+1][y])/2*field((x+1)*dx, y*dx + (k-1)*h)*rightNormal;
+	    temp2 = (tempPhi[x][y] + tempPhi[x+1][y])/2*field((x+1)*dx, y*dx +  k*h)*rightNormal;
 	    flux += h/2*(temp1 + temp2);
 	  }
 	  break;
@@ -181,7 +174,7 @@ int main() {
 	for (int i = 0; i < timesteps; i++) {
 	  std::cout << "Step " << i << std::endl;
 	  //Print field to terminal
-	  printField(Phi, 0.3);
+	  printField(Phi, 0.01);
 	  //Write field to file
 	  //writeInterfaceToFile(Phi, dx, 0.3, i);
 	  Phi = calculateNextTimestep(Phi, dt, dx, field);
