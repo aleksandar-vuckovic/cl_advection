@@ -1,4 +1,4 @@
-#ifndef vecMath2D
+#ifndef VEC_MATH_2D
 #define VEC_MATH_2D
 
 #include <array>

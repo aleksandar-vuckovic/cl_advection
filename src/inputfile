@@ -1,7 +1,9 @@
-numX=200
-numY=200
+numX=10
+numY=10
+numZ=1
 lenX=1.0
 lenY=1.0
+lenZ=0.1
 
 time=1.0
 timesteps=10000
@@ -10,6 +12,7 @@ writesteps=300
 field=shearField
 
 centerX=0.7
-centerY=-0.1 
+centerY=-0.1
+centerZ=0.5
 radius=0.2
 
