@@ -3,19 +3,45 @@
 #include <sstream>
 #include "vecMath3D.hpp"
 
+class LevelSet {
+private:
+  std::vector<double> data;
+  int num_X, num_Y, num_Z;
+  
+public: 
+  Field(int numX, int numY, int numZ) {
+    data = std::vector<double>(numX*numY*numZ);
+    num_X = numX;
+    num_Y = numY;
+    num_Z = numZ;
+  }
+
+  double& operator() (int x, int y, int z) {
+    return data[x + y*num_X + z*num_X*num_Y];
+  }
+  
+  const double& operator() (int x, int y, int z) const {
+    return data[x + y*num_X + z*num_X*num_Y];
+  }
+
+  const int& numX() const { return num_X; }
+  const int& numY() const { return num_Y; }
+  const int& numZ() const { return num_Z; }
+};
+
 std::array<double, 3> shearField(double x, double y, double z) {
   return {-sin(M_PI*x)*cos(M_PI*y), cos(M_PI*x)*sin(M_PI*y), 0};
 }
 
-void writeFieldToFile(const std::vector <std::vector <std::vector<double> >>& Phi, double dx, double epsilon, int timestep) {
+void writeLevelSetToFile(const LevelSet& Phi, double dx, double epsilon, int timestep) {
   std::ostringstream pointCoordinates;
   std::ostringstream pointPhiValues;
   int Npoints = 0;
-  for (int x = 0; x < Phi.size(); x++)
-    for (int y = 0; y < Phi[0].size(); y++)
-      for (int z = 0; z < Phi[0][0].size(); z++) {
+  for (int x = 0; x < Phi.numX(); x++)
+    for (int y = 0; y < Phi.numY(); y++)
+      for (int z = 0; z < Phi.numZ(); z++) {
 	pointCoordinates << std::to_string(x*dx) + " " + std::to_string(y*dx) + " " + std::to_string(z*dx) + "\n";
-	pointPhiValues << std::to_string(Phi[x][y][z]) + "\n"; 
+	pointPhiValues << std::to_string(Phi(x, y, z)) + "\n"; 
        Npoints++;
      }
 
@@ -37,30 +63,28 @@ void writeFieldToFile(const std::vector <std::vector <std::vector<double> >>& Ph
   outFile << "</DataItem>\n</Attribute>\n</Grid>\n</Domain>\n</Xdmf>\n";
 }
   
-double sumField(const std::vector <std::vector< std::vector<double> >>& Phi) {
+double sumLevelSet(const LevelSet& Phi) {
   double temp = 0;
-  for (int x = 0; x < Phi.size(); x++) 
-    for (int y = 0; y < Phi[0].size(); y++)
-      for (int z = 0; z < Phi[0][0].size(); z++)
-	temp = temp + Phi[x][y][z];
+  for (int x = 0; x < Phi.numX(); x++) 
+    for (int y = 0; y < Phi.numY(); y++)
+      for (int z = 0; z < Phi.numZ(); z++)
+	temp = temp + Phi(x, y, z);
   
   return temp;
 }
 
-std::vector <std::vector<std::vector<double> >>& initDroplet(std::vector <std::vector< std::vector<double> >>& Phi, double dx, std::array<double, 3> center, double radius, double epsilon) {
-  for (int x = 0; x < Phi.size(); x++) 
-    for (int y = 0; y < Phi[0].size(); y++)
-      for (int z = 0; z < Phi[0][0].size(); z++)
-	Phi[x][y][z] = pow(x*dx - center[0], 2) + pow(y*dx - center[1], 2) + pow(z*dx - center[2], 2) - pow(radius, 2);
+LevelSet& initDroplet(LevelSet& Phi, double dx, std::array<double, 3> center, double radius, double epsilon) {
+  for (int x = 0; x < Phi.numX(); x++) 
+    for (int y = 0; y < Phi.numY(); y++)
+      for (int z = 0; z < Phi.numZ(); z++)
+	Phi(x, y, z) = pow(x*dx - center[0], 2) + pow(y*dx - center[1], 2) + pow(z*dx - center[2], 2) - pow(radius, 2);
 
   return Phi;
 }
 
-std::vector <std::vector< std::vector<double> >>& calculateNextTimestep(std::vector <std::vector< std::vector<double> >>& Phi,
-							 double dx, double dt,
-							 std::array<double, 3> (*field) (double x, double y, double z)) {
+LevelSet& calculateNextTimestep(LevelSet& Phi, double dx, double dt,  std::array<double, 3> (*field) (double x, double y, double z)) {
 
-  std::vector <std::vector< std::vector<double> >> tempPhi(Phi);
+  LevelSet tempPhi(Phi);
   
   const std::array<double, 3> upNormal = {0, 1, 0};
   const std::array<double, 3> downNormal = {0,-1, 0};
@@ -69,39 +93,39 @@ std::vector <std::vector< std::vector<double> >>& calculateNextTimestep(std::vec
   const std::array<double, 3> frontNormal = {0, 0, 1};
   const std::array<double, 3> backNormal = {0, 0, -1};
   
-  for (int x = 0; x < Phi.size(); x++) {
-    for (int y = 0; y < Phi[0].size(); y++) {
-      for (int z = 0; z < Phi[0][0].size(); z++) {
+  for (int x = 0; x < Phi.numX(); x++) {
+    for (int y = 0; y < Phi.numY(); y++) {
+      for (int z = 0; z < Phi.numZ(); z++) {
       //Calculate the flux of the fluid through all sides of the square
 	double flux = 0;
 	for (int dir = 0; dir < 6; dir++) {
-	  if ((x == 0 && dir == 2) || (x == Phi.size()-1 && dir == 3)
-	      || (y == 0 && dir == 1) || (y == Phi[0].size()-1 && dir == 0)
-	      || (z == 0 && dir == 6) || (z == Phi[0][0].size()-1 && dir == 5))
+	  if ((x == 0 && dir == 2) || (x == Phi.numX()-1 && dir == 3)
+	   || (y == 0 && dir == 1) || (y == Phi.numY()-1 && dir == 0)
+	   || (z == 0 && dir == 5) || (z == Phi.numZ()-1 && dir == 4))
 	    continue;	       
 	
 	  switch(dir) {
 	  case 0:
-	    flux += (tempPhi[x][y][z] + tempPhi[x][y+1][z])/2 * field((x+1/2)*dx, (y+1)*dx, (z+1/2)*dx) * upNormal * dx*dx;
+	    flux += (tempPhi(x, y, z) + tempPhi(x, y+1, z))/2 * field((x+1/2)*dx, (y+1)*dx, (z+1/2)*dx) * upNormal * dx*dx;
 	    break;
 	  case 1:
-	    flux += (tempPhi[x][y][z] + tempPhi[x][y-1][z])/2 * field((x+1/2)*dx, y*dx, (z+1/2)*dx) * downNormal * dx*dx;
+	    flux += (tempPhi(x, y, z) + tempPhi(x, y-1, z))/2 * field((x+1/2)*dx, y*dx, (z+1/2)*dx) * downNormal * dx*dx;
 	    break;
 	  case 2:
-	    flux += (tempPhi[x][y][z] + tempPhi[x-1][y][z])/2 * field(x*dx, (y+1/2)*dx, (z+1/2)*dx) * leftNormal * dx*dx;
+	    flux += (tempPhi(x, y, z) + tempPhi(x-1, y, z))/2 * field(x*dx, (y+1/2)*dx, (z+1/2)*dx) * leftNormal * dx*dx;
 	    break;
 	  case 3:
-	    flux += (tempPhi[x][y][z] + tempPhi[x+1][y][z])/2 * field((x+1)*dx, (y+1/2)*dx, (z+1/2)*dx) * rightNormal * dx*dx;
+	    flux += (tempPhi(x, y, z) + tempPhi(x+1, y, z))/2 * field((x+1)*dx, (y+1/2)*dx, (z+1/2)*dx) * rightNormal * dx*dx;
 	    break;
 	  case 4:
-	    flux += (tempPhi[x][y][z] + tempPhi[x][y][z+1])/2 * field((x+1/2)*dx, (y+1/2)*dx, (z+1)*dx) * frontNormal * dx*dx;
+	    flux += (tempPhi(x, y, z) + tempPhi(x, y, z+1))/2 * field((x+1/2)*dx, (y+1/2)*dx, (z+1)*dx) * frontNormal * dx*dx;
 	    break;
 	  case 5:
-	    flux += (tempPhi[x][y][z] + tempPhi[x][y][z-1])/2 * field((x+1/2)*dx, (y+1/2)*dx, z*dx) * backNormal * dx*dx;
+	    flux += (tempPhi(x, y, z) + tempPhi(x, y, z-1))/2 * field((x+1/2)*dx, (y+1/2)*dx, z*dx) * backNormal * dx*dx;
 	    break;
 	  }
 	}
-	Phi[x][y][z] = Phi[x][y][z] - dt/(dx*dx*dx)*flux;
+	Phi(x, y, z) = Phi(x, y, z) - dt/(dx*dx*dx)*flux;
       }
     }
   }
@@ -109,7 +133,7 @@ std::vector <std::vector< std::vector<double> >>& calculateNextTimestep(std::vec
 }
 
 int main() {
-
+  
         int numX, numY, numZ, timesteps, writesteps;
         double lenX, lenY, lenZ, time, centerX, centerY, centerZ, radius;
 	std::array<double, 3> (*field) (double x, double y, double z);
@@ -156,7 +180,7 @@ int main() {
 	}
 	    
 	
-
+	LevelSet Phi(numX, numY, numZ);
 	double dx = lenX/numX;
 	double dt = time/timesteps;
 
@@ -167,31 +191,22 @@ int main() {
 	}
 	std::array<double, 3> center = {centerX, centerY, centerZ};
 	
-	//Initialize empty field
-	std::vector< std::vector< std::vector<double> >> Phi(numX);
-	for (int x = 0; x < numX; x++) {
-	  std::vector< std::vector<double> > tempY(numY);
-	  for (int y = 0; y < numY; y++) {
-	    std::vector<double> tempZ(numZ);
-	    tempY[y] = tempZ;
-	  }
-	  Phi[x] = tempY;
-	}
 	
-        Phi = initDroplet(Phi, dx, center, radius, 0.005);
+        initDroplet(Phi, dx, center, radius, 0.005);
 
 	system("mkdir data");
-	double sumAtStart = sumField(Phi);
+	double sumAtStart = sumLevelSet(Phi);
 	for (int i = 0; i < timesteps; i++) {
 	  std::cout << "Step " << i << std::endl;
 	  //Write field to file
-	  if (i % (timesteps/writesteps) == 0)
-	    writeFieldToFile(Phi, dx, 0.01, i);
-	  Phi = calculateNextTimestep(Phi, dx, dt, field);
+	  if (i % (timesteps/writesteps) == 0) {
+	    writeLevelSetToFile(Phi, dx, 0.01, i);
+	  }
+	  calculateNextTimestep(Phi, dx, dt, field);
 	}
 	std::cout << std::endl;
         std::cout << "Sum of Phi at start: " << sumAtStart << std::endl;
-	std::cout << "Sum of Phi at end: " << sumField(Phi) << std::endl;
+	std::cout << "Sum of Phi at end: " << sumLevelSet(Phi) << std::endl;
 
        
 	return 0;
