@@ -77,7 +77,7 @@ std::vector <std::vector< std::vector<double> >>& calculateNextTimestep(std::vec
       for (int dir = 0; dir < 6; dir++) {
 	if ((x == 0 && dir == 2) || (x == Phi.size()-1 && dir == 3)
 	    || (y == 0 && dir == 1) || (y == Phi[0].size()-1 && dir == 0)
-	    || (z == 0 && dir == 6) || (z = Phi[0][0].size() - 1 && dir == 5))
+	    || (z == 0 && dir == 6) || (z == Phi[0][0].size()-1 && dir == 5))
 	  continue;	       
 	
 	switch(dir) {
@@ -114,7 +114,7 @@ int main() {
         double lenX, lenY, lenZ, time, centerX, centerY, centerZ, radius;
 	std::array<double, 3> (*field) (double x, double y, double z);
         
-        std::ifstream inFileStream("inputfile");
+        std::ifstream inFileStream("Inputfile");
 	std::string line, varName, value;
 
 	while(std::getline(inFileStream, line)) {
@@ -148,7 +148,7 @@ int main() {
 		else if (varName == "centerY")
 		  centerY = std::stod(value);
 		else if (varName == "centerZ")
-		  centerY = std::stod(value);
+		  centerZ = std::stod(value);
 		else if (varName == "radius")
 		  radius = std::stod(value);
 	      }
