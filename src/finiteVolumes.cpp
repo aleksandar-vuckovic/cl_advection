@@ -22,7 +22,7 @@ void writeFieldToFile(const std::vector <std::vector <std::vector<double> >>& Ph
   std::ofstream outFile("data/field_t="+ std::to_string(timestep) +".xmf");
   outFile << "<?xml version=\"1.0\" ?>\n"                                                                                         
 	  << "<!DOCTYPE Xdmf SYSTEM \"Xdmf.dtd\" [\n"                                                                          
-	  << "<!ENTITY Npoints   \" " + std::to_string(Npoints) + "\">\n"                                                    
+	  << "<!ENTITY Npoints   \"" + std::to_string(Npoints) + "\">\n"
 	  << " ]>"                                                                                                      
           << "<Xdmf Version=\"2.0\" xmlns:xi=\"[http://www.w3.org/2001/XInclude]\">\n"                                       
           << "<Domain>\n"                                                                                                
@@ -32,7 +32,7 @@ void writeFieldToFile(const std::vector <std::vector <std::vector<double> >>& Ph
 	  << "<DataItem Name=\"points\" Format=\"XML\" NumberType=\"Float\" Dimensions=\"&Npoints; 3\">\n";
   
   outFile << pointCoordinates.str();
-  outFile <<"</DataItem>\n" <<"</Geometry>\n" << "<Attribute Name=\"Phi\" AttributeType=\"Scalar\" Center=\"Cell\">\n <DataItem Format =\"XML\" NumberType=\"Float\" Dimensions=\"&Npoints;\">\n";
+  outFile <<"</DataItem>\n" <<"</Geometry>\n" << "<Attribute Name=\"Phi\" AttributeType=\"Scalar\" Center=\"Cell\">\n<DataItem Format =\"XML\" NumberType=\"Float\" Dimensions=\"&Npoints;\">\n";
   outFile << pointPhiValues.str();
   outFile << "</DataItem>\n</Attribute>\n</Grid>\n</Domain>\n</Xdmf>\n";
 }
@@ -74,34 +74,34 @@ std::vector <std::vector< std::vector<double> >>& calculateNextTimestep(std::vec
       for (int z = 0; z < Phi[0][0].size(); z++) {
       //Calculate the flux of the fluid through all sides of the square
 	double flux = 0;
-      for (int dir = 0; dir < 6; dir++) {
-	if ((x == 0 && dir == 2) || (x == Phi.size()-1 && dir == 3)
-	    || (y == 0 && dir == 1) || (y == Phi[0].size()-1 && dir == 0)
-	    || (z == 0 && dir == 6) || (z == Phi[0][0].size()-1 && dir == 5))
-	  continue;	       
+	for (int dir = 0; dir < 6; dir++) {
+	  if ((x == 0 && dir == 2) || (x == Phi.size()-1 && dir == 3)
+	      || (y == 0 && dir == 1) || (y == Phi[0].size()-1 && dir == 0)
+	      || (z == 0 && dir == 6) || (z == Phi[0][0].size()-1 && dir == 5))
+	    continue;	       
 	
-	switch(dir) {
-	case 0:
-	  flux = (tempPhi[x][y][z] + tempPhi[x][y+1][z])/2 * field((x+1/2)*dx, (y+1)*dx, (z+1/2)*dx) * upNormal * dx*dx;
-	  break;
-	case 1:
-	  flux = (tempPhi[x][y][z] + tempPhi[x][y-1][z])/2 * field((x+1/2)*dx, y*dx, (z+1/2)*dx) * downNormal * dx*dx;
-	  break;
-	case 2:
-	  flux = (tempPhi[x][y][z] + tempPhi[x-1][y][z])/2 * field(x*dx, (y+1/2)*dx, (z+1/2)*dx) * leftNormal * dx*dx;
-	  break;
-	case 3:
-	  flux = (tempPhi[x][y][z] + tempPhi[x+1][y][z])/2 * field((x+1)*dx, (y+1/2)*dx, (z+1/2)*dx) * rightNormal * dx*dx;
-	  break;
-	case 4:
-	  flux = (tempPhi[x][y][z] + tempPhi[x][y][z+1])/2 * field((x+1/2)*dx, (y+1/2)*dx, (z+1)*dx) * frontNormal * dx*dx;
-	  break;
-	case 5:
-	  flux = (tempPhi[x][y][z] + tempPhi[x][y][z-1])/2 * field((x+1/2)*dx, (y+1/2)*dx, z*dx) * backNormal * dx*dx;
-	  break;
+	  switch(dir) {
+	  case 0:
+	    flux += (tempPhi[x][y][z] + tempPhi[x][y+1][z])/2 * field((x+1/2)*dx, (y+1)*dx, (z+1/2)*dx) * upNormal * dx*dx;
+	    break;
+	  case 1:
+	    flux += (tempPhi[x][y][z] + tempPhi[x][y-1][z])/2 * field((x+1/2)*dx, y*dx, (z+1/2)*dx) * downNormal * dx*dx;
+	    break;
+	  case 2:
+	    flux += (tempPhi[x][y][z] + tempPhi[x-1][y][z])/2 * field(x*dx, (y+1/2)*dx, (z+1/2)*dx) * leftNormal * dx*dx;
+	    break;
+	  case 3:
+	    flux += (tempPhi[x][y][z] + tempPhi[x+1][y][z])/2 * field((x+1)*dx, (y+1/2)*dx, (z+1/2)*dx) * rightNormal * dx*dx;
+	    break;
+	  case 4:
+	    flux += (tempPhi[x][y][z] + tempPhi[x][y][z+1])/2 * field((x+1/2)*dx, (y+1/2)*dx, (z+1)*dx) * frontNormal * dx*dx;
+	    break;
+	  case 5:
+	    flux += (tempPhi[x][y][z] + tempPhi[x][y][z-1])/2 * field((x+1/2)*dx, (y+1/2)*dx, z*dx) * backNormal * dx*dx;
+	    break;
+	  }
 	}
-      }
-      Phi[x][y][z] = Phi[x][y][z] - dt/(dx*dx)*flux;
+	Phi[x][y][z] = Phi[x][y][z] - dt/(dx*dx*dx)*flux;
       }
     }
   }

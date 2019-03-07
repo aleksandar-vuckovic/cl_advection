@@ -1,9 +1,9 @@
-numX=10
-numY=10
-numZ=10
+numX=50
+numY=50
+numZ=50
 lenX=1.0
 lenY=1.0
-lenZ=0.1
+lenZ=1.0
 
 time=1.0
 timesteps=10000
