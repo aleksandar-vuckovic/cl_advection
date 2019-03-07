@@ -9,7 +9,7 @@ private:
   int num_X, num_Y, num_Z;
   
 public: 
-  Field(int numX, int numY, int numZ) {
+  LevelSet(int numX, int numY, int numZ) {
     data = std::vector<double>(numX*numY*numZ);
     num_X = numX;
     num_Y = numY;
