@@ -3,11 +3,11 @@ numY=300
 numZ=1
 lenX=1.0
 lenY=1.0
-lenZ=0.005
+lenZ=0.001
 
-time=1.0
+time=0.3
 timesteps=1000
-writesteps=200
+writesteps=100
 numCores=4
 
 field=shearField
@@ -17,7 +17,7 @@ centerY=-0.1
 centerZ=0.0
 radius=0.2
 
-expcpX=0.45
+expcpX=0.526794919
 expcpY=0
-expcpZ=0.5
+expcpZ=0.0
 expAngle=1.047198
