@@ -169,34 +169,48 @@ void LevelSet::calculateNextTimestep(double dt) {
 	    for (int z = 0; z < this->numZ(); z++) {
 		//Calculate the flux of the fluid through all sides of the square
 		double flux = 0;
+                double sp = 0;  
+
 		for (int dir = 0; dir < 6; dir++) {
 		    if ((x == 0 && dir == 2) || (x == this->numX()-1 && dir == 3)
 			|| (y == 0 && dir == 1) || (y == this->numY()-1 && dir == 0)
 			|| (z == 0 && dir == 5) || (z == this->numZ()-1 && dir == 4))
-			continue;	       
+			continue; // no flux across the domain boundary       
 	
 		    switch(dir) {
 		    case 0:
-			flux += (tempPhi.at(x, y, z) + tempPhi.at(x, y+1, z))/2 * field((x+1/2)*dx, (y+1)*dx, (z+1/2)*dx) * upNormal * dx*dx;
-			break;
-		    case 1:
-			flux += (tempPhi.at(x, y, z) + tempPhi.at(x, y-1, z))/2 * field((x+1/2)*dx, y*dx, (z+1/2)*dx) * downNormal * dx*dx;
+                        sp = field((x+1/2)*dx, (y+1)*dx, (z+1/2)*dx) * upNormal;
+                        flux += fmax(sp,0.0)*tempPhi.at(x, y, z) + fmin(sp,0.0)*tempPhi.at(x, y+1, z); // upwind flux
+                        //flux +=(tempPhi.at(x, y+1, z) + tempPhi.at(x, y, z))/2* sp;
+                        break;
+ 		    case 1:
+                        sp = field((x+1/2)*dx, y*dx, (z+1/2)*dx) * downNormal;
+                        flux += fmax(sp,0.0)*tempPhi.at(x, y, z) + fmin(sp,0.0)*tempPhi.at(x, y-1, z); // upwind flux
+			//flux += (tempPhi.at(x, y, z) + tempPhi.at(x, y-1, z))/2 * sp;
 			break;
 		    case 2:
-			flux += (tempPhi.at(x, y, z) + tempPhi.at(x-1, y, z))/2 * field(x*dx, (y+1/2)*dx, (z+1/2)*dx) * leftNormal * dx*dx;
+                        sp = field(x*dx, (y+1/2)*dx, (z+1/2)*dx) * leftNormal;
+                        flux += fmax(sp,0.0)*tempPhi.at(x, y, z) + fmin(sp,0.0)*tempPhi.at(x-1, y, z); // upwind flux
+			//flux += (tempPhi.at(x, y, z) + tempPhi.at(x-1, y, z))/2 * sp;
 			break;
 		    case 3:
-			flux += (tempPhi.at(x, y, z) + tempPhi.at(x+1, y, z))/2 * field((x+1)*dx, (y+1/2)*dx, (z+1/2)*dx) * rightNormal * dx*dx;
+                        sp = field((x+1)*dx, (y+1/2)*dx, (z+1/2)*dx) * rightNormal;
+                        flux += fmax(sp,0.0)*tempPhi.at(x, y, z) + fmin(sp,0.0)*tempPhi.at(x+1, y, z); // upwind flux
+			//flux += (tempPhi.at(x, y, z) + tempPhi.at(x+1, y, z))/2 * sp;
 			break;
 		    case 4:
-			flux += (tempPhi.at(x, y, z) + tempPhi.at(x, y, z+1))/2 * field((x+1/2)*dx, (y+1/2)*dx, (z+1)*dx) * frontNormal * dx*dx;
+                        sp = field((x+1/2)*dx, (y+1/2)*dx, (z+1)*dx) * frontNormal;
+                        flux += fmax(sp,0.0)*tempPhi.at(x, y, z+1) + fmin(sp,0.0)*tempPhi.at(x, y, z); // upwind flux
+			//flux += (tempPhi.at(x, y, z) + tempPhi.at(x, y, z+1))/2 * sp;
 			break;
 		    case 5:
-			flux += (tempPhi.at(x, y, z) + tempPhi.at(x, y, z-1))/2 * field((x+1/2)*dx, (y+1/2)*dx, z*dx) * backNormal * dx*dx;
+                        sp = field((x+1/2)*dx, (y+1/2)*dx, z*dx) * backNormal;
+                        flux += fmax(sp,0.0)*tempPhi.at(x, y, z-1) + fmin(sp,0.0)*tempPhi.at(x, y, z); // upwind flux
+			//flux += (tempPhi.at(x, y, z) + tempPhi.at(x, y, z-1))/2 * sp;
 			break;
 		    }
 		}
-		this->at(x, y, z) = this->at(x, y, z) - dt/(dx*dx*dx)*flux;
+		this->at(x, y, z) = this->at(x, y, z) - dt/dx*flux;
 	    }
 	}
     }
