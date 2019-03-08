@@ -87,7 +87,8 @@ double LevelSet::getContactAngle(double dt, double timestep, int totalTimesteps,
 
     //Calculate angle at this cell with finite differences
     double normalX = (this->at(cell[0]+1, cell[1], cell[2]) - this->at(cell[0]-1, cell[1], cell[2]))/(2*dx);
-    double normalY = (this->at(cell[0], cell[1] + 1, cell[2]) - this->at(cell[0], cell[1], cell[2]))/dx;
+    //double normalY = (this->at(cell[0], cell[1] + 1, cell[2]) - this->at(cell[0], cell[1], cell[2]))/dx; // first order difference quotient
+    double normalY = (-this->at(cell[0], cell[1] + 2, cell[2]) + 4.0*this->at(cell[0], cell[1] + 1, cell[2]) - 3.0*this->at(cell[0], cell[1], cell[2]))/(2*dx); // second order difference quotient
     double normalZ;
     if (this->numZ() > 1)
 	normalZ = (this->at(cell[0], cell[1], cell[2]+1) - this->at(cell[0]-1, cell[1], cell[2]-1))/(2*dx);
