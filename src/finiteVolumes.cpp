@@ -280,7 +280,7 @@ int main() {
     std::array<double, 3> initCP = Phi.getInitCP(dt, expcp, 0.001);
     
     system("mkdir data");
-    std::ofstream angleFile("contactAngleAnalysis.txt");
+    std::ofstream angleFile("contactAngle.csv");
     double sumAtStart = Phi.sumLevelSet();
     for (int i = 0; i < timesteps; i++) {
 	std::cout << "Step " << i << std::endl;
@@ -289,7 +289,7 @@ int main() {
 	    Phi.writeLevelSetToFile(0.01, i);
 	}
 	angle[i] = Phi.getContactAngle(dt, i, timesteps, initCP);
-	angleFile << std::to_string(i*dt) + " " + std::to_string(angle[i]/(2*M_PI)*360) + "\n";
+	angleFile << std::to_string(i*dt) + ", " + std::to_string(angle[i]/(2*M_PI)*360) + "\n";
 	std::cout  << std::to_string(i*dt) + " " + std::to_string(angle[i]/(2*M_PI)*360) + "\n";
 	Phi.calculateNextTimestep(dt);
     }
