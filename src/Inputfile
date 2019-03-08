@@ -1,18 +1,23 @@
-numX=50
-numY=50
-numZ=50
+numX=300
+numY=300
+numZ=1
 lenX=1.0
 lenY=1.0
-lenZ=1.0
+lenZ=0.005
 
 time=1.0
-timesteps=10000
-writesteps=300
+timesteps=1000
+writesteps=200
+numCores=4
 
 field=shearField
 
 centerX=0.7
 centerY=-0.1
-centerZ=0.5
+centerZ=0.0
 radius=0.2
 
+expcpX=0.45
+expcpY=0
+expcpZ=0.5
+expAngle=1.047198

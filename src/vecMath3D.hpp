@@ -20,6 +20,8 @@ std::array<double, 3> operator*(const std::array<int, 3>& vec, double a);
 
 double operator* (const std::array<double, 3>& vecA, const std::array<double, 3>& vecB);
 
+std::array<double, 3> operator/ (const std::array<double, 3>& vec, double a);
+
 double abs (const std::array<double, 3> vec);
 
 #endif
