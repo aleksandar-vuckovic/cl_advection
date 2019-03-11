@@ -6,7 +6,7 @@
 class LevelSet {
 private:
     std::vector<double> data;
-    int num_X, num_Y, num_Z;
+    int numX, numY, numZ;
     double dx;
     std::array<double, 3> (*field) (double x, double y, double z);
     std::array<std::array<double,3>, 3> (*gradientField) (double x, double y, double z);
@@ -15,25 +15,21 @@ public:
     LevelSet(int numX, int numY, int numZ, double dx, std::array<double, 3> (*field) (double x, double y, double z),
 	     std::array<std::array<double,3>, 3> (*gradientField) (double x, double y, double z)) {
 	data = std::vector<double>(numX*numY*numZ);
-	num_X = numX;
-	num_Y = numY;
-	num_Z = numZ;
+	this->numX = numX;
+	this->numY = numY;
+	this->numZ = numZ;
 	this->dx = dx;
 	this->field = field;
 	this->gradientField = gradientField;
     }
     
     double& at(int x, int y, int z) {
-	return data[x + y*num_X + z*num_X*num_Y];
+	return data[x + y*numX + z*numX*numY];
     }
   
     const double& at(int x, int y, int z) const {
-	return data[x + y*num_X + z*num_X*num_Y];
+	return data[x + y*numX + z*numX*numY];
     }
-
-    const int& numX() const { return num_X; }
-    const int& numY() const { return num_Y; }
-    const int& numZ() const { return num_Z; }
     
     std::array<double, 3> getInitCP(double dt, std::array<double, 3> expcp, double epsilon);
     double getContactAngle(double dt, double timestep, int totalTimesteps, std::array<double, 3> initCP);
@@ -57,9 +53,9 @@ std::array<std::array<double, 3>, 3> gradShearField(double x, double y, double z
 
 std::array<double, 3> LevelSet::getInitCP(double dt, std::array<double, 3> expcp, double epsilon) {
     std::array<double, 3> candidate = {0, 0, 0};
-    for (int x = 0; x < this->numX(); x++)
-	for (int y = 0; y < this->numY(); y++)
-	    for (int z = 0; z < this->numZ(); z++) {
+    for (int x = 0; x < this->numX; x++)
+	for (int y = 0; y < this->numY; y++)
+	    for (int z = 0; z < this->numZ; z++) {
 		std::array<double, 3> other = {x*dx, y*dx, z*dx};
 		if (abs(candidate - expcp) > abs(other - expcp) && std::abs(this->at(x, y, z)) < epsilon && y == 0) {
 		    candidate = other;
@@ -77,9 +73,9 @@ double LevelSet::getContactAngle(double dt, double timestep, int totalTimesteps,
 
     //Find cell corresponding to this point
     std::array<int, 3> cell = {0, 0, 0};
-    for (int x = 0; x < this->numX(); x++)
-	for (int y = 0; y < this->numY(); y++)
-	    for (int z = 0; z < this->numZ(); z++) {
+    for (int x = 0; x < this->numX; x++)
+	for (int y = 0; y < this->numY; y++)
+	    for (int z = 0; z < this->numZ; z++) {
 		std::array<int, 3> other = {x, y, z};
 		if (abs(temp - cell*dx) > abs(temp - other*dx))
 		    cell = other;
@@ -90,7 +86,7 @@ double LevelSet::getContactAngle(double dt, double timestep, int totalTimesteps,
     //double normalY = (this->at(cell[0], cell[1] + 1, cell[2]) - this->at(cell[0], cell[1], cell[2]))/dx; // first order difference quotient
     double normalY = (-this->at(cell[0], cell[1] + 2, cell[2]) + 4.0*this->at(cell[0], cell[1] + 1, cell[2]) - 3.0*this->at(cell[0], cell[1], cell[2]))/(2*dx); // second order difference quotient
     double normalZ;
-    if (this->numZ() > 1)
+    if (this->numZ > 1)
 	normalZ = (this->at(cell[0], cell[1], cell[2]+1) - this->at(cell[0]-1, cell[1], cell[2]-1))/(2*dx);
     else
 	normalZ = 0;
@@ -110,9 +106,9 @@ void LevelSet::writeLevelSetToFile(double epsilon, int timestep) {
     std::ostringstream pointCoordinates;
     std::ostringstream pointPhiValues;
     int Npoints = 0;
-    for (int x = 0; x < this->numX(); x++)
-	for (int y = 0; y < this->numY(); y++)
-	    for (int z = 0; z < this->numZ(); z++) {
+    for (int x = 0; x < this->numX; x++)
+	for (int y = 0; y < this->numY; y++)
+	    for (int z = 0; z < this->numZ; z++) {
 		pointCoordinates << std::to_string(x*dx) + " " + std::to_string(y*dx) + " " + std::to_string(z*dx) + "\n";
 		pointPhiValues << std::to_string(this->at(x, y, z)) + "\n"; 
 		Npoints++;
@@ -138,18 +134,18 @@ void LevelSet::writeLevelSetToFile(double epsilon, int timestep) {
   
 double LevelSet::sumLevelSet() {
     double temp = 0;
-    for (int x = 0; x < this->numX(); x++) 
-	for (int y = 0; y < this->numY(); y++)
-	    for (int z = 0; z < this->numZ(); z++)
+    for (int x = 0; x < this->numX; x++) 
+	for (int y = 0; y < this->numY; y++)
+	    for (int z = 0; z < this->numZ; z++)
 		temp = temp + this->at(x, y, z);
   
     return temp;
 }
 
 void LevelSet::initDroplet(std::array<double, 3> center, double radius, double epsilon) {
-    for (int x = 0; x < this->numX(); x++) 
-	for (int y = 0; y < this->numY(); y++)
-	    for (int z = 0; z < this->numZ(); z++)
+    for (int x = 0; x < this->numX; x++) 
+	for (int y = 0; y < this->numY; y++)
+	    for (int z = 0; z < this->numZ; z++)
 		this->at(x, y, z) = pow(x*dx - center[0], 2) + pow(y*dx - center[1], 2) + pow(z*dx - center[2], 2) - pow(radius, 2);
 }
 
@@ -164,17 +160,17 @@ void LevelSet::calculateNextTimestep(double dt) {
     const std::array<double, 3> frontNormal = {0, 0, 1};
     const std::array<double, 3> backNormal = {0, 0, -1};
 
-    for (int x = 0; x < this->numX(); x++) {
-	for (int y = 0; y < this->numY(); y++) {
-	    for (int z = 0; z < this->numZ(); z++) {
+    for (int x = 0; x < this->numX; x++) {
+	for (int y = 0; y < this->numY; y++) {
+	    for (int z = 0; z < this->numZ; z++) {
 		//Calculate the flux of the fluid through all sides of the square
 		double flux = 0;
                 double sp = 0;  
 
 		for (int dir = 0; dir < 6; dir++) {
-		    if ((x == 0 && dir == 2) || (x == this->numX()-1 && dir == 3)
-			|| (y == 0 && dir == 1) || (y == this->numY()-1 && dir == 0)
-			|| (z == 0 && dir == 5) || (z == this->numZ()-1 && dir == 4))
+		    if ((x == 0 && dir == 2) || (x == this->numX-1 && dir == 3)
+			|| (y == 0 && dir == 1) || (y == this->numY-1 && dir == 0)
+			|| (z == 0 && dir == 5) || (z == this->numZ-1 && dir == 4))
 			continue; // no flux across the domain boundary       
 	
 		    switch(dir) {
