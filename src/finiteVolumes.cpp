@@ -1,6 +1,9 @@
-#include <iostream>
-#include <fstream>
-#include <sstream>
+#include <iostream>   // Terminal IO
+#include <iomanip>    // IO manipulation, set::fixed, set::setprecision
+#include <fstream>    // Filestream 
+#include <sstream>    // Stringstream
+#include <stdio.h>
+#include <string>
 #include "vecMath3D.hpp"
 
 class LevelSet {
@@ -34,7 +37,7 @@ public:
     std::array<double, 3> getInitCP(double dt, std::array<double, 3> expcp, double epsilon);
     double getContactAngle(double dt, double timestep, int totalTimesteps, std::array<double, 3> initCP);
     double sumLevelSet();
-    void writeLevelSetToFile(double epsilon, int timestep);
+    void writeLevelSetToFile(double epsilon, double dt, int timestep);
     void initDroplet(std::array<double, 3> center, double radius, double epsilon);
     void calculateNextTimestep(double dt); 
 };
@@ -102,34 +105,52 @@ double LevelSet::getContactAngle(double dt, double timestep, int totalTimesteps,
 */    
     
 
-void LevelSet::writeLevelSetToFile(double epsilon, int timestep) {
-    std::ostringstream pointCoordinates;
-    std::ostringstream pointPhiValues;
-    int Npoints = 0;
+void LevelSet::writeLevelSetToFile(double epsilon, double dt, int timestep) {
+    int Npoints = numX*numY*numZ;
+    std::vector<double> pointCoordinates(Npoints*3);
+    std::vector<double> pointPhiValues(Npoints);
+    
     for (int x = 0; x < this->numX; x++)
 	for (int y = 0; y < this->numY; y++)
 	    for (int z = 0; z < this->numZ; z++) {
-		pointCoordinates << std::to_string(x*dx) + " " + std::to_string(y*dx) + " " + std::to_string(z*dx) + "\n";
-		pointPhiValues << std::to_string(this->at(x, y, z)) + "\n"; 
-		Npoints++;
+                if (timestep == 0) {
+                    pointCoordinates[x*y*z] = x*dx;
+                    pointCoordinates[x*y*z+1] = y*dx;
+                    pointCoordinates[x*y*z+2] = z*dx;
+                }
+		pointPhiValues[x*y*z] = this->at(x, y, z); 
 	    }
 
-    std::ofstream outFile("data/field_t="+ std::to_string(timestep) +".xmf");
-    outFile << "<?xml version=\"1.0\" ?>\n"                                                                                         
+    // XMF file for Paraview
+    std::ofstream xmfFile("data/Phi_t="+ std::to_string(timestep*dt) +".xmf");
+
+    // If it is the first iteration, create coordinate file
+    if (timestep == 0) {
+        FILE *fieldFile;
+        fieldFile = fopen("data/field.bin", "wb");
+        fwrite(&pointCoordinates, sizeof(double), Npoints*3, fieldFile);
+    }
+    FILE *PhiFile;
+    std::string filename = "data/Phi_t="+ std::to_string(timestep*dt)+".bin";
+    PhiFile = fopen(filename.data(), "wb");
+    fwrite(&pointPhiValues, sizeof(double), Npoints, PhiFile);
+        
+    xmfFile << "<?xml version=\"1.0\" ?>\n"                                                                                         
 	    << "<!DOCTYPE Xdmf SYSTEM \"Xdmf.dtd\" [\n"                                                                          
-	    << "<!ENTITY Npoints   \"" + std::to_string(Npoints) + "\">\n"
-	    << " ]>"                                                                                                      
-	    << "<Xdmf Version=\"2.0\" xmlns:xi=\"[http://www.w3.org/2001/XInclude]\">\n"                                       
+	    << "<!ENTITY Npoints   \"" + std::to_string(Npoints) + "\">]>\n"
+	    << " "                                                                                                      
+	    << "<Xdmf Version=\"2.0\">\n"                                       
 	    << "<Domain>\n"                                                                                                
 	    << "<Grid Name=\"interface\">\n"                                                                            
 	    << "<Topology TopologyType=\"Polyvertex\" NumberOfElements=\"&Npoints;\"/>\n"                      
 	    << "<Geometry GeometryType=\"XYZ\">\n"                                                            
-	    << "<DataItem Name=\"points\" Format=\"XML\" NumberType=\"Float\" Dimensions=\"&Npoints; 3\">\n";
+	    << "<DataItem ItemType=\"Uniform\" Name=\"points\" Format=\"Binary\" NumberType=\"Float\" Precision=\"8\"\n" 
+            << "Dimensions=\""+ std::to_string(numX)+ " " + std::to_string(numY) + " "+ std::to_string(numZ) +"\">\n";
   
-    outFile << pointCoordinates.str();
-    outFile <<"</DataItem>\n" <<"</Geometry>\n" << "<Attribute Name=\"Phi\" AttributeType=\"Scalar\" Center=\"Cell\">\n<DataItem Format =\"XML\" NumberType=\"Float\" Dimensions=\"&Npoints;\">\n";
-    outFile << pointPhiValues.str();
-    outFile << "</DataItem>\n</Attribute>\n</Grid>\n</Domain>\n</Xdmf>\n";
+    xmfFile << "field.bin\n";
+    xmfFile <<"</DataItem>\n" <<"</Geometry>\n" << "<Attribute Name=\"Phi\" AttributeType=\"Scalar\" Center=\"Cell\">\n<DataItem Format =\"Binary\" NumberType=\"Float\" Precision=\"8\" Dimensions=\"&Npoints;\">\n";
+    xmfFile << "Phi_t="+ std::to_string(timestep*dt) +".bin\n";
+    xmfFile << "</DataItem>\n</Attribute>\n</Grid>\n</Domain>\n</Xdmf>\n";
 }
   
 double LevelSet::sumLevelSet() {
@@ -296,7 +317,7 @@ int main() {
 	std::cout << "Step " << i << std::endl;
 	//Write field to file
 	if (i % (timesteps/writesteps) == 0) {
-	    Phi.writeLevelSetToFile(0.01, i);
+	    Phi.writeLevelSetToFile(0.01, dt, i);
 	}
 	angle[i] = Phi.getContactAngle(dt, i, timesteps, initCP);
 	angleFile << std::to_string(i*dt) + ", " + std::to_string(angle[i]/(2*M_PI)*360) + "\n";
