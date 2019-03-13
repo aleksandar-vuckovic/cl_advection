@@ -37,7 +37,7 @@ public:
     std::array<double, 3> getInitCP(double dt, std::array<double, 3> expcp, double epsilon);
     double getContactAngle(double dt, double timestep, int totalTimesteps, std::array<double, 3> initCP);
     double sumLevelSet();
-    void writeLevelSetToFile(double epsilon, double dt, int timestep);
+    void writeLevelSetToFile(double epsilon, double dt, int timestep, int total_timesteps, int total_writesteps, std::ofstream *xmfFile);
     void initDroplet(std::array<double, 3> center, double radius, double epsilon);
     void calculateNextTimestep(double dt); 
 };
@@ -105,52 +105,62 @@ double LevelSet::getContactAngle(double dt, double timestep, int totalTimesteps,
 */    
     
 
-void LevelSet::writeLevelSetToFile(double epsilon, double dt, int timestep) {
+void LevelSet::writeLevelSetToFile(double epsilon, double dt, int timestep, int total_timesteps, int total_writesteps, std::ofstream *xmfFile) {
     int Npoints = numX*numY*numZ;
-    std::vector<double> pointCoordinates(Npoints*3);
-    std::vector<double> pointPhiValues(Npoints);
-    
-    for (int x = 0; x < this->numX; x++)
-	for (int y = 0; y < this->numY; y++)
-	    for (int z = 0; z < this->numZ; z++) {
-                if (timestep == 0) {
-                    pointCoordinates[x*y*z] = x*dx;
-                    pointCoordinates[x*y*z+1] = y*dx;
-                    pointCoordinates[x*y*z+2] = z*dx;
-                }
-		pointPhiValues[x*y*z] = this->at(x, y, z); 
-	    }
+    double *pointCoordinates = new double[Npoints*3];
+    double *pointPhiValues = new double [Npoints];
 
-    // XMF file for Paraview
-    std::ofstream xmfFile("data/Phi_t="+ std::to_string(timestep*dt) +".xmf");
+    int index = 0;
+    for (int x = 0; x < numX; x++)
+        for (int y = 0; y < numY; y++)
+            for (int z = 0; z < numZ; z++) {
+                if (timestep == 0) {
+                    pointCoordinates[index] = y*dx;
+                    pointCoordinates[index +1] = x*dx;
+                    pointCoordinates[index +2] = z*dx;
+                    index += 3;
+                }
+                pointPhiValues[x + y*numX + z*numX*numY] = this->at(x, y, z);
+	    }
 
     // If it is the first iteration, create coordinate file
     if (timestep == 0) {
+        *xmfFile << "<?xml version=\"1.0\" ?>\n"
+                 << "<!DOCTYPE Xdmf SYSTEM \"Xdmf.dtd\" [\n"
+                 << "<!ENTITY Npoints \"" + std::to_string(Npoints) + "\">\n"
+                 << "]>\n"
+                 << "<Xdmf xmlns:xi=\"http://www.w3.org/2001/XInclude\" Version=\"2.0\">\n"
+                 << "<Domain>\n"
+                 << "<Grid Name=\"TimeSeries\" GridType=\"Collection\" CollectionType=\"Temporal\">\n"
+                 << "<Time TimeType=\"List\">\n"
+                 << "<DataItem Format=\"XML\" NumberType=\"Float\" Dimensions=\""+ std::to_string(total_writesteps)+"\">\n";
+        for (int i = 0; i < total_writesteps; i++) {
+            *xmfFile << std::to_string(i*(total_timesteps/total_writesteps)*dt) << " ";
+        }
+        *xmfFile <<"</DataItem>\n" << "</Time>\n";
+
+        //Write field coordinates into binary file
         FILE *fieldFile;
         fieldFile = fopen("data/field.bin", "wb");
-        fwrite(&pointCoordinates, sizeof(double), Npoints*3, fieldFile);
+        fwrite(pointCoordinates, sizeof(double), Npoints*3, fieldFile);
     }
     FILE *PhiFile;
     std::string filename = "data/Phi_t="+ std::to_string(timestep*dt)+".bin";
     PhiFile = fopen(filename.data(), "wb");
-    fwrite(&pointPhiValues, sizeof(double), Npoints, PhiFile);
+    fwrite(pointPhiValues, sizeof(double), Npoints, PhiFile);
         
-    xmfFile << "<?xml version=\"1.0\" ?>\n"                                                                                         
-	    << "<!DOCTYPE Xdmf SYSTEM \"Xdmf.dtd\" [\n"                                                                          
-	    << "<!ENTITY Npoints   \"" + std::to_string(Npoints) + "\">]>\n"
-	    << " "                                                                                                      
-	    << "<Xdmf Version=\"2.0\">\n"                                       
-	    << "<Domain>\n"                                                                                                
-	    << "<Grid Name=\"interface\">\n"                                                                            
-	    << "<Topology TopologyType=\"Polyvertex\" NumberOfElements=\"&Npoints;\"/>\n"                      
-	    << "<Geometry GeometryType=\"XYZ\">\n"                                                            
-	    << "<DataItem ItemType=\"Uniform\" Name=\"points\" Format=\"Binary\" NumberType=\"Float\" Precision=\"8\"\n" 
-            << "Dimensions=\""+ std::to_string(numX)+ " " + std::to_string(numY) + " "+ std::to_string(numZ) +"\">\n";
-  
-    xmfFile << "field.bin\n";
-    xmfFile <<"</DataItem>\n" <<"</Geometry>\n" << "<Attribute Name=\"Phi\" AttributeType=\"Scalar\" Center=\"Cell\">\n<DataItem Format =\"Binary\" NumberType=\"Float\" Precision=\"8\" Dimensions=\"&Npoints;\">\n";
-    xmfFile << "Phi_t="+ std::to_string(timestep*dt) +".bin\n";
-    xmfFile << "</DataItem>\n</Attribute>\n</Grid>\n</Domain>\n</Xdmf>\n";
+    *xmfFile << "<Grid>\n"
+             << "<Topology TopologyType=\"Polyvertex\" NumberOfElements=\""+std::to_string(Npoints) +"\"/>\n"
+             << "<Geometry GeometryType=\"XYZ\"> \n"
+             << "<DataItem Name=\"points\" Format=\"Binary\" NumberType=\"Float\" Precision=\"8\" Endian=\"Little\" Dimensions=\"&Npoints; 3\">\n"
+             << "field.bin\n"
+             << "</DataItem>\n</Geometry>"
+             << "<Attribute Name =\"lvlset\" AttributeType=\"Scalar\" Center=\"Cell\">\n"
+             << "<DataItem Format=\"Binary\" NumberType=\"Float\" Precision=\"8\"  Endian=\"Little\" Dimensions=\"&Npoints;\">\n"
+             << "Phi_t="+ std::to_string(timestep*dt) +".bin\n"
+             << "</DataItem></Attribute></Grid>\n";
+
+    delete[] pointCoordinates;
 }
   
 double LevelSet::sumLevelSet() {
@@ -313,17 +323,22 @@ int main() {
     system("mkdir data");
     std::ofstream angleFile("contactAngle.csv");
     double sumAtStart = Phi.sumLevelSet();
+    
+    // XMF file for Paraview
+    std::ofstream xmfFile("data/Phi.xmf");
+    
     for (int i = 0; i < timesteps; i++) {
 	std::cout << "Step " << i << std::endl;
 	//Write field to file
 	if (i % (timesteps/writesteps) == 0) {
-	    Phi.writeLevelSetToFile(0.01, dt, i);
+	    Phi.writeLevelSetToFile(0.01, dt, i, timesteps, writesteps, &xmfFile);
 	}
 	angle[i] = Phi.getContactAngle(dt, i, timesteps, initCP);
 	angleFile << std::to_string(i*dt) + ", " + std::to_string(angle[i]/(2*M_PI)*360) + "\n";
 	std::cout  << std::to_string(i*dt) + " " + std::to_string(angle[i]/(2*M_PI)*360) + "\n";
 	Phi.calculateNextTimestep(dt);
     }
+    xmfFile << "</Grid>\n</Domain>\n</Xdmf>" << std::endl;
     std::cout << std::endl;
     std::cout << "Sum of Phi at start: " << sumAtStart << std::endl;
     std::cout << "Sum of Phi at end: " << Phi.sumLevelSet() << std::endl;

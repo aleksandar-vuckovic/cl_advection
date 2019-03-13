@@ -1,25 +1,23 @@
-numX=2
-numY=1
+numX=500
+numY=500
 numZ=1
 lenX=1.0
 lenY=1.0
-lenZ=0.0005
+lenZ=0.002
 
-time=0.1
-timesteps=1000
+time=1.0
+timesteps=100
 writesteps=100
-writeXMF=true
-writeBin=true
 numCores=4
 
 field=shearField
 
-centerX=0.4
-centerY=0.3
-centerZ=0.1
+centerX=0.7
+centerY=-0.1
+centerZ=0.0
 radius=0.2
 
-expcpX=0.226794919
+expcpX=0.56794919
 expcpY=0
 expcpZ=0.0
 expAngle=1.047198
