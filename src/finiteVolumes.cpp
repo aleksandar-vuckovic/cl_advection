@@ -6,40 +6,54 @@
 #include <string>
 #include "vecMath3D.hpp"
 
-class LevelSet {
+template <class T>
+class Field {
 private:
-    std::vector<double> data;
+    std::vector<T> data;
+
+protected:
     int numX, numY, numZ;
+
+public:
+    Field(int numX, int numY, int numZ) {
+        data = std::vector<T>(numX*numY*numZ);
+        this->numX = numX;
+        this->numY = numY;
+        this->numZ = numZ;
+    }
+    
+    T& at(int x, int y, int z) {
+	return data[x + y*numX + z*numX*numY];
+    }
+  
+    const T& at(int x, int y, int z) const {
+	return data[x + y*numX + z*numX*numY];
+    }
+};
+
+class LevelSet : Field<double> {
+private:
     double dx;
     std::array<double, 3> (*field) (double x, double y, double z);
     std::array<std::array<double,3>, 3> (*gradientField) (double x, double y, double z);
     
 public: 
     LevelSet(int numX, int numY, int numZ, double dx, std::array<double, 3> (*field) (double x, double y, double z),
-	     std::array<std::array<double,3>, 3> (*gradientField) (double x, double y, double z)) {
-	data = std::vector<double>(numX*numY*numZ);
-	this->numX = numX;
-	this->numY = numY;
-	this->numZ = numZ;
+	     std::array<std::array<double,3>, 3> (*gradientField) (double x, double y, double z)) : Field<double>(numX, numY, numZ) {
 	this->dx = dx;
 	this->field = field;
 	this->gradientField = gradientField;
     }
     
-    double& at(int x, int y, int z) {
-	return data[x + y*numX + z*numX*numY];
-    }
-  
-    const double& at(int x, int y, int z) const {
-	return data[x + y*numX + z*numX*numY];
-    }
-    
     std::array<double, 3> getInitCP(double dt, std::array<double, 3> expcp, double epsilon);
+    
     double getContactAngle(double dt, double timestep, int totalTimesteps, std::array<double, 3> initCP);
+    //For now, getCurvature() only works for the stationary droplet
+    double getCurvature(const std::array<double, 3>& init) const;
     double sumLevelSet();
     void writeLevelSetToFile(double epsilon, double dt, int timestep, int total_timesteps, int total_writesteps, std::ofstream *xmfFile);
     void initDroplet(std::array<double, 3> center, double radius, double epsilon);
-    void calculateNextTimestep(double dt); 
+    void calculateNextTimestep(double dt);
 };
 
 std::array<double, 3> shearField(double x, double y, double z) {
@@ -102,8 +116,77 @@ double LevelSet::getContactAngle(double dt, double timestep, int totalTimesteps,
     //Calculate current position of contact point
     for (int i = 0; i < timestep; i++)
 	temp = temp + dt*field(temp[0], temp[1], temp[2]);   
-*/    
+*/
+
+double LevelSet::getCurvature(const std::array<double, 3>& init) const {
+    /* Find cell corresponding to this point
+       The array cell contains the coordinates of the cell */
+    std::array<int, 3> cell = {0, 0, 0};
+    for (int x = 0; x < this->numX; x++)
+	for (int y = 0; y < this->numY; y++)
+	    for (int z = 0; z < this->numZ; z++) {
+		std::array<int, 3> other = {x, y, z};
+		if (abs(init - cell*dx) > abs(init - other*dx))
+		    cell = other;
+	    }
+
+    /* Define what number of cells in each direction(excluding the main cell) are considered local.
+       The resulting normal vector field is defined on a cuboid with  sidelength 2*local + 1 */
+    int local = 2;
+    int sidelength = 2*local + 1;
+    int sidelengthZ;
+    if (this->numZ > 1)
+        sidelengthZ = sidelength;
+    else
+        sidelengthZ = 1;
+    // Declare a field of normal vectors
+    Field<std::array<double, 3> > localField(sidelength, sidelength, sidelengthZ);
     
+    for (int x = -sidelength/2; x < sidelength/2; x++)
+        for (int y = -sidelength/2; y < sidelength/2; y++)
+            for (int z = -sidelength/2; z < sidelength/2; z++) {
+                if (this->numZ == 1 && z != 0) {
+                    continue;
+                }
+                std::array<int, 3> temp = {x, y, z};
+                temp = temp + cell;
+            
+                double normalX = (this->at(temp[0] + 1, temp[1], temp[2]) - this->at(temp[0]-1, temp[1], temp[2])) / (2*dx);
+                // second order difference quotient
+                double normalY = (-this->at(temp[0], temp[1] + 2, temp[2]) + 4.0*this->at(temp[0], temp[1] + 1, temp[2]) - 3.0*this->at(temp[0], temp[1], temp[2])) / (2*dx); 
+                double normalZ;
+                if (this->numZ > 1)
+                    normalZ = (this->at(temp[0], temp[1], temp[2]+1) - this->at(temp[0]-1, temp[1], temp[2]-1))/(2*dx);
+                else
+                    normalZ = 0;
+                std::array<double ,3> normal = {normalX, normalY, normalZ};
+                normal = normal/abs(normal);
+                if (this->numZ > 1)
+                    localField.at(x+local, y+local, z+local) = normal;
+                else
+                    localField.at(x+local, y+local, 0) = normal;
+            }
+
+    // Calculate divergence of localfield at cell, which by definition
+    // is in the "middle" of localField
+    double divergenceX = (localField.at(sidelength/2 + 1, sidelength/2, sidelengthZ/2)[0] - localField.at(sidelength/2 - 1, sidelength/2, sidelengthZ/2)[0])/(2*dx);
+                          
+    // second order difference quotient
+    double divergenceY = (-localField.at(sidelength/2, sidelength/2 + 2, sidelengthZ/2)[1]
+                          + 4.0*localField.at(sidelength/2, sidelength/2 + 1, sidelengthZ/2)[1]
+                          - 3.0*localField.at(sidelength/2, sidelength/2, sidelengthZ/2)[1]) / (2*dx); 
+    double divergenceZ;
+    if (this->numZ > 1)
+        divergenceZ = (localField.at(sidelength/2,sidelength/2, sidelengthZ/2 + 1)[2] - localField.at(sidelength/2, sidelength/2, sidelengthZ/2 - 1)[2])/(2*dx);
+    else
+        divergenceZ = 0; 
+
+    double kappa = - (divergenceX + divergenceY + divergenceZ);
+
+    return kappa;
+}
+
+
 
 void LevelSet::writeLevelSetToFile(double epsilon, double dt, int timestep, int total_timesteps, int total_writesteps, std::ofstream *xmfFile) {
     int Npoints = numX*numY*numZ;
@@ -326,6 +409,10 @@ int main() {
     
     // XMF file for Paraview
     std::ofstream xmfFile("data/Phi.xmf");
+
+    //Test curvature calculation
+    std::cout << "The initial curvature of the droplet is: " << Phi.getCurvature(expcp) << std::endl;
+       
     
     for (int i = 0; i < timesteps; i++) {
 	std::cout << "Step " << i << std::endl;

@@ -4,6 +4,10 @@ std::array<double, 3> operator+ (std::array<double, 3> vecA, std::array<double, 
   return { vecA[0] + vecB[0], vecA[1] + vecB[1], vecA[2] + vecB[2] };
 }
 
+std::array<int, 3> operator+ (std::array<int, 3> vecA, std::array<int, 3> vecB){
+  return { vecA[0] + vecB[0], vecA[1] + vecB[1], vecA[2] + vecB[2] };
+}
+
 std::array<double, 3> operator- (std::array<double, 3> vecA, std::array<double, 3> vecB){
   return { vecA[0] - vecB[0], vecA[1] - vecB[1], vecA[2] - vecB[2] };
 }

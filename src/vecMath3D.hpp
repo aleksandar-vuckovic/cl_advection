@@ -8,6 +8,8 @@
 
 std::array<double, 3> operator+ (std::array<double, 3> vecA, std::array<double, 3> vecB);
 
+std::array<int, 3> operator+ (std::array<int, 3> vecA, std::array<int, 3> vecB);
+
 std::array<double, 3> operator- (std::array<double, 3> vecA, std::array<double, 3> vecB);
 
 std::array<double, 3> operator- (std::array<double, 3> vecA, std::array<int, 3> vecB);
