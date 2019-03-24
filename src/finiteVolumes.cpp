@@ -142,21 +142,21 @@ double LevelSet::getCurvature(const std::array<double, 3>& init) const {
     // Declare a field of normal vectors
     Field<std::array<double, 3> > localField(sidelength, sidelength, sidelengthZ);
     
-    for (int x = -sidelength/2; x < sidelength/2; x++)
-        for (int y = -sidelength/2; y < sidelength/2; y++)
-            for (int z = -sidelength/2; z < sidelength/2; z++) {
+    for (int x = -sidelength/2; x <= sidelength/2; x++)
+        for (int y = -sidelength/2; y <= sidelength/2; y++)
+            for (int z = -sidelength/2; z <= sidelength/2; z++) {
                 if (this->numZ == 1 && z != 0) {
                     continue;
                 }
                 std::array<int, 3> temp = {x, y, z};
                 temp = temp + cell;
-            
+                
                 double normalX = (this->at(temp[0] + 1, temp[1], temp[2]) - this->at(temp[0]-1, temp[1], temp[2])) / (2*dx);
                 // second order difference quotient
-                double normalY = (-this->at(temp[0], temp[1] + 2, temp[2]) + 4.0*this->at(temp[0], temp[1] + 1, temp[2]) - 3.0*this->at(temp[0], temp[1], temp[2])) / (2*dx); 
+                double normalY = (-this->at(temp[0], temp[1] + 2, temp[2]) + 4.0*this->at(temp[0], temp[1] + 1, temp[2]) - 3.0*this->at(temp[0], temp[1], temp[2])) / (2*dx);
                 double normalZ;
                 if (this->numZ > 1)
-                    normalZ = (this->at(temp[0], temp[1], temp[2]+1) - this->at(temp[0]-1, temp[1], temp[2]-1))/(2*dx);
+                    normalZ = (this->at(temp[0], temp[1], temp[2]+1) - this->at(temp[0], temp[1], temp[2]-1)) / (2*dx);
                 else
                     normalZ = 0;
                 std::array<double ,3> normal = {normalX, normalY, normalZ};
@@ -169,17 +169,15 @@ double LevelSet::getCurvature(const std::array<double, 3>& init) const {
 
     // Calculate divergence of localfield at cell, which by definition
     // is in the "middle" of localField
-    double divergenceX = (localField.at(sidelength/2 + 1, sidelength/2, sidelengthZ/2)[0] - localField.at(sidelength/2 - 1, sidelength/2, sidelengthZ/2)[0])/(2*dx);
+    double divergenceX = (localField.at(sidelength/2 + 1, sidelength/2, sidelengthZ/2)[0] - localField.at(sidelength/2 - 1, sidelength/2, sidelengthZ/2)[0]) / (2*dx);
                           
-    // second order difference quotient
-    double divergenceY = (-localField.at(sidelength/2, sidelength/2 + 2, sidelengthZ/2)[1]
-                          + 4.0*localField.at(sidelength/2, sidelength/2 + 1, sidelengthZ/2)[1]
-                          - 3.0*localField.at(sidelength/2, sidelength/2, sidelengthZ/2)[1]) / (2*dx); 
+    // first order difference quotient
+    double divergenceY = (localField.at(sidelength/2, sidelength/2 + 1, sidelengthZ/2)[1] - localField.at(sidelength/2, sidelength/2 - 1, sidelengthZ/2)[1]) / (2*dx);
     double divergenceZ;
     if (this->numZ > 1)
-        divergenceZ = (localField.at(sidelength/2,sidelength/2, sidelengthZ/2 + 1)[2] - localField.at(sidelength/2, sidelength/2, sidelengthZ/2 - 1)[2])/(2*dx);
+        divergenceZ = (localField.at(sidelength/2,sidelength/2, sidelengthZ/2 + 1)[2] - localField.at(sidelength/2, sidelength/2, sidelengthZ/2 - 1)[2]) / (2*dx);
     else
-        divergenceZ = 0; 
+        divergenceZ = 0;
 
     double kappa = - (divergenceX + divergenceY + divergenceZ);
 
