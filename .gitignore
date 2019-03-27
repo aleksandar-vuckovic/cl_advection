@@ -10,5 +10,6 @@ src/finiteVolumes.debug
 
 #output files
 src/data/*
+src/contactAngle.csv
 field.csv*
 *.txt
