@@ -5,19 +5,19 @@ lenX=1.0
 lenY=1.0
 lenZ=0.001
 
-time=0.1
-timesteps=100
+time=1.0
+timesteps=10000
 writesteps=100
-numCores=4
+numCores=1
 
 field=shearField
 
-centerX=0.7
+centerX=1.0
 centerY=0.0
 centerZ=0.0
-radius=0.1
+radius=0.5
 
-expcpX=0.6
+expcpX=0.5
 expcpY=0.0
 expcpZ=0.0
 expAngle=1.047198

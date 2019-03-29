@@ -51,7 +51,7 @@ public:
     //For now, getCurvature() only works for the stationary droplet
     double getCurvature(double dt, int timestep,  std::array<double, 3> init) const;
     double sumLevelSet();
-    void writeLevelSetToFile(double epsilon, double dt, int timestep, int total_timesteps, int total_writesteps, std::ofstream *xmfFile);
+    void writeToFile(double epsilon, double dt, int timestep, int total_timesteps, int total_writesteps, std::ofstream *xmfFile);
     void initDroplet(std::array<double, 3> center, double radius, double epsilon);
     void calculateNextTimestep(double dt);
 };
@@ -119,21 +119,34 @@ double LevelSet::getContactAngle(double dt, double timestep, std::array<double, 
 */
 
 /*
-  Currently this only works for the shear field case with theta = pi/2.
+  Currently this only works for the shear field case with theta == pi/2.
  */
 double LevelSet::getReferenceCurvature(double dt, double timestep, double initCurvature, std::array<double, 3> initCP) const {
-    //Calculate current position of contact point
-    const std::array<double, 3> tau = {0, 1, 0};
-    double curvature = initCurvature;
     std::array<double, 3> &CP = initCP;
+    //Calculate current position of contact point
+    for (int i = 0; i < timestep; i++)
+	CP = CP + dt*field(CP[0], CP[1], CP[2]);
+
+     /* Find cell corresponding to this point
+       The array "cell" contains the coordinates of the cell */
+    std::array<int, 3> cell = {0, 0, 0};
+    for (int x = 0; x < this->numX; x++)
+	for (int y = 0; y < this->numY; y++)
+	    for (int z = 0; z < this->numZ; z++) {
+		std::array<int, 3> other = {x, y, z};
+		if (abs(CP - cell*dx) > abs(CP - other*dx))
+		    cell = other;
+	    }
+    
+    double curvature = initCurvature;
     for (int i = 0; i < timestep; i++){
         
         //Calculate angle at this cell with finite differences
-        double normalX = (this->at(CP[0]+1, CP[1], CP[2]) - this->at(CP[0]-1, CP[1], CP[2]))/(2*dx);
-        double normalY = (-this->at(CP[0], CP[1] + 2, CP[2]) + 4.0*this->at(CP[0], CP[1] + 1, CP[2]) - 3.0*this->at(CP[0], CP[1], CP[2]))/(2*dx);
+        double normalX = (this->at(cell[0]+1, cell[1], cell[2]) - this->at(cell[0]-1, cell[1], cell[2])) / (2*dx);
+        double normalY = (-this->at(cell[0], cell[1] + 2, cell[2]) + 4.0*this->at(cell[0], cell[1] + 1, cell[2]) - 3.0*this->at(cell[0], cell[1], cell[2]))/(2*dx);
         double normalZ;
         if (this->numZ > 1)
-            normalZ = (this->at(CP[0], CP[1], CP[2]+1) - this->at(CP[0]-1, CP[1], CP[2]-1))/(2*dx);
+            normalZ = (this->at(cell[0], cell[1], cell[2]+1) - this->at(cell[0]-1, cell[1], cell[2]-1))/(2*dx);
         else
             normalZ = 0;
         std::array<double, 3> normal = {normalX, normalY, normalZ};
@@ -142,9 +155,9 @@ double LevelSet::getReferenceCurvature(double dt, double timestep, double initCu
         // This is the second derivative of v in the tau direction (= y direction)
         std::array<double, 3> temp = {-M_PI*M_PI*sin(M_PI*CP[0]*dx), -M_PI*M_PI*cos(M_PI*CP[0]*dx), 0};
         
+        std::array<double,3> tau = {normal[1], -normal[0], 0};
         
         curvature = curvature + dt*(temp*normal - 2*curvature*(gradientField(CP[0]*dx, CP[1]*dx, CP[2]*dx)*tau)[1]);
-        CP = CP + dt*field(CP[0], CP[1], CP[2]);
     }
 
     return curvature;
@@ -156,7 +169,7 @@ double LevelSet::getCurvature(double dt, int timestep, std::array<double, 3> ini
 	init = init + dt*field(init[0], init[1], init[2]);
     
     /* Find cell corresponding to this point
-       The array cell contains the coordinates of the cell */
+       The array "cell" contains the coordinates of the cell */
     std::array<int, 3> cell = {0, 0, 0};
     for (int x = 0; x < this->numX; x++)
 	for (int y = 0; y < this->numY; y++)
@@ -192,7 +205,7 @@ double LevelSet::getCurvature(double dt, int timestep, std::array<double, 3> ini
                 double normalY = (-this->at(temp[0], temp[1] + 2, temp[2]) + 4.0*this->at(temp[0], temp[1] + 1, temp[2]) - 3.0*this->at(temp[0], temp[1], temp[2])) / (2*dx);
                 double normalZ;
                 if (this->numZ > 1)
-                    normalZ = (this->at(temp[0], temp[1], temp[2]+1) - this->at(temp[0], temp[1], temp[2]-1)) / (2*dx);
+                    normalZ = (this->at(temp[0], temp[1], temp[2] + 1) - this->at(temp[0], temp[1], temp[2] - 1)) / (2*dx);
                 else
                     normalZ = 0;
                 std::array<double ,3> normal = {normalX, normalY, normalZ};
@@ -205,28 +218,35 @@ double LevelSet::getCurvature(double dt, int timestep, std::array<double, 3> ini
 
     // Calculate divergence of localfield at cell, which by definition
     // is in the "middle" of localField
-    double divergenceX = (localField.at(sidelength/2 + 1, sidelength/2, sidelengthZ/2)[0] - localField.at(sidelength/2 - 1, sidelength/2, sidelengthZ/2)[0]) / (2*dx);
+    double dnx_dx = (localField.at(sidelength/2 + 1, sidelength/2, sidelengthZ/2)[0] - localField.at(sidelength/2 - 1, sidelength/2, sidelengthZ/2)[0]) / (2*dx);
 
-    // first order difference quotient
-    double divergenceY = (-localField.at(sidelength/2, sidelength/2 + 2, sidelengthZ/2)[1]
+    double dnx_dy = (-localField.at(sidelength/2, sidelength/2 + 2, sidelengthZ/2)[0]
+                          + 4.0*localField.at(sidelength/2, sidelength/2 + 1, sidelengthZ/2)[0]
+                          - 3.0*localField.at(sidelength/2, sidelength/2, sidelengthZ/2)[0] ) / (2*dx);
+
+    
+    double dny_dx = (localField.at(sidelength/2 + 1, sidelength/2, sidelengthZ/2)[1] - localField.at(sidelength/2 - 1, sidelength/2, sidelengthZ/2)[1]) / (2*dx);
+    
+    double dny_dy = (-localField.at(sidelength/2, sidelength/2 + 2, sidelengthZ/2)[1]
                           + 4.0*localField.at(sidelength/2, sidelength/2 + 1, sidelengthZ/2)[1]
                           - 3.0*localField.at(sidelength/2, sidelength/2, sidelengthZ/2)[1] ) / (2*dx);
+    //2D only
+    std::array<double, 3> normal = localField.at(sidelength/2, sidelength/2, sidelengthZ/2);
+    std::array<double, 3> tau = {normal[1], -normal[0], 0};
+    std::array<double, 3> row1 = {dnx_dx, dnx_dy, 0};
+    std::array<double, 3> row2 = {dny_dx, dny_dy, 0};
+    std::array<double, 3> row3 = {0,      0,      0};
+    std::array< std::array<double, 3>, 3> gradNormal = {row1, row2, row3};
+
+    double kappa = -1*(gradNormal*tau)*tau;
     
-    double divergenceZ;
-    if (this->numZ > 1)
-        divergenceZ = (localField.at(sidelength/2,sidelength/2, sidelengthZ/2 + 1)[2] - localField.at(sidelength/2, sidelength/2, sidelengthZ/2 - 1)[2]) / (2*dx);
-    else
-        divergenceZ = 0;
-
-    double kappa = - (divergenceX + divergenceY + divergenceZ);
-
 
     return kappa;
 }
 
 
 
-void LevelSet::writeLevelSetToFile(double epsilon, double dt, int timestep, int total_timesteps, int total_writesteps, std::ofstream *xmfFile) {
+void LevelSet::writeToFile(double epsilon, double dt, int timestep, int total_timesteps, int total_writesteps, std::ofstream *xmfFile) {
     int Npoints = numX*numY*numZ;
     double *pointCoordinates = new double[Npoints*3];
     double *pointPhiValues = new double [Npoints];
@@ -456,7 +476,7 @@ int main() {
 	std::cout << "Step " << i << std::endl;
 	//Write field to file
 	if (i % (timesteps/writesteps) == 0) {
-	    Phi.writeLevelSetToFile(0.01, dt, i, timesteps, writesteps, &xmfFile);
+	    Phi.writeToFile(0.01, dt, i, timesteps, writesteps, &xmfFile);
 	}
 	angle[i] = Phi.getContactAngle(dt, i, initCP);
         std::cout << "Time: " + std::to_string(i*dt) + "\n"; 
@@ -465,7 +485,7 @@ int main() {
 
         curvatureActual[i] = Phi.getCurvature(dt, i, initCP);
         curvatureTheoretical[i] = Phi.getReferenceCurvature(dt, i, initCurvature, initCP);
-        curvatureFile << std::to_string(i*dt) + "," + std::to_string(curvatureActual[i]) + std::to_string(curvatureTheoretical[i]) + "\n";
+        curvatureFile << std::to_string(i*dt) + "," + std::to_string(curvatureActual[i]) + "," + std::to_string(curvatureTheoretical[i]) + "\n";
         std::cout << "Measured curvature: " + std::to_string(curvatureActual[i]) + "\n";
         std::cout << "Reference curvature:" + std::to_string(curvatureTheoretical[i])  << std::endl;
         
