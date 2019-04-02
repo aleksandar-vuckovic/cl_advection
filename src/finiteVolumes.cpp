@@ -153,11 +153,11 @@ double LevelSet::getReferenceCurvature(double dt, double timestep, double initCu
         normal = normal/abs(normal);
 
         // This is the second derivative of v in the tau direction (= y direction)
-        std::array<double, 3> temp = {-M_PI*M_PI*sin(M_PI*CP[0]*dx), -M_PI*M_PI*cos(M_PI*CP[0]*dx), 0};
+        std::array<double, 3> temp = {M_PI*M_PI*sin(M_PI*CP[0])*cos(M_PI*CP[1]), -M_PI*M_PI*cos(M_PI*CP[0])*sin(M_PI*CP[1]), 0};
         
         std::array<double,3> tau = {normal[1], -normal[0], 0};
         
-        curvature = curvature + dt*(temp*normal - 2*curvature*(gradientField(CP[0]*dx, CP[1]*dx, CP[2]*dx)*tau)[1]);
+        curvature = curvature + dt*(temp*normal - 2*curvature*(gradientField(CP[0], CP[1], CP[2])*tau)*tau);
     }
 
     return curvature;
