@@ -21,3 +21,5 @@ expcpX=0.5
 expcpY=0.0
 expcpZ=0.0
 expAngle=1.047198
+
+calculateCurvature=true

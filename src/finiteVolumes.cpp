@@ -388,6 +388,7 @@ int main() {
 
     int numX, numY, numZ, timesteps, writesteps, numCores;
     double lenX, lenY, lenZ, time, centerX, centerY, centerZ, radius, expcpX, expcpY, expcpZ, expAngle;
+    bool calculateCurvature;
     std::array<double, 3> (*field) (double x, double y, double z);
     std::array<std::array<double, 3>, 3> (*gradientField) (double x, double y, double z);
 
@@ -440,6 +441,8 @@ int main() {
 		    expcpZ = std::stod(value);
 		else if (varName == "expAngle")
 		    expAngle = std::stod(value);
+                else if (varName == "calculateCurvature")
+                    std::stringstream(value) >> std::boolalpha >> calculateCurvature;
 
 	    }
 	}
@@ -483,11 +486,14 @@ int main() {
 	angleFile << std::to_string(i*dt) + ", " + std::to_string(angle[i]/(2*M_PI)*360) + "\n";
 	std::cout << std::to_string(angle[i]/(2*M_PI)*360) + "\n";
 
-        curvatureActual[i] = Phi.getCurvature(dt, i, initCP);
-        curvatureTheoretical[i] = Phi.getReferenceCurvature(dt, i, initCurvature, initCP);
-        curvatureFile << std::to_string(i*dt) + "," + std::to_string(curvatureActual[i]) + "," + std::to_string(curvatureTheoretical[i]) + "\n";
-        std::cout << "Measured curvature: " + std::to_string(curvatureActual[i]) + "\n";
-        std::cout << "Reference curvature:" + std::to_string(curvatureTheoretical[i])  << std::endl;
+        if (calculateCurvature) {
+            curvatureActual[i] = Phi.getCurvature(dt, i, initCP);
+            curvatureTheoretical[i] = Phi.getReferenceCurvature(dt, i, initCurvature, initCP);
+            curvatureFile << std::to_string(i*dt) + "," + std::to_string(curvatureActual[i]) + "," + std::to_string(curvatureTheoretical[i]) + "\n";
+ 
+            std::cout << "Measured curvature: " + std::to_string(curvatureActual[i]) + "\n";
+            std::cout << "Reference curvature:" + std::to_string(curvatureTheoretical[i])  << std::endl;
+        }
         
 	Phi.calculateNextTimestep(dt);
     }
