@@ -26,7 +26,7 @@ def DeltaT(DeltaX):
     return CFL*DeltaX/vNorm
 
 for dx in DeltaXArray:
-    directory = "generatedTestcases/" + str(DeltaT(dx))
+    directory = "generatedTestcases/" + str(dx)
     
     if not os.path.exists(directory):
         os.makedirs(directory)
