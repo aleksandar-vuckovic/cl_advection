@@ -1,0 +1,15 @@
+#!/bin/bash
+#SBATCH -J curvature_convergence
+#SBATCH --mail-user=aleksandar.vuckovic@stud.tu-darmstadt.de
+#SBATCH --mail-type=
+#SBATCH -e err.%j
+#SBATCH -o out.%j
+#SBATCH --mem-per-cpu=1500
+#SBATCH -t 01:00:00
+#SBATCH -n 1
+
+#TESTCASE_TOOL_SUBMIT_JOB sbatch --array=0-$nrestart%1 < jobscript
+
+echo "This is Job $$SLURM_JOB_ID"
+
+../finiteVolumes

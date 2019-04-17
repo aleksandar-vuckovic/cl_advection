@@ -1,0 +1,23 @@
+#!/bin/bash
+#SBATCH -J advection_contactline_testcase
+#SBATCH --mail-user=aleksandar.vuckovic@stud.tu-darmstadt.de
+#SBATCH --mail-type=END,FAIL
+#SBATCH -e err.%j
+#SBATCH -o out.%j
+#SBATCH --mem-per-cpu=750
+#SBATCH -t 00:10:00
+#SBATCH -n 1
+
+#TESTCASE_TOOL_SUBMIT_JOB sbatch --array=0-$nrestart%1 < jobscript
+
+echo "This is Job $$SLURM_JOB_ID"
+
+#fs3d_set_restart.sh # set restart-flag if necessary
+
+#module load $$TESTCASE_TOOL_FS3D_MODULES
+mpirun /home/av20keco/fs3d_binary_io/fs3d
+
+# Run analysis script
+#python analysis.py
+
+# TODO: Add a git hash information to the working folder
