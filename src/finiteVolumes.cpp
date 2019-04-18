@@ -46,7 +46,7 @@ public:
     }
 
     std::array<double, 3> getInitCP(double dt, std::array<double, 3> expcp, double epsilon);
-    std::array<double, 3> getContactPoint(double dt, double timestep, std::array<double, 3> initCP);
+    std::array<double, 3> getContactPoint(double dt, int timestep, int timesteps, std::array<double, 3> initCP);
     std::array<int, 3> getContactPointCoordinates(std::array<double, 3> point);
     double getContactAngle(double dt, double timestep, std::array<int, 3> cell);
     double getReferenceCurvature(double dt, double timestep, double initCurvature, std::array<double, 3> CP, std::array<int, 3> cell) const;
@@ -84,7 +84,7 @@ std::array<double, 3> LevelSet::getInitCP(double dt, std::array<double, 3> expcp
     return candidate;
 }
 
-std::array<double, 3> LevelSet::getContactPoint(double dt, double timestep, std::array<double, 3> initCP) {
+std::array<double, 3> LevelSet::getContactPoint(double dt, int timestep, int timesteps, std::array<double, 3> initCP) {
     std::array<double, 3> &temp = initCP;
     //Calculate current position of contact point
     for (int i = 0; i < timestep; i++)
@@ -114,6 +114,7 @@ std::array<int, 3> LevelSet::getContactPointCoordinates(std::array<double, 3> po
                 }
         return cell;
     }
+    return std::array<int, 3> {0,0,0};
 }
      
 double LevelSet::getContactAngle(double dt, double timestep, std::array<int, 3> cell) {
@@ -471,7 +472,7 @@ int main() {
 	if (i % (timesteps/writesteps) == 0) {
 	    //Phi.writeToFile(0.01, dt, i, timesteps, writesteps, &xmfFile);
 	}
-        std::array<double, 3> newCP = Phi.getContactPoint(i, timesteps, initCP);
+        std::array<double, 3> newCP = Phi.getContactPoint(dt, i, timesteps, initCP);
         std::array<int, 3> newCPCoord = Phi.getContactPointCoordinates(newCP);
 	angle[i] = Phi.getContactAngle(dt, i, newCPCoord);
         std::cout << "Time: " + std::to_string(i*dt) + "\n";
