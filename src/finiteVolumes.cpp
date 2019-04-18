@@ -475,7 +475,7 @@ int main() {
         std::array<int, 3> newCPCoord = Phi.getContactPointCoordinates(newCP);
 	angle[i] = Phi.getContactAngle(dt, i, newCPCoord);
         std::cout << "Time: " + std::to_string(i*dt) + "\n";
-        positionFile << std::to_string(i*dt) << std::to_string(newCP[0]) << std::to_string(dx*newCPCoord[0]) << std::endl; 
+        positionFile << std::to_string(i*dt) + ", " << std::to_string(dx*newCPCoord[0])  + ", "<< std::to_string(newCP[0]) << std::endl; 
 	angleFile << std::to_string(i*dt) + ", " + std::to_string(angle[i]/(2*M_PI)*360) + "\n";
 	std::cout << std::to_string(angle[i]/(2*M_PI)*360) + "\n";
 
