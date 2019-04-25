@@ -8,9 +8,11 @@ lenZ=0.001
 time=1.0
 timesteps=10000
 writesteps=100
+writeVOF=false
 numCores=1
 
 field=shearField
+BoundaryCondition=homogeneousVonNeumann
 
 centerX=1.0
 centerY=0.0
@@ -23,3 +25,4 @@ expcpZ=0.0
 expAngle=1.047198
 
 calculateCurvature=true
+
