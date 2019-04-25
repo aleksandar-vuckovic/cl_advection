@@ -4,6 +4,7 @@
 #include <sstream>    // Stringstream
 #include <stdio.h>
 #include <string>
+#include <functional> // std::function
 #include "vecMath3D.hpp"
 #include "fields.hpp"
 #include "BoundaryCondition.hpp"
@@ -35,15 +36,19 @@ public:
 
 class LevelSet : Field<double> {
 private:
-    double dx;
-    std::array<double, 3> (*field) (double x, double y, double z);
-    std::array<std::array<double,3>, 3> (*gradientField) (double x, double y, double z);
+    double dx, v0, c1, c2;
+    std::function<std::array<double, 3>(double x, double y, double z)> field;
+    std::function<std::array<std::array<double, 3>, 3>(double x, double y, double z)> gradientField;
     BoundaryCondition boundaryCondition;
 
 public:
-    LevelSet(int numX, int numY, int numZ, double dx, std::array<double, 3> (*field) (double x, double y, double z),
-	     std::array<std::array<double,3>, 3> (*gradientField) (double x, double y, double z), BoundaryCondition boundaryCondition) : Field<double>(numX, numY, numZ) {
+    LevelSet(int numX, int numY, int numZ, double dx, std::function<std::array<double, 3>(double x, double y, double z)> field,
+    	    std::function<std::array<std::array<double, 3>, 3>(double x, double y, double z)> gradientField,
+		 BoundaryCondition boundaryCondition, double v0, double c1, double c2) : Field<double>(numX, numY, numZ) {
 	this->dx = dx;
+	this->v0 = v0;
+	this->c1 = c1;
+	this->c2 = c2;
 	this->field = field;
 	this->gradientField = gradientField;
 	this->boundaryCondition = boundaryCondition;
@@ -343,7 +348,7 @@ void LevelSet::calculateNextTimestep(double dt) {
 				switch(dir) {
 				case 0:
 							sp = field((x+1/2)*dx, (y+1)*dx, (z+1/2)*dx) * upNormal;
-							if (boundaryCondition == BoundaryCondition::homogeneousVonNeumann && y == numY-1) {
+							if (boundaryCondition == BoundaryCondition::homogeneousVonNeumann && y == numY - 1) {
 								flux += sp*tempPhi.at(x, y, z);
 								break;
 							}
@@ -352,7 +357,7 @@ void LevelSet::calculateNextTimestep(double dt) {
 							break;
 				case 1:
 							sp = field((x+1/2)*dx, y*dx, (z+1/2)*dx) * downNormal;
-							if (boundaryCondition == BoundaryCondition::homogeneousVonNeumann && y == 0) {
+							if (boundaryCondition == BoundaryCondition::homogeneousVonNeumann && y == 0 ) {
 								flux += sp*tempPhi.at(x, y, z);
 								break;
 							}
@@ -406,11 +411,11 @@ void LevelSet::calculateNextTimestep(double dt) {
 int main() {
 
     int numX, numY, numZ, timesteps, writesteps, numCores;
-    double lenX, lenY, lenZ, time, centerX, centerY, centerZ, radius, expcpX, expcpY, expcpZ, expAngle;
+    double lenX, lenY, lenZ, time, centerX, centerY, centerZ, radius, expcpX, expcpY, expcpZ, expAngle, v0, c1, c2;
     bool calculateCurvature, writeVOF;
-    std::array<double, 3> (*field) (double x, double y, double z);
+    std::function<std::array<double, 3>(double x, double y, double z)> field;
     BoundaryCondition boundaryCondition;
-    std::array<std::array<double, 3>, 3> (*gradientField) (double x, double y, double z);
+    std::function<std::array<std::array<double, 3>, 3>(double x, double y, double z)> gradientField;
 
     std::ifstream inFileStream("Inputfile");
     std::string line, varName, value;
@@ -441,17 +446,29 @@ int main() {
 			std::stringstream(value) >> std::boolalpha >> writeVOF;
 		else if (varName == "numCores")
 		    numCores = std::stoi(value);
-		else if (varName == "field") {
-		    if (value == "shearField") {
-			field = shearField;
-			gradientField = gradShearField;
-		    }
+		else if (varName == "v0") {
+			v0 = std::stod(value);
 		}
+		else if (varName == "c1") {
+			c1 = std::stod(value);
+		}
+		else if (varName == "c2") {
+			c2 = std::stod(value);
+		}
+//		else if (varName == "field") {
+//		    if (value == "shearField") {
+//				field = [v0, c1, c2](double x, double y, double z) {shearField(x, y, z, v0, c1, c2);
+//				gradientField = [&](double x, double y, double z) {gradShearField(x, y, z, v0, c1, c2);
+//		    } else if (value == "navierField") {
+//				field = [v0, c1, c2](double x, double y, double z) {navierField(x, y, z, v0, c1, c2);
+//				gradientField = [&](double x, double y, double z) {gradNavierField(x, y, z, v0, c1, c2);
+//		    }
+
 		else if (varName == "BoundaryCondition") {
-			if (value == "None")
-				boundaryCondition = BoundaryCondition::None;
-			else if (value == "homogeneousVonNeumann")
+			if (value == "homogeneousVonNeumann")
 				boundaryCondition = BoundaryCondition::homogeneousVonNeumann;
+			else if (value == "Dirichlet")
+				boundaryCondition = BoundaryCondition::Dirichlet;
 		}
 		else if (varName == "centerX")
 		    centerX = std::stod(value);
@@ -479,7 +496,7 @@ int main() {
     double dx = lenX/numX;
     double dt = time/timesteps;
     double initCurvature = -1/radius;
-    LevelSet Phi(numX, numY, numZ, dx, field, gradientField, boundaryCondition);
+    LevelSet Phi(numX, numY, numZ, dx, field, gradientField, boundaryCondition, v0, c1, c2);
 
     if (dt/dx < 1) {
 	std::cout << "The stability requirement is fullfilled" << std::endl;
@@ -533,4 +550,5 @@ int main() {
 
     return 0;
 }
+
 

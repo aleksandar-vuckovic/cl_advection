@@ -1,17 +1,20 @@
-numX=1000
-numY=1000
+numX=750
+numY=750
 numZ=1
-lenX=1.0
-lenY=1.0
+lenX=0.75
+lenY=0.75
 lenZ=0.001
 
 time=1.0
 timesteps=10000
 writesteps=100
-writeVOF=false
+writeVOF=true
 numCores=1
 
 field=shearField
+v0=-0.2
+c1=0.1
+c2=-2
 BoundaryCondition=homogeneousVonNeumann
 
 centerX=1.0
