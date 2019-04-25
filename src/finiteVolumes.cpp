@@ -25,11 +25,11 @@ public:
     }
 
     T& at(int x, int y, int z) {
-	return data[x + y*numX + z*numX*numY];
+		return data[x + y*numX + z*numX*numY];
     }
 
     const T& at(int x, int y, int z) const {
-	return data[x + y*numX + z*numX*numY];
+		return data[x + y*numX + z*numX*numY];
     }
 };
 
@@ -323,55 +323,77 @@ void LevelSet::calculateNextTimestep(double dt) {
     const std::array<double, 3> frontNormal = {0, 0, 1};
     const std::array<double, 3> backNormal = {0, 0, -1};
 
-    for (int x = 0; x < this->numX; x++) {
-    	for (int y = 0; y < this->numY; y++) {
-    		for (int z = 0; z < this->numZ; z++) {
+    for (int x = 0; x < numX; x++) {
+    	for (int y = 0; y < numY; y++) {
+    		for (int z = 0; z < numZ; z++) {
 			//Calculate the flux of the fluid through all sides of the square
 			double flux = 0;
 			double sp = 0;
 
 			for (int dir = 0; dir < 6; dir++) {
-				if (boundaryCondition == BoundaryCondition::None) {
 					// no flux across the domain boundary
-					if ((x == 0 && dir == 2) || (x == this->numX-1 && dir == 3)
-					|| (y == 0 && dir == 1) || (y == this->numY-1 && dir == 0)
-					|| (z == 0 && dir == 5) || (z == this->numZ-1 && dir == 4))
-						continue;
-				} else if (boundaryCondition == BoundaryCondition::homogeneousVonNeumann) {
+					if (boundaryCondition == BoundaryCondition::Dirichlet &&
+					    ((x == 0 && dir == 2) || (x == numX-1 && dir == 3)
+					  || (y == 0 && dir == 1) || (y == numY-1 && dir == 0)
+					  || (z == 0 && dir == 5) || (z == numZ-1 && dir == 4)))
+							continue;
 
-				}
 
 
 				switch(dir) {
 				case 0:
 							sp = field((x+1/2)*dx, (y+1)*dx, (z+1/2)*dx) * upNormal;
+							if (boundaryCondition == BoundaryCondition::homogeneousVonNeumann && y == numY-1) {
+								flux += sp*tempPhi.at(x, y, z);
+								break;
+							}
 							flux += fmax(sp,0.0)*tempPhi.at(x, y, z) + fmin(sp,0.0)*tempPhi.at(x, y+1, z); // upwind flux
 							//flux +=(tempPhi.at(x, y+1, z) + tempPhi.at(x, y, z))/2* sp;
 							break;
 				case 1:
 							sp = field((x+1/2)*dx, y*dx, (z+1/2)*dx) * downNormal;
+							if (boundaryCondition == BoundaryCondition::homogeneousVonNeumann && y == 0) {
+								flux += sp*tempPhi.at(x, y, z);
+								break;
+							}
 							flux += fmax(sp,0.0)*tempPhi.at(x, y, z) + fmin(sp,0.0)*tempPhi.at(x, y-1, z); // upwind flux
-				//flux += (tempPhi.at(x, y, z) + tempPhi.at(x, y-1, z))/2 * sp;
+							//flux += (tempPhi.at(x, y, z) + tempPhi.at(x, y-1, z))/2 * sp;
 							break;
 				case 2:
 							sp = field(x*dx, (y+1/2)*dx, (z+1/2)*dx) * leftNormal;
+							if (boundaryCondition == BoundaryCondition::homogeneousVonNeumann && x == 0) {
+								flux += sp*tempPhi.at(x, y, z);
+								break;
+							}
 							flux += fmax(sp,0.0)*tempPhi.at(x, y, z) + fmin(sp,0.0)*tempPhi.at(x-1, y, z); // upwind flux
-				//flux += (tempPhi.at(x, y, z) + tempPhi.at(x-1, y, z))/2 * sp;
+							//flux += (tempPhi.at(x, y, z) + tempPhi.at(x-1, y, z))/2 * sp;
 							break;
 				case 3:
 							sp = field((x+1)*dx, (y+1/2)*dx, (z+1/2)*dx) * rightNormal;
+							if (boundaryCondition == BoundaryCondition::homogeneousVonNeumann && x == numX - 1) {
+								flux += sp*tempPhi.at(x, y, z);
+								break;
+							}
 							flux += fmax(sp,0.0)*tempPhi.at(x, y, z) + fmin(sp,0.0)*tempPhi.at(x+1, y, z); // upwind flux
-				//flux += (tempPhi.at(x, y, z) + tempPhi.at(x+1, y, z))/2 * sp;
+							//flux += (tempPhi.at(x, y, z) + tempPhi.at(x+1, y, z))/2 * sp;
 							break;
 				case 4:
 							sp = field((x+1/2)*dx, (y+1/2)*dx, (z+1)*dx) * frontNormal;
+							if (boundaryCondition == BoundaryCondition::homogeneousVonNeumann && z == numZ - 1) {
+								flux += sp*tempPhi.at(x, y, z);
+								break;
+							}
 							flux += fmax(sp,0.0)*tempPhi.at(x, y, z+1) + fmin(sp,0.0)*tempPhi.at(x, y, z); // upwind flux
-				//flux += (tempPhi.at(x, y, z) + tempPhi.at(x, y, z+1))/2 * sp;
+							//flux += (tempPhi.at(x, y, z) + tempPhi.at(x, y, z+1))/2 * sp;
 							break;
 				case 5:
 							sp = field((x+1/2)*dx, (y+1/2)*dx, z*dx) * backNormal;
+							if (boundaryCondition == BoundaryCondition::homogeneousVonNeumann && z == 0) {
+								flux += tempPhi.at(x, y, z);
+								break;
+							}
 							flux += fmax(sp,0.0)*tempPhi.at(x, y, z-1) + fmin(sp,0.0)*tempPhi.at(x, y, z); // upwind flux
-				//flux += (tempPhi.at(x, y, z) + tempPhi.at(x, y, z-1))/2 * sp;
+							//flux += (tempPhi.at(x, y, z) + tempPhi.at(x, y, z-1))/2 * sp;
 							break;
 				}
 			}
@@ -502,6 +524,7 @@ int main() {
         }
         
 	Phi.calculateNextTimestep(dt);
+
     }
     xmfFile << "</Grid>\n</Domain>\n</Xdmf>" << std::endl;
     std::cout << std::endl;
