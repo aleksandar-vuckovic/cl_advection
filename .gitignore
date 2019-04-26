@@ -13,9 +13,11 @@ src/data/*
 src/contactAngle.csv
 *.csv*
 *.txt
+<<<<<<< HEAD
 
 #eclipse project files
 .cproject
 .project
 .settings
 src/Debug
+

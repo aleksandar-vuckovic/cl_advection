@@ -4,7 +4,10 @@
 #include <sstream>    // Stringstream
 #include <stdio.h>
 #include <string>
+#include <functional> // std::function
 #include "vecMath3D.hpp"
+#include "fields.hpp"
+#include "BoundaryCondition.hpp"
 
 template <class T>
 class Field {
@@ -23,26 +26,32 @@ public:
     }
 
     T& at(int x, int y, int z) {
-	return data[x + y*numX + z*numX*numY];
+		return data[x + y*numX + z*numX*numY];
     }
 
     const T& at(int x, int y, int z) const {
-	return data[x + y*numX + z*numX*numY];
+		return data[x + y*numX + z*numX*numY];
     }
 };
 
 class LevelSet : Field<double> {
 private:
-    double dx;
-    std::array<double, 3> (*field) (double x, double y, double z);
-    std::array<std::array<double,3>, 3> (*gradientField) (double x, double y, double z);
+    double dx, v0, c1, c2;
+    std::function<std::array<double, 3>(double x, double y, double z)> field;
+    std::function<std::array<std::array<double, 3>, 3>(double x, double y, double z)> gradientField;
+    BoundaryCondition boundaryCondition;
 
 public:
-    LevelSet(int numX, int numY, int numZ, double dx, std::array<double, 3> (*field) (double x, double y, double z),
-	     std::array<std::array<double,3>, 3> (*gradientField) (double x, double y, double z)) : Field<double>(numX, numY, numZ) {
+    LevelSet(int numX, int numY, int numZ, double dx, std::function<std::array<double, 3>(double x, double y, double z)> field,
+    	    std::function<std::array<std::array<double, 3>, 3>(double x, double y, double z)> gradientField,
+		 BoundaryCondition boundaryCondition, double v0, double c1, double c2) : Field<double>(numX, numY, numZ) {
 	this->dx = dx;
+	this->v0 = v0;
+	this->c1 = c1;
+	this->c2 = c2;
 	this->field = field;
 	this->gradientField = gradientField;
+	this->boundaryCondition = boundaryCondition;
     }
 
     std::array<double, 3> getInitCP(double dt, std::array<double, 3> expcp, double epsilon);
@@ -57,18 +66,6 @@ public:
     void initDroplet(std::array<double, 3> center, double radius, double epsilon);
     void calculateNextTimestep(double dt);
 };
-
-std::array<double, 3> shearField(double x, double y, double z) {
-    return {-sin(M_PI*x)*cos(M_PI*y), cos(M_PI*x)*sin(M_PI*y), 0};
-}
-
-std::array<std::array<double, 3>, 3> gradShearField(double x, double y, double z) {
-    std::array<std::array<double, 3>, 3> tempReturn;
-    tempReturn[0] = {-M_PI*cos(M_PI*x)*cos(M_PI*y), -M_PI*sin(M_PI*x)*sin(M_PI*y), 0};
-    tempReturn[1] = {-M_PI*sin(M_PI*x)*sin(M_PI*y), M_PI*cos(M_PI*x)*cos(M_PI*y), 0};
-    tempReturn[2] = {0, 0, 0};
-    return tempReturn;
-}
 
 std::array<double, 3> LevelSet::getInitCP(double dt, std::array<double, 3> expcp, double epsilon) {
     std::array<double, 3> candidate = {0, 0, 0};
@@ -226,10 +223,10 @@ double LevelSet::getCurvature(double dt, int timestep, std::array<int, 3> cell) 
     std::array<double, 3> row1 = {dnx_dx, dnx_dy, 0};
     std::array<double, 3> row2 = {dny_dx, dny_dy, 0};
     std::array<double, 3> row3 = {0,      0,      0};
-    std::array< std::array<double, 3>, 3> gradNormal = {row1, row2, row3};
+    //For this line, eclipse is complaining even though it compiles just fine
+    std::array< std::array<double, 3>, 3> gradNormal = {row1, row2, row3}; // @suppress("Invalid arguments")
 
     double kappa = -1*(gradNormal*tau)*tau;
-    
 
     return kappa;
 }
@@ -312,7 +309,6 @@ void LevelSet::initDroplet(std::array<double, 3> center, double radius, double e
 }
 
 void LevelSet::calculateNextTimestep(double dt) {
-
     LevelSet tempPhi(*this);
 
     const std::array<double, 3> upNormal = {0, 1, 0};
@@ -322,65 +318,94 @@ void LevelSet::calculateNextTimestep(double dt) {
     const std::array<double, 3> frontNormal = {0, 0, 1};
     const std::array<double, 3> backNormal = {0, 0, -1};
 
-    for (int x = 0; x < this->numX; x++) {
-	for (int y = 0; y < this->numY; y++) {
-	    for (int z = 0; z < this->numZ; z++) {
-		//Calculate the flux of the fluid through all sides of the square
-		double flux = 0;
-                double sp = 0;
+    for (int x = 0; x < numX; x++) {
+    	for (int y = 0; y < numY; y++) {
+    		for (int z = 0; z < numZ; z++) {
+			//Calculate the flux of the fluid through all sides of the square
+			double flux = 0;
+			double sp = 0;
 
-		for (int dir = 0; dir < 6; dir++) {
-		    if ((x == 0 && dir == 2) || (x == this->numX-1 && dir == 3)
-			|| (y == 0 && dir == 1) || (y == this->numY-1 && dir == 0)
-			|| (z == 0 && dir == 5) || (z == this->numZ-1 && dir == 4))
-			continue; // no flux across the domain boundary
+			for (int dir = 0; dir < 6; dir++) {
+					// no flux across the domain boundary
+					if (boundaryCondition == BoundaryCondition::Dirichlet &&
+					    ((x == 0 && dir == 2) || (x == numX-1 && dir == 3)
+					  || (y == 0 && dir == 1) || (y == numY-1 && dir == 0)
+					  || (z == 0 && dir == 5) || (z == numZ-1 && dir == 4)))
+							continue;
 
-		    switch(dir) {
-		    case 0:
-                        sp = field((x+1/2)*dx, (y+1)*dx, (z+1/2)*dx) * upNormal;
-                        flux += fmax(sp,0.0)*tempPhi.at(x, y, z) + fmin(sp,0.0)*tempPhi.at(x, y+1, z); // upwind flux
-                        //flux +=(tempPhi.at(x, y+1, z) + tempPhi.at(x, y, z))/2* sp;
-                        break;
- 		    case 1:
-                        sp = field((x+1/2)*dx, y*dx, (z+1/2)*dx) * downNormal;
-                        flux += fmax(sp,0.0)*tempPhi.at(x, y, z) + fmin(sp,0.0)*tempPhi.at(x, y-1, z); // upwind flux
-			//flux += (tempPhi.at(x, y, z) + tempPhi.at(x, y-1, z))/2 * sp;
-			break;
-		    case 2:
-                        sp = field(x*dx, (y+1/2)*dx, (z+1/2)*dx) * leftNormal;
-                        flux += fmax(sp,0.0)*tempPhi.at(x, y, z) + fmin(sp,0.0)*tempPhi.at(x-1, y, z); // upwind flux
-			//flux += (tempPhi.at(x, y, z) + tempPhi.at(x-1, y, z))/2 * sp;
-			break;
-		    case 3:
-                        sp = field((x+1)*dx, (y+1/2)*dx, (z+1/2)*dx) * rightNormal;
-                        flux += fmax(sp,0.0)*tempPhi.at(x, y, z) + fmin(sp,0.0)*tempPhi.at(x+1, y, z); // upwind flux
-			//flux += (tempPhi.at(x, y, z) + tempPhi.at(x+1, y, z))/2 * sp;
-			break;
-		    case 4:
-                        sp = field((x+1/2)*dx, (y+1/2)*dx, (z+1)*dx) * frontNormal;
-                        flux += fmax(sp,0.0)*tempPhi.at(x, y, z+1) + fmin(sp,0.0)*tempPhi.at(x, y, z); // upwind flux
-			//flux += (tempPhi.at(x, y, z) + tempPhi.at(x, y, z+1))/2 * sp;
-			break;
-		    case 5:
-                        sp = field((x+1/2)*dx, (y+1/2)*dx, z*dx) * backNormal;
-                        flux += fmax(sp,0.0)*tempPhi.at(x, y, z-1) + fmin(sp,0.0)*tempPhi.at(x, y, z); // upwind flux
-			//flux += (tempPhi.at(x, y, z) + tempPhi.at(x, y, z-1))/2 * sp;
-			break;
-		    }
-		}
-		this->at(x, y, z) = this->at(x, y, z) - dt/dx*flux;
-	    }
-	}
+
+
+				switch(dir) {
+				case 0:
+							sp = field((x+1/2)*dx, (y+1)*dx, (z+1/2)*dx) * upNormal;
+							if (boundaryCondition == BoundaryCondition::homogeneousVonNeumann && y == numY - 1) {
+								flux += sp*tempPhi.at(x, y, z);
+								break;
+							}
+							flux += fmax(sp,0.0)*tempPhi.at(x, y, z) + fmin(sp,0.0)*tempPhi.at(x, y+1, z); // upwind flux
+							//flux +=(tempPhi.at(x, y+1, z) + tempPhi.at(x, y, z))/2* sp;
+							break;
+				case 1:
+							sp = field((x+1/2)*dx, y*dx, (z+1/2)*dx) * downNormal;
+							if (boundaryCondition == BoundaryCondition::homogeneousVonNeumann && y == 0 ) {
+								flux += sp*tempPhi.at(x, y, z);
+								break;
+							}
+							flux += fmax(sp,0.0)*tempPhi.at(x, y, z) + fmin(sp,0.0)*tempPhi.at(x, y-1, z); // upwind flux
+							//flux += (tempPhi.at(x, y, z) + tempPhi.at(x, y-1, z))/2 * sp;
+							break;
+				case 2:
+							sp = field(x*dx, (y+1/2)*dx, (z+1/2)*dx) * leftNormal;
+							if (boundaryCondition == BoundaryCondition::homogeneousVonNeumann && x == 0) {
+								flux += sp*tempPhi.at(x, y, z);
+								break;
+							}
+							flux += fmax(sp,0.0)*tempPhi.at(x, y, z) + fmin(sp,0.0)*tempPhi.at(x-1, y, z); // upwind flux
+							//flux += (tempPhi.at(x, y, z) + tempPhi.at(x-1, y, z))/2 * sp;
+							break;
+				case 3:
+							sp = field((x+1)*dx, (y+1/2)*dx, (z+1/2)*dx) * rightNormal;
+							if (boundaryCondition == BoundaryCondition::homogeneousVonNeumann && x == numX - 1) {
+								flux += sp*tempPhi.at(x, y, z);
+								break;
+							}
+							flux += fmax(sp,0.0)*tempPhi.at(x, y, z) + fmin(sp,0.0)*tempPhi.at(x+1, y, z); // upwind flux
+							//flux += (tempPhi.at(x, y, z) + tempPhi.at(x+1, y, z))/2 * sp;
+							break;
+				case 4:
+							sp = field((x+1/2)*dx, (y+1/2)*dx, (z+1)*dx) * frontNormal;
+							if (boundaryCondition == BoundaryCondition::homogeneousVonNeumann && z == numZ - 1) {
+								flux += sp*tempPhi.at(x, y, z);
+								break;
+							}
+							flux += fmax(sp,0.0)*tempPhi.at(x, y, z+1) + fmin(sp,0.0)*tempPhi.at(x, y, z); // upwind flux
+							//flux += (tempPhi.at(x, y, z) + tempPhi.at(x, y, z+1))/2 * sp;
+							break;
+				case 5:
+							sp = field((x+1/2)*dx, (y+1/2)*dx, z*dx) * backNormal;
+							if (boundaryCondition == BoundaryCondition::homogeneousVonNeumann && z == 0) {
+								flux += tempPhi.at(x, y, z);
+								break;
+							}
+							flux += fmax(sp,0.0)*tempPhi.at(x, y, z-1) + fmin(sp,0.0)*tempPhi.at(x, y, z); // upwind flux
+							//flux += (tempPhi.at(x, y, z) + tempPhi.at(x, y, z-1))/2 * sp;
+							break;
+				}
+			}
+			this->at(x, y, z) = this->at(x, y, z) - dt/dx*flux;
+			}
+    	}
     }
 }
 
 int main() {
 
     int numX, numY, numZ, timesteps, writesteps, numCores;
-    double lenX, lenY, lenZ, time, centerX, centerY, centerZ, radius, expcpX, expcpY, expcpZ, expAngle;
-    bool calculateCurvature;
-    std::array<double, 3> (*field) (double x, double y, double z);
-    std::array<std::array<double, 3>, 3> (*gradientField) (double x, double y, double z);
+    double lenX, lenY, lenZ, time, centerX, centerY, centerZ, radius, expcpX, expcpY, expcpZ, expAngle, v0, c1, c2;
+    bool calculateCurvature, writeVOF;
+    std::function<std::array<double, 3>(double x, double y, double z)> field;
+    BoundaryCondition boundaryCondition;
+    std::function<std::array<std::array<double, 3>, 3>(double x, double y, double z)> gradientField;
 
     std::ifstream inFileStream("Inputfile");
     std::string line, varName, value;
@@ -407,13 +432,33 @@ int main() {
 		    timesteps = std::stoi(value);
 		else if (varName == "writesteps")
 		    writesteps =std::stoi(value);
+		else if (varName == "writeVOF")
+			std::stringstream(value) >> std::boolalpha >> writeVOF;
 		else if (varName == "numCores")
 		    numCores = std::stoi(value);
-		else if (varName == "field") {
-		    if (value == "shearField") {
-			field = shearField;
-			gradientField = gradShearField;
-		    }
+		else if (varName == "v0") {
+			v0 = std::stod(value);
+		}
+		else if (varName == "c1") {
+			c1 = std::stod(value);
+		}
+		else if (varName == "c2") {
+			c2 = std::stod(value);
+		}
+//		else if (varName == "field") {
+//		    if (value == "shearField") {
+//				field = [v0, c1, c2](double x, double y, double z) {shearField(x, y, z, v0, c1, c2);
+//				gradientField = [&](double x, double y, double z) {gradShearField(x, y, z, v0, c1, c2);
+//		    } else if (value == "navierField") {
+//				field = [v0, c1, c2](double x, double y, double z) {navierField(x, y, z, v0, c1, c2);
+//				gradientField = [&](double x, double y, double z) {gradNavierField(x, y, z, v0, c1, c2);
+//		    }
+
+		else if (varName == "BoundaryCondition") {
+			if (value == "homogeneousVonNeumann")
+				boundaryCondition = BoundaryCondition::homogeneousVonNeumann;
+			else if (value == "Dirichlet")
+				boundaryCondition = BoundaryCondition::Dirichlet;
 		}
 		else if (varName == "centerX")
 		    centerX = std::stod(value);
@@ -431,8 +476,8 @@ int main() {
 		    expcpZ = std::stod(value);
 		else if (varName == "expAngle")
 		    expAngle = std::stod(value);
-                else if (varName == "calculateCurvature")
-                    std::stringstream(value) >> std::boolalpha >> calculateCurvature;
+		else if (varName == "calculateCurvature")
+			std::stringstream(value) >> std::boolalpha >> calculateCurvature;
 
 	    }
 	}
@@ -441,7 +486,7 @@ int main() {
     double dx = lenX/numX;
     double dt = time/timesteps;
     double initCurvature = -1/radius;
-    LevelSet Phi(numX, numY, numZ, dx, field, gradientField);
+    LevelSet Phi(numX, numY, numZ, dx, field, gradientField, boundaryCondition, v0, c1, c2);
 
     if (dt/dx < 1) {
 	std::cout << "The stability requirement is fullfilled" << std::endl;
@@ -469,8 +514,8 @@ int main() {
     for (int i = 0; i < timesteps; i++) {
 	std::cout << "Step " << i << std::endl;
 	//Write field to file
-	if (i % (timesteps/writesteps) == 0) {
-	    //Phi.writeToFile(0.01, dt, i, timesteps, writesteps, &xmfFile);
+	if (writeVOF && i % (timesteps/writesteps) == 0) {
+	    Phi.writeToFile(0.01, dt, i, timesteps, writesteps, &xmfFile);
 	}
         std::array<double, 3> newCP = Phi.getContactPoint(dt, i, timesteps, initCP);
         std::array<int, 3> newCPCoord = Phi.getContactPointCoordinates(newCP);
@@ -502,4 +547,5 @@ int main() {
 
     return 0;
 }
+
 
