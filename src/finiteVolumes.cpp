@@ -7,7 +7,10 @@
 #include <functional> // std::function
 #include "vecMath3D.hpp"
 #include "fields.hpp"
+#include "VelocityField.hpp"
 #include "BoundaryCondition.hpp"
+
+using std::array;
 
 template <class T>
 class Field {
@@ -36,43 +39,37 @@ public:
 
 class LevelSet : Field<double> {
 private:
-    double dx, v0, c1, c2;
-    std::function<std::array<double, 3>(double x, double y, double z)> field;
-    std::function<std::array<std::array<double, 3>, 3>(double x, double y, double z)> gradientField;
+    double dx;
+    VelocityField *field;
     BoundaryCondition boundaryCondition;
 
 public:
-    LevelSet(int numX, int numY, int numZ, double dx, std::function<std::array<double, 3>(double x, double y, double z)> field,
-    	    std::function<std::array<std::array<double, 3>, 3>(double x, double y, double z)> gradientField,
-		 BoundaryCondition boundaryCondition, double v0, double c1, double c2) : Field<double>(numX, numY, numZ) {
-	this->dx = dx;
-	this->v0 = v0;
-	this->c1 = c1;
-	this->c2 = c2;
-	this->field = field;
-	this->gradientField = gradientField;
-	this->boundaryCondition = boundaryCondition;
+    LevelSet(int numX, int numY, int numZ, double dx, VelocityField *field,
+    		BoundaryCondition boundaryCondition) : Field<double>(numX, numY, numZ) {
+		this->dx = dx;
+		this->field = field;
+		this->boundaryCondition = boundaryCondition;
     }
 
-    std::array<double, 3> getInitCP(double dt, std::array<double, 3> expcp, double epsilon);
-    std::array<double, 3> getContactPoint(double dt, int timestep, int timesteps, std::array<double, 3> initCP);
-    std::array<int, 3> getContactPointCoordinates(std::array<double, 3> point);
-    double getContactAngle(double dt, double timestep, std::array<int, 3> cell);
-    double getReferenceCurvature(double dt, double timestep, double initCurvature, std::array<double, 3> CP, std::array<int, 3> cell) const;
+    array<double, 3> getInitCP(double dt, array<double, 3> expcp, double epsilon);
+    array<double, 3> getContactPoint(double dt, int timestep, int timesteps, array<double, 3> initCP);
+    array<int, 3> getContactPointCoordinates(array<double, 3> point);
+    double getContactAngle(double dt, double timestep, array<int, 3> cell);
+    double getReferenceCurvature(double dt, double timestep, double initCurvature, array<double, 3> CP, array<int, 3> cell);
     //For now, getCurvature() only works for the stationary droplet
-    double getCurvature(double dt, int timestep,  std::array<int, 3> cell) const;
+    double getCurvature(double dt, int timestep,  array<int, 3> cell) const;
     double sumLevelSet();
     void writeToFile(double epsilon, double dt, int timestep, int total_timesteps, int total_writesteps, std::ofstream *xmfFile);
-    void initDroplet(std::array<double, 3> center, double radius, double epsilon);
+    void initDroplet(array<double, 3> center, double radius, double epsilon);
     void calculateNextTimestep(double dt);
 };
 
-std::array<double, 3> LevelSet::getInitCP(double dt, std::array<double, 3> expcp, double epsilon) {
-    std::array<double, 3> candidate = {0, 0, 0};
+array<double, 3> LevelSet::getInitCP(double dt, array<double, 3> expcp, double epsilon) {
+    array<double, 3> candidate = {0, 0, 0};
     for (int x = 0; x < this->numX; x++)
 	for (int y = 0; y < this->numY; y++)
 	    for (int z = 0; z < this->numZ; z++) {
-		std::array<double, 3> other = {x*dx, y*dx, z*dx};
+		array<double, 3> other = {x*dx, y*dx, z*dx};
 		if (abs(candidate - expcp) > abs(other - expcp) && std::abs(this->at(x, y, z)) < epsilon && y == 0) {
 		    candidate = other;
 		}
@@ -81,16 +78,16 @@ std::array<double, 3> LevelSet::getInitCP(double dt, std::array<double, 3> expcp
     return candidate;
 }
 
-std::array<double, 3> LevelSet::getContactPoint(double dt, int timestep, int timesteps, std::array<double, 3> initCP) {
-    std::array<double, 3> &temp = initCP;
+array<double, 3> LevelSet::getContactPoint(double dt, int timestep, int timesteps, array<double, 3> initCP) {
+    array<double, 3> &temp = initCP;
     //Calculate current position of contact point
     for (int i = 0; i < timestep; i++)
-	temp = temp + dt*field(temp[0], temp[1], temp[2]);
+	temp = temp + dt*field->at(temp[0], temp[1], temp[2]);
 
     return temp;
 }
 
-std::array<int, 3> LevelSet::getContactPointCoordinates(std::array<double, 3> point) {
+array<int, 3> LevelSet::getContactPointCoordinates(array<double, 3> point) {
     // If simulation is 2D, ignore input parameter and return
     // coordinates of /left/ contact point by checking where the sign of the
     // LevelSet field changes
@@ -101,20 +98,20 @@ std::array<int, 3> LevelSet::getContactPointCoordinates(std::array<double, 3> po
                 return {x, 0, 0};
     } else {
         //Find cell corresponding to this point
-        std::array<int, 3> cell = {0, 0, 0};
+        array<int, 3> cell = {0, 0, 0};
         for (int x = 0; x < this->numX; x++)
             for (int y = 0; y < this->numY; y++)
                 for (int z = 0; z < this->numZ; z++) {
-                    std::array<int, 3> other = {x, y, z};
+                    array<int, 3> other = {x, y, z};
                     if (abs(point - cell*dx) > abs(point - other*dx))
                         cell = other;
                 }
         return cell;
     }
-    return std::array<int, 3> {0,0,0};
+    return array<int, 3> {0,0,0};
 }
      
-double LevelSet::getContactAngle(double dt, double timestep, std::array<int, 3> cell) {
+double LevelSet::getContactAngle(double dt, double timestep, array<int, 3> cell) {
     //Calculate angle at this cell with finite differences
     double normalX = (this->at(cell[0]+1, cell[1], cell[2]) - this->at(cell[0]-1, cell[1], cell[2]))/(2*dx);
     double normalY = (-this->at(cell[0], cell[1] + 2, cell[2])
@@ -125,7 +122,7 @@ double LevelSet::getContactAngle(double dt, double timestep, std::array<int, 3> 
 	normalZ = (this->at(cell[0], cell[1], cell[2]+1) - this->at(cell[0]-1, cell[1], cell[2]-1))/(2*dx);
     else
 	normalZ = 0;
-    std::array<double ,3> normal = {normalX, normalY, normalZ};
+    array<double ,3> normal = {normalX, normalY, normalZ};
     normal = normal/abs(normal);
     return acos(normal[1]);
 }
@@ -133,13 +130,13 @@ double LevelSet::getContactAngle(double dt, double timestep, std::array<int, 3> 
 /* double getReferenceAngle(double dt, double timestep, int totalTimesteps, double contactAngle) {
     //Calculate current position of contact point
     for (int i = 0; i < timestep; i++)
-	temp = temp + dt*field(temp[0], temp[1], temp[2]);
+	temp = temp + dt*field->at(temp[0], temp[1], temp[2]);
 */
 
 /*
   Currently this only works for the shear field case with theta == pi/2.
  */
-double LevelSet::getReferenceCurvature(double dt, double timestep, double initCurvature, std::array<double, 3> CP, std::array<int, 3> cell) const {
+double LevelSet::getReferenceCurvature(double dt, double timestep, double initCurvature, array<double, 3> CP, array<int, 3> cell) {
     double curvature = initCurvature;
     for (int i = 0; i < timestep; i++){
         
@@ -151,21 +148,21 @@ double LevelSet::getReferenceCurvature(double dt, double timestep, double initCu
             normalZ = (this->at(cell[0], cell[1], cell[2]+1) - this->at(cell[0]-1, cell[1], cell[2]-1))/(2*dx);
         else
             normalZ = 0;
-        std::array<double, 3> normal = {normalX, normalY, normalZ};
+        array<double, 3> normal = {normalX, normalY, normalZ};
         normal = normal/abs(normal);
 
         // This is the second derivative of v in the tau direction (= y direction)
-        std::array<double, 3> temp = {M_PI*M_PI*sin(M_PI*CP[0])*cos(M_PI*CP[1]), -M_PI*M_PI*cos(M_PI*CP[0])*sin(M_PI*CP[1]), 0};
+        array<double, 3> temp = {M_PI*M_PI*sin(M_PI*CP[0])*cos(M_PI*CP[1]), -M_PI*M_PI*cos(M_PI*CP[0])*sin(M_PI*CP[1]), 0};
         
-        std::array<double,3> tau = {normal[1], -normal[0], 0};
+        array<double,3> tau = {normal[1], -normal[0], 0};
         
-        curvature = curvature + dt*(temp*normal - 2*curvature*(gradientField(CP[0], CP[1], CP[2])*tau)*tau);
+        curvature = curvature + dt*(temp*normal - 2*curvature*(field->gradAt(CP[0], CP[1], CP[2])*tau)*tau);
     }
 
     return curvature;
 }
 
-double LevelSet::getCurvature(double dt, int timestep, std::array<int, 3> cell) const {
+double LevelSet::getCurvature(double dt, int timestep, array<int, 3> cell) const {
     /* Define what number of cells in each direction(excluding the main cell) are considered local.
        The resulting normal vector field is defined on a cuboid with  sidelength 2*local + 1 */
     int local = 2;
@@ -176,7 +173,7 @@ double LevelSet::getCurvature(double dt, int timestep, std::array<int, 3> cell) 
     else
         sidelengthZ = 1;
     // Declare a field of normal vectors
-    Field<std::array<double, 3> > localField(sidelength, sidelength, sidelengthZ);
+    Field<array<double, 3> > localField(sidelength, sidelength, sidelengthZ);
 
     for (int x = -sidelength/2; x <= sidelength/2; x++)
         for (int y = 0; y <= sidelength/2; y++)
@@ -184,7 +181,7 @@ double LevelSet::getCurvature(double dt, int timestep, std::array<int, 3> cell) 
                 if (this->numZ == 1 && z != 0) {
                     continue;
                 }
-                std::array<int, 3> temp = {x, y, z};
+                array<int, 3> temp = {x, y, z};
                 temp = temp + cell;
 
                 double normalX = (this->at(temp[0] + 1, temp[1], temp[2]) - this->at(temp[0]-1, temp[1], temp[2])) / (2*dx);
@@ -195,7 +192,7 @@ double LevelSet::getCurvature(double dt, int timestep, std::array<int, 3> cell) 
                     normalZ = (this->at(temp[0], temp[1], temp[2] + 1) - this->at(temp[0], temp[1], temp[2] - 1)) / (2*dx);
                 else
                     normalZ = 0;
-                std::array<double ,3> normal = {normalX, normalY, normalZ};
+                array<double ,3> normal = {normalX, normalY, normalZ};
                 normal = normal/abs(normal);
                 if (this->numZ > 1)
                     localField.at(x+local, y+local, z+local) = normal;
@@ -218,13 +215,13 @@ double LevelSet::getCurvature(double dt, int timestep, std::array<int, 3> cell) 
                           + 4.0*localField.at(sidelength/2, sidelength/2 + 1, sidelengthZ/2)[1]
                           - 3.0*localField.at(sidelength/2, sidelength/2, sidelengthZ/2)[1] ) / (2*dx);
     //2D only
-    std::array<double, 3> normal = localField.at(sidelength/2, sidelength/2, sidelengthZ/2);
-    std::array<double, 3> tau = {normal[1], -normal[0], 0};
-    std::array<double, 3> row1 = {dnx_dx, dnx_dy, 0};
-    std::array<double, 3> row2 = {dny_dx, dny_dy, 0};
-    std::array<double, 3> row3 = {0,      0,      0};
+    array<double, 3> normal = localField.at(sidelength/2, sidelength/2, sidelengthZ/2);
+    array<double, 3> tau = {normal[1], -normal[0], 0};
+    array<double, 3> row1 = {dnx_dx, dnx_dy, 0};
+    array<double, 3> row2 = {dny_dx, dny_dy, 0};
+    array<double, 3> row3 = {0,      0,      0};
     //For this line, eclipse is complaining even though it compiles just fine
-    std::array< std::array<double, 3>, 3> gradNormal = {row1, row2, row3}; // @suppress("Invalid arguments")
+    array< array<double, 3>, 3> gradNormal = {row1, row2, row3}; // @suppress("Invalid arguments")
 
     double kappa = -1*(gradNormal*tau)*tau;
 
@@ -301,7 +298,7 @@ double LevelSet::sumLevelSet() {
     return temp;
 }
 
-void LevelSet::initDroplet(std::array<double, 3> center, double radius, double epsilon) {
+void LevelSet::initDroplet(array<double, 3> center, double radius, double epsilon) {
     for (int x = 0; x < this->numX; x++)
 	for (int y = 0; y < this->numY; y++)
 	    for (int z = 0; z < this->numZ; z++)
@@ -311,12 +308,12 @@ void LevelSet::initDroplet(std::array<double, 3> center, double radius, double e
 void LevelSet::calculateNextTimestep(double dt) {
     LevelSet tempPhi(*this);
 
-    const std::array<double, 3> upNormal = {0, 1, 0};
-    const std::array<double, 3> downNormal = {0,-1, 0};
-    const std::array<double, 3> leftNormal = {-1, 0, 0};
-    const std::array<double, 3> rightNormal = {1, 0, 0};
-    const std::array<double, 3> frontNormal = {0, 0, 1};
-    const std::array<double, 3> backNormal = {0, 0, -1};
+    const array<double, 3> upNormal = {0, 1, 0};
+    const array<double, 3> downNormal = {0,-1, 0};
+    const array<double, 3> leftNormal = {-1, 0, 0};
+    const array<double, 3> rightNormal = {1, 0, 0};
+    const array<double, 3> frontNormal = {0, 0, 1};
+    const array<double, 3> backNormal = {0, 0, -1};
 
     for (int x = 0; x < numX; x++) {
     	for (int y = 0; y < numY; y++) {
@@ -337,7 +334,7 @@ void LevelSet::calculateNextTimestep(double dt) {
 
 				switch(dir) {
 				case 0:
-							sp = field((x+1/2)*dx, (y+1)*dx, (z+1/2)*dx) * upNormal;
+							sp = field->at((x+1/2)*dx, (y+1)*dx, (z+1/2)*dx) * upNormal;
 							if (boundaryCondition == BoundaryCondition::homogeneousVonNeumann && y == numY - 1) {
 								flux += sp*tempPhi.at(x, y, z);
 								break;
@@ -346,7 +343,7 @@ void LevelSet::calculateNextTimestep(double dt) {
 							//flux +=(tempPhi.at(x, y+1, z) + tempPhi.at(x, y, z))/2* sp;
 							break;
 				case 1:
-							sp = field((x+1/2)*dx, y*dx, (z+1/2)*dx) * downNormal;
+							sp = field->at((x+1/2)*dx, y*dx, (z+1/2)*dx) * downNormal;
 							if (boundaryCondition == BoundaryCondition::homogeneousVonNeumann && y == 0 ) {
 								flux += sp*tempPhi.at(x, y, z);
 								break;
@@ -355,7 +352,7 @@ void LevelSet::calculateNextTimestep(double dt) {
 							//flux += (tempPhi.at(x, y, z) + tempPhi.at(x, y-1, z))/2 * sp;
 							break;
 				case 2:
-							sp = field(x*dx, (y+1/2)*dx, (z+1/2)*dx) * leftNormal;
+							sp = field->at(x*dx, (y+1/2)*dx, (z+1/2)*dx) * leftNormal;
 							if (boundaryCondition == BoundaryCondition::homogeneousVonNeumann && x == 0) {
 								flux += sp*tempPhi.at(x, y, z);
 								break;
@@ -364,7 +361,7 @@ void LevelSet::calculateNextTimestep(double dt) {
 							//flux += (tempPhi.at(x, y, z) + tempPhi.at(x-1, y, z))/2 * sp;
 							break;
 				case 3:
-							sp = field((x+1)*dx, (y+1/2)*dx, (z+1/2)*dx) * rightNormal;
+							sp = field->at((x+1)*dx, (y+1/2)*dx, (z+1/2)*dx) * rightNormal;
 							if (boundaryCondition == BoundaryCondition::homogeneousVonNeumann && x == numX - 1) {
 								flux += sp*tempPhi.at(x, y, z);
 								break;
@@ -373,7 +370,7 @@ void LevelSet::calculateNextTimestep(double dt) {
 							//flux += (tempPhi.at(x, y, z) + tempPhi.at(x+1, y, z))/2 * sp;
 							break;
 				case 4:
-							sp = field((x+1/2)*dx, (y+1/2)*dx, (z+1)*dx) * frontNormal;
+							sp = field->at((x+1/2)*dx, (y+1/2)*dx, (z+1)*dx) * frontNormal;
 							if (boundaryCondition == BoundaryCondition::homogeneousVonNeumann && z == numZ - 1) {
 								flux += sp*tempPhi.at(x, y, z);
 								break;
@@ -382,7 +379,7 @@ void LevelSet::calculateNextTimestep(double dt) {
 							//flux += (tempPhi.at(x, y, z) + tempPhi.at(x, y, z+1))/2 * sp;
 							break;
 				case 5:
-							sp = field((x+1/2)*dx, (y+1/2)*dx, z*dx) * backNormal;
+							sp = field->at((x+1/2)*dx, (y+1/2)*dx, z*dx) * backNormal;
 							if (boundaryCondition == BoundaryCondition::homogeneousVonNeumann && z == 0) {
 								flux += tempPhi.at(x, y, z);
 								break;
@@ -403,9 +400,8 @@ int main() {
     int numX, numY, numZ, timesteps, writesteps, numCores;
     double lenX, lenY, lenZ, time, centerX, centerY, centerZ, radius, expcpX, expcpY, expcpZ, expAngle, v0, c1, c2;
     bool calculateCurvature, writeVOF;
-    std::function<std::array<double, 3>(double x, double y, double z)> field;
+    VelocityField *field;
     BoundaryCondition boundaryCondition;
-    std::function<std::array<std::array<double, 3>, 3>(double x, double y, double z)> gradientField;
 
     std::ifstream inFileStream("Inputfile");
     std::string line, varName, value;
@@ -420,7 +416,7 @@ int main() {
 		    numY = std::stoi(value);
 		else if (varName == "numZ")
 		    numZ = std::stoi(value);
-	        else if (varName == "lenX")
+		else if (varName == "lenX")
 		    lenX = std::stod(value);
 		else if (varName == "lenY")
 		    lenY = std::stod(value);
@@ -445,15 +441,9 @@ int main() {
 		else if (varName == "c2") {
 			c2 = std::stod(value);
 		}
-//		else if (varName == "field") {
-//		    if (value == "shearField") {
-//				field = [v0, c1, c2](double x, double y, double z) {shearField(x, y, z, v0, c1, c2);
-//				gradientField = [&](double x, double y, double z) {gradShearField(x, y, z, v0, c1, c2);
-//		    } else if (value == "navierField") {
-//				field = [v0, c1, c2](double x, double y, double z) {navierField(x, y, z, v0, c1, c2);
-//				gradientField = [&](double x, double y, double z) {gradNavierField(x, y, z, v0, c1, c2);
-//		    }
-
+		else if (varName == "field") {
+			field = new VelocityField(value, v0, c1, c2);
+		}
 		else if (varName == "BoundaryCondition") {
 			if (value == "homogeneousVonNeumann")
 				boundaryCondition = BoundaryCondition::homogeneousVonNeumann;
@@ -486,21 +476,21 @@ int main() {
     double dx = lenX/numX;
     double dt = time/timesteps;
     double initCurvature = -1/radius;
-    LevelSet Phi(numX, numY, numZ, dx, field, gradientField, boundaryCondition, v0, c1, c2);
+    LevelSet Phi(numX, numY, numZ, dx, field, boundaryCondition);
 
     if (dt/dx < 1) {
 	std::cout << "The stability requirement is fullfilled" << std::endl;
     } else {
 	std::cout << "The stability requirement is NOT fullfilled" << std::endl;
     }
-    std::array<double, 3> center = {centerX, centerY, centerZ};
-    std::array<double, 3> expcp = {expcpX, expcpY, expcpZ};
+    array<double, 3> center = {centerX, centerY, centerZ};
+    array<double, 3> expcp = {expcpX, expcpY, expcpZ};
     std::vector<double> angle(timesteps);
     std::vector<double> curvatureActual(timesteps);
     std::vector<double> curvatureTheoretical(timesteps);
 
     Phi.initDroplet(center, radius, 0.005);
-    std::array<double, 3> initCP = Phi.getInitCP(dt, expcp, 0.001);
+    array<double, 3> initCP = Phi.getInitCP(dt, expcp, 0.001);
 
     system("mkdir data");
     std::ofstream positionFile("position.csv");
@@ -512,33 +502,32 @@ int main() {
     std::ofstream xmfFile("data/Phi.xmf");
 
     for (int i = 0; i < timesteps; i++) {
-	std::cout << "Step " << i << std::endl;
-	//Write field to file
-	if (writeVOF && i % (timesteps/writesteps) == 0) {
-	    Phi.writeToFile(0.01, dt, i, timesteps, writesteps, &xmfFile);
-	}
-        std::array<double, 3> newCP = Phi.getContactPoint(dt, i, timesteps, initCP);
-        std::array<int, 3> newCPCoord = Phi.getContactPointCoordinates(newCP);
-	angle[i] = Phi.getContactAngle(dt, i, newCPCoord);
-        std::cout << "Time: " + std::to_string(i*dt) + "\n";
-        positionFile << std::to_string(i*dt) + ", " << std::to_string(dx*newCPCoord[0])  + ", "<< std::to_string(newCP[0]) << std::endl; 
-	angleFile << std::to_string(i*dt) + ", " + std::to_string(angle[i]/(2*M_PI)*360) + "\n";
-	std::cout << std::to_string(angle[i]/(2*M_PI)*360) + "\n";
+		std::cout << "Step " << i << std::endl;
+		//Write field to file
+		if (writeVOF && i % (timesteps/writesteps) == 0) {
+			Phi.writeToFile(0.01, dt, i, timesteps, writesteps, &xmfFile);
+		}
+		array<double, 3> newCP = Phi.getContactPoint(dt, i, timesteps, initCP);
+		array<int, 3> newCPCoord = Phi.getContactPointCoordinates(newCP);
+		angle[i] = Phi.getContactAngle(dt, i, newCPCoord);
+		std::cout << "Time: " + std::to_string(i*dt) + "\n";
+		positionFile << std::to_string(i*dt) + ", " << std::to_string(dx*newCPCoord[0])  + ", "<< std::to_string(newCP[0]) << std::endl;
+		angleFile << std::to_string(i*dt) + ", " + std::to_string(angle[i]/(2*M_PI)*360) + "\n";
+		std::cout << std::to_string(angle[i]/(2*M_PI)*360) + "\n";
 
-        if (calculateCurvature) {
-            curvatureActual[i] = Phi.getCurvature(dt, i, newCPCoord);
-            curvatureTheoretical[i] = Phi.getReferenceCurvature(dt, i, initCurvature, newCP, newCPCoord);
-            curvatureFile << std::to_string(i*dt) + "," + std::to_string(curvatureActual[i]) + "," + std::to_string(curvatureTheoretical[i]) + "\n";
- 
-            std::cout << "Measured curvature: " + std::to_string(curvatureActual[i]) + "\n";
-            std::cout << "Reference curvature:" + std::to_string(curvatureTheoretical[i])  << std::endl;
-        }
-        
-	Phi.calculateNextTimestep(dt);
+		if (calculateCurvature) {
+			curvatureActual[i] = Phi.getCurvature(dt, i, newCPCoord);
+			curvatureTheoretical[i] = Phi.getReferenceCurvature(dt, i, initCurvature, newCP, newCPCoord);
+			curvatureFile << std::to_string(i*dt) + "," + std::to_string(curvatureActual[i]) + "," + std::to_string(curvatureTheoretical[i]) + "\n";
 
-        positionFile.flush();
-        angleFile.flush();
-        curvatureFile.flush();
+			std::cout << "Measured curvature: " + std::to_string(curvatureActual[i]) + "\n";
+			std::cout << "Reference curvature:" + std::to_string(curvatureTheoretical[i])  << std::endl;
+		}
+		Phi.calculateNextTimestep(dt);
+
+		positionFile.flush();
+		angleFile.flush();
+		curvatureFile.flush();
     }
     xmfFile << "</Grid>\n</Domain>\n</Xdmf>" << std::endl;
     std::cout << std::endl;
