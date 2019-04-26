@@ -55,10 +55,12 @@ public:
     }
 
     std::array<double, 3> getInitCP(double dt, std::array<double, 3> expcp, double epsilon);
-    double getContactAngle(double dt, double timestep, std::array<double, 3> initCP);
-    double getReferenceCurvature(double dt, double timestep, double initCurvature, std::array<double, 3> initCP) const;
+    std::array<double, 3> getContactPoint(double dt, int timestep, int timesteps, std::array<double, 3> initCP);
+    std::array<int, 3> getContactPointCoordinates(std::array<double, 3> point);
+    double getContactAngle(double dt, double timestep, std::array<int, 3> cell);
+    double getReferenceCurvature(double dt, double timestep, double initCurvature, std::array<double, 3> CP, std::array<int, 3> cell) const;
     //For now, getCurvature() only works for the stationary droplet
-    double getCurvature(double dt, int timestep,  std::array<double, 3> init) const;
+    double getCurvature(double dt, int timestep,  std::array<int, 3> cell) const;
     double sumLevelSet();
     void writeToFile(double epsilon, double dt, int timestep, int total_timesteps, int total_writesteps, std::ofstream *xmfFile);
     void initDroplet(std::array<double, 3> center, double radius, double epsilon);
@@ -79,26 +81,45 @@ std::array<double, 3> LevelSet::getInitCP(double dt, std::array<double, 3> expcp
     return candidate;
 }
 
-double LevelSet::getContactAngle(double dt, double timestep, std::array<double, 3> initCP) {
+std::array<double, 3> LevelSet::getContactPoint(double dt, int timestep, int timesteps, std::array<double, 3> initCP) {
     std::array<double, 3> &temp = initCP;
     //Calculate current position of contact point
     for (int i = 0; i < timestep; i++)
 	temp = temp + dt*field(temp[0], temp[1], temp[2]);
 
-    //Find cell corresponding to this point
-    std::array<int, 3> cell = {0, 0, 0};
-    for (int x = 0; x < this->numX; x++)
-	for (int y = 0; y < this->numY; y++)
-	    for (int z = 0; z < this->numZ; z++) {
-		std::array<int, 3> other = {x, y, z};
-		if (abs(temp - cell*dx) > abs(temp - other*dx))
-		    cell = other;
-	    }
+    return temp;
+}
 
+std::array<int, 3> LevelSet::getContactPointCoordinates(std::array<double, 3> point) {
+    // If simulation is 2D, ignore input parameter and return
+    // coordinates of /left/ contact point by checking where the sign of the
+    // LevelSet field changes
+    if (this->numZ == 1){
+        double initSign = this->at(0, 0, 0)/abs(this->at(0, 0, 0));
+        for (int x = 0; x < this->numX; x++)
+            if (this->at(x, 0, 0)*initSign < 0)
+                return {x, 0, 0};
+    } else {
+        //Find cell corresponding to this point
+        std::array<int, 3> cell = {0, 0, 0};
+        for (int x = 0; x < this->numX; x++)
+            for (int y = 0; y < this->numY; y++)
+                for (int z = 0; z < this->numZ; z++) {
+                    std::array<int, 3> other = {x, y, z};
+                    if (abs(point - cell*dx) > abs(point - other*dx))
+                        cell = other;
+                }
+        return cell;
+    }
+    return std::array<int, 3> {0,0,0};
+}
+     
+double LevelSet::getContactAngle(double dt, double timestep, std::array<int, 3> cell) {
     //Calculate angle at this cell with finite differences
     double normalX = (this->at(cell[0]+1, cell[1], cell[2]) - this->at(cell[0]-1, cell[1], cell[2]))/(2*dx);
-    //double normalY = (this->at(cell[0], cell[1] + 1, cell[2]) - this->at(cell[0], cell[1], cell[2]))/dx; // first order difference quotient
-    double normalY = (-this->at(cell[0], cell[1] + 2, cell[2]) + 4.0*this->at(cell[0], cell[1] + 1, cell[2]) - 3.0*this->at(cell[0], cell[1], cell[2]))/(2*dx); // second order difference quotient
+    double normalY = (-this->at(cell[0], cell[1] + 2, cell[2])
+                      + 4.0*this->at(cell[0], cell[1] + 1, cell[2])
+                      - 3.0*this->at(cell[0], cell[1], cell[2]))/(2*dx); // second order difference quotient
     double normalZ;
     if (this->numZ > 1)
 	normalZ = (this->at(cell[0], cell[1], cell[2]+1) - this->at(cell[0]-1, cell[1], cell[2]-1))/(2*dx);
@@ -118,23 +139,7 @@ double LevelSet::getContactAngle(double dt, double timestep, std::array<double, 
 /*
   Currently this only works for the shear field case with theta == pi/2.
  */
-double LevelSet::getReferenceCurvature(double dt, double timestep, double initCurvature, std::array<double, 3> initCP) const {
-    std::array<double, 3> &CP = initCP;
-    //Calculate current position of contact point
-    for (int i = 0; i < timestep; i++)
-	CP = CP + dt*field(CP[0], CP[1], CP[2]);
-
-     /* Find cell corresponding to this point
-       The array "cell" contains the coordinates of the cell */
-    std::array<int, 3> cell = {0, 0, 0};
-    for (int x = 0; x < this->numX; x++)
-	for (int y = 0; y < this->numY; y++)
-	    for (int z = 0; z < this->numZ; z++) {
-		std::array<int, 3> other = {x, y, z};
-		if (abs(CP - cell*dx) > abs(CP - other*dx))
-		    cell = other;
-	    }
-    
+double LevelSet::getReferenceCurvature(double dt, double timestep, double initCurvature, std::array<double, 3> CP, std::array<int, 3> cell) const {
     double curvature = initCurvature;
     for (int i = 0; i < timestep; i++){
         
@@ -160,22 +165,7 @@ double LevelSet::getReferenceCurvature(double dt, double timestep, double initCu
     return curvature;
 }
 
-double LevelSet::getCurvature(double dt, int timestep, std::array<double, 3> init) const {
-    //Calculate current position of contact point
-    for (int i = 0; i < timestep; i++)
-	init = init + dt*field(init[0], init[1], init[2]);
-    
-    /* Find cell corresponding to this point
-       The array "cell" contains the coordinates of the cell */
-    std::array<int, 3> cell = {0, 0, 0};
-    for (int x = 0; x < this->numX; x++)
-	for (int y = 0; y < this->numY; y++)
-	    for (int z = 0; z < this->numZ; z++) {
-		std::array<int, 3> other = {x, y, z};
-		if (abs(init - cell*dx) > abs(init - other*dx))
-		    cell = other;
-	    }
-
+double LevelSet::getCurvature(double dt, int timestep, std::array<int, 3> cell) const {
     /* Define what number of cells in each direction(excluding the main cell) are considered local.
        The resulting normal vector field is defined on a cuboid with  sidelength 2*local + 1 */
     int local = 2;
@@ -513,6 +503,7 @@ int main() {
     std::array<double, 3> initCP = Phi.getInitCP(dt, expcp, 0.001);
 
     system("mkdir data");
+    std::ofstream positionFile("position.csv");
     std::ofstream angleFile("contactAngle.csv");
     std::ofstream curvatureFile("curvature.csv");
     double sumAtStart = Phi.sumLevelSet();
@@ -526,14 +517,17 @@ int main() {
 	if (writeVOF && i % (timesteps/writesteps) == 0) {
 	    Phi.writeToFile(0.01, dt, i, timesteps, writesteps, &xmfFile);
 	}
-	angle[i] = Phi.getContactAngle(dt, i, initCP);
-        std::cout << "Time: " + std::to_string(i*dt) + "\n"; 
+        std::array<double, 3> newCP = Phi.getContactPoint(dt, i, timesteps, initCP);
+        std::array<int, 3> newCPCoord = Phi.getContactPointCoordinates(newCP);
+	angle[i] = Phi.getContactAngle(dt, i, newCPCoord);
+        std::cout << "Time: " + std::to_string(i*dt) + "\n";
+        positionFile << std::to_string(i*dt) + ", " << std::to_string(dx*newCPCoord[0])  + ", "<< std::to_string(newCP[0]) << std::endl; 
 	angleFile << std::to_string(i*dt) + ", " + std::to_string(angle[i]/(2*M_PI)*360) + "\n";
 	std::cout << std::to_string(angle[i]/(2*M_PI)*360) + "\n";
 
         if (calculateCurvature) {
-            curvatureActual[i] = Phi.getCurvature(dt, i, initCP);
-            curvatureTheoretical[i] = Phi.getReferenceCurvature(dt, i, initCurvature, initCP);
+            curvatureActual[i] = Phi.getCurvature(dt, i, newCPCoord);
+            curvatureTheoretical[i] = Phi.getReferenceCurvature(dt, i, initCurvature, newCP, newCPCoord);
             curvatureFile << std::to_string(i*dt) + "," + std::to_string(curvatureActual[i]) + "," + std::to_string(curvatureTheoretical[i]) + "\n";
  
             std::cout << "Measured curvature: " + std::to_string(curvatureActual[i]) + "\n";
@@ -542,6 +536,9 @@ int main() {
         
 	Phi.calculateNextTimestep(dt);
 
+        positionFile.flush();
+        angleFile.flush();
+        curvatureFile.flush();
     }
     xmfFile << "</Grid>\n</Domain>\n</Xdmf>" << std::endl;
     std::cout << std::endl;

@@ -11,12 +11,12 @@ src/finiteVolumes.debug
 #output files
 src/data/*
 src/contactAngle.csv
-field.csv*
+*.csv*
 *.txt
-Debug/
 
-#eclipse files
+#eclipse project files
 .cproject
 .project
-.settings/
+.settings
+src/Debug
 

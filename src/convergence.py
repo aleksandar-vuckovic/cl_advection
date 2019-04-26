@@ -7,9 +7,9 @@ import sys
 import os
 import subprocess
 
-DeltaXArray = np.linspace(0.001, 0.00001, 100)
+DeltaXArray = np.linspace(0.001, 0.0001, 20)
 lenX = 1.0
-time = 1.0
+time = 0.3
 
 try:
     if (sys.argv[1] == "True"):
