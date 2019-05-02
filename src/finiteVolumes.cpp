@@ -335,7 +335,7 @@ void LevelSet::calculateNextTimestep(double dt) {
 				switch(dir) {
 				case 0:
 							sp = field->at((x+1/2)*dx, (y+1)*dx, (z+1/2)*dx) * upNormal;
-							if (boundaryCondition == BoundaryCondition::homogeneousVonNeumann && y == numY - 1) {
+							if (boundaryCondition == BoundaryCondition::homogeneousNeumann && y == numY - 1) {
 								flux += sp*tempPhi.at(x, y, z);
 								break;
 							}
@@ -344,7 +344,7 @@ void LevelSet::calculateNextTimestep(double dt) {
 							break;
 				case 1:
 							sp = field->at((x+1/2)*dx, y*dx, (z+1/2)*dx) * downNormal;
-							if (boundaryCondition == BoundaryCondition::homogeneousVonNeumann && y == 0 ) {
+							if (boundaryCondition == BoundaryCondition::homogeneousNeumann && y == 0 ) {
 								flux += sp*tempPhi.at(x, y, z);
 								break;
 							}
@@ -353,7 +353,7 @@ void LevelSet::calculateNextTimestep(double dt) {
 							break;
 				case 2:
 							sp = field->at(x*dx, (y+1/2)*dx, (z+1/2)*dx) * leftNormal;
-							if (boundaryCondition == BoundaryCondition::homogeneousVonNeumann && x == 0) {
+							if (boundaryCondition == BoundaryCondition::homogeneousNeumann && x == 0) {
 								flux += sp*tempPhi.at(x, y, z);
 								break;
 							}
@@ -362,7 +362,7 @@ void LevelSet::calculateNextTimestep(double dt) {
 							break;
 				case 3:
 							sp = field->at((x+1)*dx, (y+1/2)*dx, (z+1/2)*dx) * rightNormal;
-							if (boundaryCondition == BoundaryCondition::homogeneousVonNeumann && x == numX - 1) {
+							if (boundaryCondition == BoundaryCondition::homogeneousNeumann && x == numX - 1) {
 								flux += sp*tempPhi.at(x, y, z);
 								break;
 							}
@@ -370,8 +370,10 @@ void LevelSet::calculateNextTimestep(double dt) {
 							//flux += (tempPhi.at(x, y, z) + tempPhi.at(x+1, y, z))/2 * sp;
 							break;
 				case 4:
+							if (numZ == 1)
+								break;
 							sp = field->at((x+1/2)*dx, (y+1/2)*dx, (z+1)*dx) * frontNormal;
-							if (boundaryCondition == BoundaryCondition::homogeneousVonNeumann && z == numZ - 1) {
+							if (boundaryCondition == BoundaryCondition::homogeneousNeumann && z == numZ - 1) {
 								flux += sp*tempPhi.at(x, y, z);
 								break;
 							}
@@ -379,9 +381,11 @@ void LevelSet::calculateNextTimestep(double dt) {
 							//flux += (tempPhi.at(x, y, z) + tempPhi.at(x, y, z+1))/2 * sp;
 							break;
 				case 5:
+							if (numZ == 1)
+								break;
 							sp = field->at((x+1/2)*dx, (y+1/2)*dx, z*dx) * backNormal;
-							if (boundaryCondition == BoundaryCondition::homogeneousVonNeumann && z == 0) {
-								flux += tempPhi.at(x, y, z);
+							if (boundaryCondition == BoundaryCondition::homogeneousNeumann && z == 0) {
+								flux += sp*tempPhi.at(x, y, z);
 								break;
 							}
 							flux += fmax(sp,0.0)*tempPhi.at(x, y, z-1) + fmin(sp,0.0)*tempPhi.at(x, y, z); // upwind flux
@@ -445,8 +449,8 @@ int main() {
 			field = new VelocityField(value, v0, c1, c2);
 		}
 		else if (varName == "BoundaryCondition") {
-			if (value == "homogeneousVonNeumann")
-				boundaryCondition = BoundaryCondition::homogeneousVonNeumann;
+			if (value == "homogeneousNeumann")
+				boundaryCondition = BoundaryCondition::homogeneousNeumann;
 			else if (value == "Dirichlet")
 				boundaryCondition = BoundaryCondition::Dirichlet;
 		}

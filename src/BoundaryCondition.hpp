@@ -2,7 +2,7 @@
 #define BOUNDARYCONDITION_HPP_
 
 enum class BoundaryCondition {
-	None,  Dirichlet, homogeneousVonNeumann
+	None,  Dirichlet, homogeneousNeumann
 };
 
 #endif /* BOUNDARYCONDITION_HPP_ */

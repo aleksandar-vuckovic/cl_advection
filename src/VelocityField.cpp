@@ -1,10 +1,3 @@
-/*
- * VelocityField.cpp
- *
- *  Created on: Apr 26, 2019
- *      Author: CSI\av20keco
- */
-
 #include <string>
 #include <array>
 #include "VelocityField.hpp"
@@ -28,7 +21,7 @@ VelocityField::VelocityField(std::string name, double v0, double c1, double c2) 
 
 array<double, 3> VelocityField::at(double x, double y, double z) {
 	if (field == "shearField") {
-		return shearField(x, y, z, v0, c1, c2);
+		return shearField(x, y, z, v0);
 	} else if (field == "navierField") {
 		return navierField(x, y, z, v0, c1, c2);
 	}
@@ -37,7 +30,7 @@ array<double, 3> VelocityField::at(double x, double y, double z) {
 
 array<array<double, 3>, 3> VelocityField::gradAt(double x, double y, double z) {
 	if (field == "shearField") {
-		return gradShearField(x, y, z, v0, c1, c2);
+		return gradShearField(x, y, z, v0);
 	} else if (field == "navierField") {
 		return gradNavierField(x, y, z, v0, c1, c2);
 	}

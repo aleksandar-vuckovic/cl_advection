@@ -3,19 +3,18 @@ numY=750
 numZ=1
 lenX=0.75
 lenY=0.75
-lenZ=0.001
+lenZ=0.0013333333333333333
 
 time=1.0
-timesteps=10000
+timesteps=1000
 writesteps=100
 writeVOF=true
-numCores=1
 
-field=shearField
-v0=-0.2
+v0=1.0
 c1=0.1
 c2=-2
-BoundaryCondition=homogeneousVonNeumann
+field=shearField
+BoundaryCondition=homogeneousNeumann
 
 centerX=1.0
 centerY=0.0
