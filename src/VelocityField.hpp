@@ -1,12 +1,6 @@
-/*
- * VelocityField.hpp
- *
- *  Created on: Apr 26, 2019
- *      Author: CSI\av20keco
- */
-
-#ifndef VELOCITYFIELD_HPP_
-#define VELOCITYFIELD_HPP_
+#ifndef CLASS_VELOCITYFIELD
+#define CLASS_VELOCITYFIELD
+#include <array>
 
 using std::array;
 
@@ -20,4 +14,4 @@ public:
 	array<array<double, 3>, 3> gradAt(double x, double y, double z);
 };
 
-#endif /* VELOCITYFIELD_HPP_ */
+#endif

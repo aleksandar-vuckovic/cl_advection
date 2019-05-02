@@ -1,25 +1,34 @@
 default: finiteVolumes
 
-finiteVolumes.o : finiteVolumes.cpp
-	g++ -c -Ofast -Wall finiteVolumes.cpp -o finiteVolumes.o
+sourceFiles = main.cpp Field.cpp LevelSet.cpp VelocityField.cpp velocityFields.cpp vecMath3D.cpp
+objects = main.o Field.o LevelSet.o VelocityField.o velocityFields.o vecMath3D.o
+
+main.o : main.cpp
+	g++ -c -Ofast -Wall main.cpp -o main.o
+
+Field.o : Field.cpp
+	g++ -c -Ofast -Wall Field.cpp -o Field.o
+
+LevelSet.o : LevelSet.cpp
+	g++ -c -Ofast -Wall LevelSet.cpp -o LevelSet.o
+
+VelocityField.o : VelocityField.cpp
+	g++ -c -Ofast -Wall VelocityField.cpp -o VelocityField.o
+
+velocityFields.o : velocityFields.cpp
+	g++ -c -Ofast -Wall velocityFields.cpp -o velocityFields.o
 
 vecMath3D.o : vecMath3D.cpp
 	g++ -c -Ofast -Wall vecMath3D.cpp -o vecMath3D.o
 
-fields.o : fields.cpp
-	g++ -c -Ofast -Wall fields.cpp -o fields.o	
-	
-VelocityField.o : VelocityField.cpp
-	g++ -c -Ofast -Wall VelocityField.cpp -o VelocityField.o
-
-finiteVolumes: finiteVolumes.o vecMath3D.o fields.o VelocityField.o
-	g++ finiteVolumes.o fields.o vecMath3D.o VelocityField.o -Ofast -Wall -o finiteVolumes
+finiteVolumes: $(objects)
+	g++ $(objects) -Ofast -Wall -o finiteVolumes
 
 clean:
-	rm -r data/ finiteVolumes.o vecMath2D.o vecMath3D.o fields.o VelocityField.o finiteVolumes finiteVolumes.debug *csv* *xmf*
+	rm -r data/ $(objects) finiteVolumes finiteVolumes.debug *csv* *xmf*
 
-debug: finiteVolumes.cpp vecMath2D.cpp 
-	g++ -g finiteVolumes.cpp vecMath3D.cpp fields.cpp VelocityField.cpp -o finiteVolumes.debug
+debug: $(sourceFiles)
+	g++ -g $(sourceFiles) -o finiteVolumes.debug
 run:
 	./finiteVolumes
 

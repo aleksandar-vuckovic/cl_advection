@@ -1,7 +1,7 @@
 #include <string>
 #include <array>
 #include "VelocityField.hpp"
-#include "fields.hpp"
+#include "velocityFields.hpp"
 
 using std::array;
 

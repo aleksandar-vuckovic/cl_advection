@@ -1,5 +1,5 @@
 #include "vecMath3D.hpp"
-#include "fields.hpp"
+#include "velocityFields.hpp"
 #include "BoundaryCondition.hpp"
 
 std::array<double, 3> shearField(double x, double y, double z, double v0) {
