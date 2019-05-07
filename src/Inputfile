@@ -5,8 +5,8 @@ lenX=0.75
 lenY=0.75
 lenZ=0.0013333333333333333
 
-time=1.0
-timesteps=1000
+time=0.1
+timesteps=500
 writesteps=100
 writeVOF=true
 

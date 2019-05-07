@@ -46,11 +46,20 @@ array<int, 3> LevelSet::getContactPointCoordinates(array<double, 3> point) {
     }
     return array<int, 3> {0,0,0};
 }
-     
+
 double LevelSet::getContactAngle(double dt, double timestep, array<int, 3> cell) {
+
+     // find root of phi, alpha: coefficient for convex combination
+     double alpha = this->at(cell[0],0,0)/(this->at(cell[0],0,0)-this->at(cell[0]-1,0,0));
+     //std::cout << "alpha: " << alpha << std::endl;
+
     //Calculate angle at this cell with finite differences
-    double normalX = (this->at(cell[0]+1, cell[1], cell[2]) - this->at(cell[0]-1, cell[1], cell[2]))/(2*dx);
-    double normalY = (-this->at(cell[0], cell[1] + 2, cell[2])
+    double normalX = alpha*(this->at(cell[0], cell[1], cell[2]) - this->at(cell[0]-2, cell[1], cell[2]))/(2*dx)
+    + (1-alpha)*(this->at(cell[0]+1, cell[1], cell[2]) - this->at(cell[0]-1, cell[1], cell[2]))/(2*dx);
+    double normalY = alpha*(-this->at(cell[0]-1, cell[1] + 2, cell[2])
+                      + 4.0*this->at(cell[0]-1, cell[1] + 1, cell[2])
+                      - 3.0*this->at(cell[0]-1, cell[1], cell[2]))/(2*dx)
+                      + (1-alpha)*(-this->at(cell[0], cell[1] + 2, cell[2])
                       + 4.0*this->at(cell[0], cell[1] + 1, cell[2])
                       - 3.0*this->at(cell[0], cell[1], cell[2]))/(2*dx); // second order difference quotient
     double normalZ;
@@ -75,7 +84,7 @@ double LevelSet::getContactAngle(double dt, double timestep, array<int, 3> cell)
 double LevelSet::getReferenceCurvature(double dt, double timestep, double initCurvature, array<double, 3> CP, array<int, 3> cell) {
     double curvature = initCurvature;
     for (int i = 0; i < timestep; i++){
-        
+
         //Calculate angle at this cell with finite differences
         double normalX = (this->at(cell[0]+1, cell[1], cell[2]) - this->at(cell[0]-1, cell[1], cell[2])) / (2*dx);
         double normalY = (-this->at(cell[0], cell[1] + 2, cell[2]) + 4.0*this->at(cell[0], cell[1] + 1, cell[2]) - 3.0*this->at(cell[0], cell[1], cell[2]))/(2*dx);
@@ -89,9 +98,9 @@ double LevelSet::getReferenceCurvature(double dt, double timestep, double initCu
 
         // This is the second derivative of v in the tau direction (= y direction)
         array<double, 3> temp = {M_PI*M_PI*sin(M_PI*CP[0])*cos(M_PI*CP[1]), -M_PI*M_PI*cos(M_PI*CP[0])*sin(M_PI*CP[1]), 0};
-        
+
         array<double,3> tau = {normal[1], -normal[0], 0};
-        
+
         curvature = curvature + dt*(temp*normal - 2*curvature*(field->gradAt(CP[0], CP[1], CP[2])*tau)*tau);
     }
 
@@ -144,9 +153,9 @@ double LevelSet::getCurvature(double dt, int timestep, array<int, 3> cell) const
                           + 4.0*localField.at(sidelength/2, sidelength/2 + 1, sidelengthZ/2)[0]
                           - 3.0*localField.at(sidelength/2, sidelength/2, sidelengthZ/2)[0] ) / (2*dx);
 
-    
+
     double dny_dx = (localField.at(sidelength/2 + 1, sidelength/2, sidelengthZ/2)[1] - localField.at(sidelength/2 - 1, sidelength/2, sidelengthZ/2)[1]) / (2*dx);
-    
+
     double dny_dy = (-localField.at(sidelength/2, sidelength/2 + 2, sidelengthZ/2)[1]
                           + 4.0*localField.at(sidelength/2, sidelength/2 + 1, sidelengthZ/2)[1]
                           - 3.0*localField.at(sidelength/2, sidelength/2, sidelengthZ/2)[1] ) / (2*dx);
