@@ -73,7 +73,7 @@ double LevelSet::getContactAngle(double dt, double timestep, array<int, 3> cell)
 }
 
 double LevelSet::getReferenceAngleLinearField(double t, double c1, double c2, double theta0) {
-    return M_PI/2 + atan(-1/tan(theta0) * exp(2*c1*t) + c2 * (exp(2*c1*t) - 1)/(2*c1));
+    return M_PI/2 + atan(-1/tan(theta0) * exp(2*c1*t) - c2 * (exp(2*c1*t) - 1)/(2*c1));
 }
 
 double LevelSet::getReferenceCurvature(double dt, double timestep, double initCurvature, array<double, 3> CP, array<int, 3> cell) {
