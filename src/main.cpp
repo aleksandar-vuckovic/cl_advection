@@ -95,7 +95,7 @@ int main() {
     double initCurvature = -1/radius;
     LevelSet Phi(numX, numY, numZ, dx, field, boundaryCondition);
 
-    if (dt/dx < 1) {
+    if (dt/dx < 1) { // TODO this criterion does only make sense for |v|=1
 	std::cout << "The stability requirement is fullfilled" << std::endl;
     } else {
 	std::cout << "The stability requirement is NOT fullfilled" << std::endl;
@@ -126,7 +126,7 @@ int main() {
 		}
 		array<double, 3> newCP = Phi.getContactPoint(dt, i, timesteps, initCP);
 		array<int, 3> newCPCoord = Phi.getContactPointCoordinates(newCP);
-		angle[i] = Phi.getContactAngle(dt, i, newCPCoord);
+    angle[i] = Phi.getContactAngle(dt, i, newCPCoord);
 		std::cout << "Time: " + std::to_string(i*dt) + "\n";
 		positionFile << std::to_string(i*dt) + ", " << std::to_string(dx*newCPCoord[0])  + ", "<< std::to_string(newCP[0]) << std::endl;
 		angleFile << std::to_string(i*dt) + ", " + std::to_string(angle[i]/(2*M_PI)*360)
@@ -156,5 +156,3 @@ int main() {
 
     return 0;
 }
-
-
