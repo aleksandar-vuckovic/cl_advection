@@ -63,15 +63,10 @@ double LevelSet::getContactAngle(double dt, double timestep, array<int, 3> cell)
     return acos(normal[1]);
 }
 
-/* double getReferenceAngle(double dt, double timestep, int totalTimesteps, double contactAngle) {
-    //Calculate current position of contact point
-    for (int i = 0; i < timestep; i++)
-	temp = temp + dt*field->at(temp[0], temp[1], temp[2]);
-*/
+double LevelSet::getReferenceAngleLinearField(double t, double c1, double c2, double theta0) {
+    return M_PI/2 + atan(-1/tan(theta0) * exp(2*c1*t) + c2 * (exp(2*c1*t) - 1)/(2*c1));
+}
 
-/*
-  Currently this only works for the shear field case with theta == pi/2.
- */
 double LevelSet::getReferenceCurvature(double dt, double timestep, double initCurvature, array<double, 3> CP, array<int, 3> cell) {
     double curvature = initCurvature;
     for (int i = 0; i < timestep; i++){
@@ -176,9 +171,9 @@ void LevelSet::writeToFile(double epsilon, double dt, int timestep, int total_ti
         for (int y = 0; y < numY; y++)
             for (int z = 0; z < numZ; z++) {
                 if (timestep == 0) {
-                    pointCoordinates[index] = y*dx;
-                    pointCoordinates[index +1] = x*dx;
-                    pointCoordinates[index +2] = z*dx;
+                    pointCoordinates[index] = z*dx;
+                    pointCoordinates[index +1] = y*dx;
+                    pointCoordinates[index +2] = x*dx;
                     index += 3;
                 }
                 pointPhiValues[x + y*numX + z*numX*numY] = this->at(x, y, z);

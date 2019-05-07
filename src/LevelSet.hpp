@@ -26,6 +26,7 @@ public:
     array<double, 3> getInitCP(double dt, array<double, 3> expcp, double epsilon);
     array<double, 3> getContactPoint(double dt, int timestep, int timesteps, array<double, 3> initCP);
     array<int, 3> getContactPointCoordinates(array<double, 3> point);
+    double getReferenceAngleLinearField(double t, double c1, double c2, double theta0);
     double getContactAngle(double dt, double timestep, array<int, 3> cell);
     double getReferenceCurvature(double dt, double timestep, double initCurvature, array<double, 3> CP, array<int, 3> cell);
     //For now, getCurvature() only works for the stationary droplet
