@@ -130,9 +130,9 @@ int main() {
 		std::cout << "Time: " + std::to_string(i*dt) + "\n";
 		positionFile << std::to_string(i*dt) + ", " << std::to_string(dx*newCPCoord[0])  + ", "<< std::to_string(newCP[0]) << std::endl;
 		angleFile << std::to_string(i*dt) + ", " + std::to_string(angle[i]/(2*M_PI)*360) + ", "
-                    + std::to_string(Phi.getReferenceAngleLinearField(i*dt, c1, c2, expAngle/360*(2*M_PI))/(2*M_PI)*360) + "\n";
+                    + std::to_string(Phi.getReferenceAngleLinearField(i*dt, c1, c2, expAngle)/M_PI*180.0) + "\n";
 		std::cout << "Actual: " << std::to_string(angle[i]/(2*M_PI)*360) + "\n";
-                std::cout << "Reference: " << std::to_string(Phi.getReferenceAngleLinearField(i*dt, c1, c2, expAngle/360*(2*M_PI))/(2*M_PI)*360) + "\n";
+                std::cout << "Reference: " << std::to_string(Phi.getReferenceAngleLinearField(i*dt, c1, c2, expAngle)/M_PI*180.0) + "\n";
 
 		if (calculateCurvature) {
 			curvatureActual[i] = Phi.getCurvature(dt, i, newCPCoord);
