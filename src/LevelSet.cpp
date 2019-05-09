@@ -1,4 +1,5 @@
 #include "LevelSet.hpp"
+#include <iostream>
 
 array<double, 3> LevelSet::getInitCP(double dt, array<double, 3> expcp, double epsilon) {
     array<double, 3> candidate = {0, 0, 0};
@@ -9,7 +10,7 @@ array<double, 3> LevelSet::getInitCP(double dt, array<double, 3> expcp, double e
 		if (abs(candidate - expcp) > abs(other - expcp) && std::abs(this->at(x, y, z)) < epsilon && y == 0) {
 		    candidate = other;
 		}
-	    }
+	}
 
     return candidate;
 }
@@ -18,7 +19,7 @@ array<double, 3> LevelSet::getContactPoint(double dt, int timestep, int timestep
     array<double, 3> &temp = initCP;
     //Calculate current position of contact point
     for (int i = 0; i < timestep; i++)
-	temp = temp + dt*field->at(temp[0], temp[1], temp[2]);
+    	temp = temp + dt*field->at(temp[0], temp[1], temp[2]);
 
     return temp;
 }
@@ -50,8 +51,12 @@ array<int, 3> LevelSet::getContactPointCoordinates(array<double, 3> point) {
 double LevelSet::getContactAngle(double dt, double timestep, array<int, 3> cell) {
 
      // find root of phi, alpha: coefficient for convex combination
-     double alpha = this->at(cell[0],0,0)/(this->at(cell[0],0,0)-this->at(cell[0]-1,0,0));
-     //std::cout << "alpha: " << alpha << std::endl;
+     double alpha = this->at(cell[0],0,0)-this->at(cell[0]-1,0,0);
+     if(fabs(alpha)<1E-12){
+       exit(-1);
+     }
+
+     alpha = this->at(cell[0],0,0)/(alpha);
 
     //Calculate angle at this cell with finite differences
     double normalX = alpha*(this->at(cell[0], cell[1], cell[2]) - this->at(cell[0]-2, cell[1], cell[2]))/(2*dx)
@@ -170,7 +175,7 @@ double LevelSet::getCurvature(double dt, int timestep, array<int, 3> cell) const
 
 
 
-void LevelSet::writeToFile(double epsilon, double dt, int timestep, int total_timesteps, int total_writesteps, std::ofstream *xmfFile) {
+void LevelSet::writeToFile(double dt, int timestep, int total_timesteps, int total_writesteps, std::ofstream *xmfFile) {
     int Npoints = numX*numY*numZ;
     double *pointCoordinates = new double[Npoints*3];
     double *pointPhiValues = new double [Npoints];
@@ -180,9 +185,9 @@ void LevelSet::writeToFile(double epsilon, double dt, int timestep, int total_ti
         for (int y = 0; y < numY; y++)
             for (int z = 0; z < numZ; z++) {
                 if (timestep == 0) {
-                    pointCoordinates[index] = z*dx;
+                    pointCoordinates[index] = x*dx;
                     pointCoordinates[index +1] = y*dx;
-                    pointCoordinates[index +2] = x*dx;
+                    pointCoordinates[index +2] = z*dx;
                     index += 3;
                 }
                 pointPhiValues[x + y*numX + z*numX*numY] = this->at(x, y, z);
@@ -208,22 +213,26 @@ void LevelSet::writeToFile(double epsilon, double dt, int timestep, int total_ti
         FILE *fieldFile;
         fieldFile = fopen("data/field.bin", "wb");
         fwrite(pointCoordinates, sizeof(double), Npoints*3, fieldFile);
+        fclose(fieldFile);
     }
     FILE *PhiFile;
     std::string filename = "data/Phi_t="+ std::to_string(timestep*dt)+".bin";
+    std::cout << filename;
     PhiFile = fopen(filename.data(), "wb");
-    fwrite(pointPhiValues, sizeof(double), Npoints, PhiFile);
+	fwrite(pointPhiValues, sizeof(double), Npoints, PhiFile);
+	fclose(PhiFile);
 
-    *xmfFile << "<Grid>\n"
-             << "<Topology TopologyType=\"Polyvertex\" NumberOfElements=\""+std::to_string(Npoints) +"\"/>\n"
-             << "<Geometry GeometryType=\"XYZ\"> \n"
-             << "<DataItem Name=\"points\" Format=\"Binary\" NumberType=\"Float\" Precision=\"8\" Endian=\"Little\" Dimensions=\"&Npoints; 3\">\n"
-             << "field.bin\n"
-             << "</DataItem>\n</Geometry>"
-             << "<Attribute Name =\"lvlset\" AttributeType=\"Scalar\" Center=\"Cell\">\n"
-             << "<DataItem Format=\"Binary\" NumberType=\"Float\" Precision=\"8\"  Endian=\"Little\" Dimensions=\"&Npoints;\">\n"
-             << "Phi_t="+ std::to_string(timestep*dt) +".bin\n"
-             << "</DataItem></Attribute></Grid>\n";
+	*xmfFile << "<Grid>\n"
+			 << "<Topology TopologyType=\"Polyvertex\" NumberOfElements=\""+std::to_string(Npoints) +"\"/>\n"
+			 << "<Geometry GeometryType=\"XYZ\"> \n"
+			 << "<DataItem Name=\"points\" Format=\"Binary\" NumberType=\"Float\" Precision=\"8\" Endian=\"Little\" Dimensions=\"&Npoints; 3\">\n"
+			 << "field.bin\n"
+			 << "</DataItem>\n</Geometry>"
+			 << "<Attribute Name =\"lvlset\" AttributeType=\"Scalar\" Center=\"Cell\">\n"
+			 << "<DataItem Format=\"Binary\" NumberType=\"Float\" Precision=\"8\"  Endian=\"Little\" Dimensions=\"&Npoints;\">\n"
+			 << "Phi_t="+ std::to_string(timestep*dt) +".bin\n"
+			 << "</DataItem></Attribute></Grid>\n";
+
 
     delete[] pointCoordinates;
 }

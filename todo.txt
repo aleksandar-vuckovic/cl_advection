@@ -1,8 +1,8 @@
 TODOs Level Set Implementierung
 ===============================
 * Schreibe Dokumentation mit Markdown.
-* Courantzahl als Eingabeparameter im Inputfile?
+* Courantzahl als Eingabeparameter im Inputfile? - Fertig.
 * Bug suchen: Fehler in Paraview Visualisierung falls lenX \neq lenY.
 * Prüfe Kompatibilität mit Windows.
 * Visualisiere auch das Geschwindigkeitsfeld in Paraview.
-* Beseitigen aller Compiler-Warnungen.
+* Beseitigen aller Compiler-Warnungen. - Fertig.

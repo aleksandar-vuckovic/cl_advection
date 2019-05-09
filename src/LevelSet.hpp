@@ -32,7 +32,7 @@ public:
     //For now, getCurvature() only works for the stationary droplet
     double getCurvature(double dt, int timestep,  array<int, 3> cell) const;
     double sumLevelSet();
-    void writeToFile(double epsilon, double dt, int timestep, int total_timesteps, int total_writesteps, std::ofstream *xmfFile);
+    void writeToFile(double dt, int timestep, int total_timesteps, int total_writesteps, std::ofstream *xmfFile);
     void initDroplet(array<double, 3> center, double radius, double epsilon);
     void calculateNextTimestep(double dt);
 };

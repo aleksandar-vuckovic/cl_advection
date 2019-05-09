@@ -5,7 +5,6 @@
 #include <vector>
 #include "LevelSet.hpp"
 #include "VelocityField.hpp"
-#include "BoundaryCondition.hpp"
 
 #define _USE_MATH_DEFINES
 #include <cmath>
@@ -14,11 +13,12 @@ using std::array;
 
 int main() {
 
-    int numX, numY, numZ, timesteps, writesteps, numCores;
-    double lenX, lenY, lenZ, time, centerX, centerY, centerZ, radius, expcpX, expcpY, expcpZ, expAngle, v0, c1, c2;
-    bool calculateCurvature, writeVOF;
-    VelocityField *field;
-    BoundaryCondition boundaryCondition;
+    int numX, numY, numZ, writesteps, numCores;
+    double lenX, lenY, lenZ, time, centerX, centerY, centerZ, radius, expcpX, expcpY, expcpZ, expAngle, v0, c1, c2, CFL;
+    numX = numY = numZ = writesteps = numCores = 0;
+    lenX = lenY = lenZ = time = centerX = centerY = centerZ = radius = expcpX = expcpY = expcpZ = expAngle = v0 = c1 = c2 = CFL = 0;
+    bool calculateCurvature = false, writeVOF = false;
+    VelocityField *field = nullptr;
 
     std::ifstream inFileStream("Inputfile");
     std::string line, varName, value;
@@ -41,8 +41,8 @@ int main() {
 		    lenZ = std::stod(value);
 		else if (varName == "time")
 		    time = std::stod(value);
-		else if (varName == "timesteps")
-		    timesteps = std::stoi(value);
+		else if (varName == "CFL")
+		   CFL = std::stod(value);
 		else if (varName == "writesteps")
 		    writesteps =std::stoi(value);
 		else if (varName == "writeVOF")
@@ -59,13 +59,7 @@ int main() {
 			c2 = std::stod(value);
 		}
 		else if (varName == "field") {
-			field = new VelocityField(value, v0, c1, c2);
-		}
-		else if (varName == "BoundaryCondition") {
-			if (value == "homogeneousNeumann")
-				boundaryCondition = BoundaryCondition::homogeneousNeumann;
-			else if (value == "Dirichlet")
-				boundaryCondition = BoundaryCondition::Dirichlet;
+			field = new VelocityField(value, v0, c1, c2, 0, lenX, 0, lenY, 0, lenZ, lenX/numX);
 		}
 		else if (varName == "centerX")
 		    centerX = std::stod(value);
@@ -91,15 +85,11 @@ int main() {
     }
 
     double dx = lenX/numX;
-    double dt = time/timesteps;
+    double dt = CFL*dx/field->getMaxNormValue();
+    int timesteps = time/dt;
     double initCurvature = -1/radius;
-    LevelSet Phi(numX, numY, numZ, dx, field, boundaryCondition);
+    LevelSet Phi(numX, numY, numZ, dx, field, BoundaryCondition::homogeneousNeumann);
 
-    if (dt/dx < 1) { // TODO this criterion does only make sense for |v|=1
-	std::cout << "The stability requirement is fullfilled" << std::endl;
-    } else {
-	std::cout << "The stability requirement is NOT fullfilled" << std::endl;
-    }
     array<double, 3> center = {centerX, centerY, centerZ};
     array<double, 3> expcp = {expcpX, expcpY, expcpZ};
     std::vector<double> angle(timesteps);
@@ -109,7 +99,11 @@ int main() {
     Phi.initDroplet(center, radius, 0.005);
     array<double, 3> initCP = Phi.getInitCP(dt, expcp, 0.001);
 
-    system("mkdir data");
+    int sysRet = system("mkdir data");
+
+    if (sysRet == 256) {
+    	std::cout << "Overwriting folder \"data\".\n";
+    }
     std::ofstream positionFile("position.csv");
     std::ofstream angleFile("contactAngle.csv");
     std::ofstream curvatureFile("curvature.csv");
@@ -122,7 +116,7 @@ int main() {
 		std::cout << "Step " << i << std::endl;
 		//Write field to file
 		if (writeVOF && i % (timesteps/writesteps) == 0) {
-			Phi.writeToFile(0.01, dt, i, timesteps, writesteps, &xmfFile);
+			Phi.writeToFile(dt, i, timesteps, writesteps, &xmfFile);
 		}
 		array<double, 3> newCP = Phi.getContactPoint(dt, i, timesteps, initCP);
 		array<int, 3> newCPCoord = Phi.getContactPointCoordinates(newCP);

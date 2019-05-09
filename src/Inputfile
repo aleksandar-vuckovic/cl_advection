@@ -6,7 +6,7 @@ lenY=0.25
 lenZ=0.001
 
 time=0.1
-timesteps=500
+CFL=0.2
 writesteps=100
 writeVOF=true
 
@@ -14,7 +14,6 @@ v0=0.2
 c1=0.1
 c2=-2
 field=navierField
-BoundaryCondition=homogeneousNeumann
 
 centerX=0.9
 centerY=-0.15
