@@ -5,7 +5,6 @@
 #include <vector>
 #include "LevelSet.hpp"
 #include "VelocityField.hpp"
-#include "BoundaryCondition.hpp"
 
 #define _USE_MATH_DEFINES
 #include <cmath>
@@ -16,9 +15,10 @@ int main() {
 
     int numX, numY, numZ, writesteps, numCores;
     double lenX, lenY, lenZ, time, centerX, centerY, centerZ, radius, expcpX, expcpY, expcpZ, expAngle, v0, c1, c2, CFL;
-    bool calculateCurvature, writeVOF;
-    VelocityField *field;
-    BoundaryCondition boundaryCondition;
+    numX = numY = numZ = writesteps = numCores = 0;
+    lenX = lenY = lenZ = time = centerX = centerY = centerZ = radius = expcpX = expcpY = expcpZ = expAngle = v0 = c1 = c2 = CFL = 0;
+    bool calculateCurvature = false, writeVOF = false;
+    VelocityField *field = nullptr;
 
     std::ifstream inFileStream("Inputfile");
     std::string line, varName, value;
@@ -61,12 +61,6 @@ int main() {
 		else if (varName == "field") {
 			field = new VelocityField(value, v0, c1, c2, 0, lenX, 0, lenY, 0, lenZ, lenX/numX);
 		}
-		else if (varName == "BoundaryCondition") {
-			if (value == "homogeneousNeumann")
-				boundaryCondition = BoundaryCondition::homogeneousNeumann;
-			else if (value == "Dirichlet")
-				boundaryCondition = BoundaryCondition::Dirichlet;
-		}
 		else if (varName == "centerX")
 		    centerX = std::stod(value);
 		else if (varName == "centerY")
@@ -94,7 +88,7 @@ int main() {
     double dt = CFL*dx/field->getMaxNormValue();
     int timesteps = time/dt;
     double initCurvature = -1/radius;
-    LevelSet Phi(numX, numY, numZ, dx, field, boundaryCondition);
+    LevelSet Phi(numX, numY, numZ, dx, field, BoundaryCondition::homogeneousNeumann);
 
     array<double, 3> center = {centerX, centerY, centerZ};
     array<double, 3> expcp = {expcpX, expcpY, expcpZ};
@@ -105,7 +99,11 @@ int main() {
     Phi.initDroplet(center, radius, 0.005);
     array<double, 3> initCP = Phi.getInitCP(dt, expcp, 0.001);
 
-    system("mkdir data");
+    int sysRet = system("mkdir data");
+
+    if (sysRet == 256) {
+    	std::cout << "Overwriting folder \"data\".\n";
+    }
     std::ofstream positionFile("position.csv");
     std::ofstream angleFile("contactAngle.csv");
     std::ofstream curvatureFile("curvature.csv");
@@ -118,7 +116,7 @@ int main() {
 		std::cout << "Step " << i << std::endl;
 		//Write field to file
 		if (writeVOF && i % (timesteps/writesteps) == 0) {
-			Phi.writeToFile(0.01, dt, i, timesteps, writesteps, &xmfFile);
+			Phi.writeToFile(dt, i, timesteps, writesteps, &xmfFile);
 		}
 		array<double, 3> newCP = Phi.getContactPoint(dt, i, timesteps, initCP);
 		array<int, 3> newCPCoord = Phi.getContactPointCoordinates(newCP);
@@ -126,9 +124,9 @@ int main() {
 		std::cout << "Time: " + std::to_string(i*dt) + "\n";
 		positionFile << std::to_string(i*dt) + ", " << std::to_string(dx*newCPCoord[0])  + ", "<< std::to_string(newCP[0]) << std::endl;
 		angleFile << std::to_string(i*dt) + ", " + std::to_string(angle[i]/(2*M_PI)*360) + ", "
-                    + std::to_string(Phi.getReferenceAngleLinearField(i*dt, c1, c2, expAngle)/M_PI*180.0) + "\n";
+                    + std::to_string(Phi.getReferenceAngleLinearField(i*dt, c1, c2, expAngle/180*M_PI)/M_PI*180.0) + "\n";
 		std::cout << "Actual: " << std::to_string(angle[i]/(2*M_PI)*360) + "\n";
-                std::cout << "Reference: " << std::to_string(Phi.getReferenceAngleLinearField(i*dt, c1, c2, expAngle)/M_PI*180.0) + "\n";
+                std::cout << "Reference: " << std::to_string(Phi.getReferenceAngleLinearField(i*dt, c1, c2, expAngle/180*M_PI)/M_PI*180.0) + "\n";
 
 		if (calculateCurvature) {
 			curvatureActual[i] = Phi.getCurvature(dt, i, newCPCoord);

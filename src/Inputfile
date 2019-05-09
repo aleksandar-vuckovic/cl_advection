@@ -14,7 +14,6 @@ v0=0.2
 c1=0.1
 c2=-2
 field=navierField
-BoundaryCondition=homogeneousNeumann
 
 centerX=0.9
 centerY=-0.15

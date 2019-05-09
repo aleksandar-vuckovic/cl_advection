@@ -5,4 +5,4 @@ TODOs Level Set Implementierung
 * Bug suchen: Fehler in Paraview Visualisierung falls lenX \neq lenY.
 * Prüfe Kompatibilität mit Windows.
 * Visualisiere auch das Geschwindigkeitsfeld in Paraview.
-* Beseitigen aller Compiler-Warnungen.
+* Beseitigen aller Compiler-Warnungen. - Fertig.
