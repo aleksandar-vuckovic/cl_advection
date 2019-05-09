@@ -1,5 +1,4 @@
 #include "LevelSet.hpp"
-#include <iostream>
 
 array<double, 3> LevelSet::getInitCP(double dt, array<double, 3> expcp, double epsilon) {
     array<double, 3> candidate = {0, 0, 0};
@@ -217,7 +216,6 @@ void LevelSet::writeToFile(double dt, int timestep, int total_timesteps, int tot
     }
     FILE *PhiFile;
     std::string filename = "data/Phi_t="+ std::to_string(timestep*dt)+".bin";
-    std::cout << filename;
     PhiFile = fopen(filename.data(), "wb");
 	fwrite(pointPhiValues, sizeof(double), Npoints, PhiFile);
 	fclose(PhiFile);

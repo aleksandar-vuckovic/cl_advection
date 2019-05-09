@@ -6,7 +6,7 @@ lenY=0.2
 lenZ=0.001
 
 time=5.0
-timesteps=50000
+CFL=0.2
 writesteps=2000
 writeVOF=true
 
