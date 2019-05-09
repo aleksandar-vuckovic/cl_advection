@@ -50,8 +50,12 @@ array<int, 3> LevelSet::getContactPointCoordinates(array<double, 3> point) {
 double LevelSet::getContactAngle(double dt, double timestep, array<int, 3> cell) {
 
      // find root of phi, alpha: coefficient for convex combination
-     double alpha = this->at(cell[0],0,0)/(this->at(cell[0],0,0)-this->at(cell[0]-1,0,0));
-     //std::cout << "alpha: " << alpha << std::endl;
+     double alpha = this->at(cell[0],0,0)-this->at(cell[0]-1,0,0);
+     if(fabs(alpha)<1E-12){
+       exit(-1);
+     }
+
+     alpha = this->at(cell[0],0,0)/(alpha);
 
     //Calculate angle at this cell with finite differences
     double normalX = alpha*(this->at(cell[0], cell[1], cell[2]) - this->at(cell[0]-2, cell[1], cell[2]))/(2*dx)
