@@ -14,8 +14,8 @@ using std::array;
 
 int main() {
 
-    int numX, numY, numZ, timesteps, writesteps, numCores;
-    double lenX, lenY, lenZ, time, centerX, centerY, centerZ, radius, expcpX, expcpY, expcpZ, expAngle, v0, c1, c2;
+    int numX, numY, numZ, writesteps, numCores;
+    double lenX, lenY, lenZ, time, centerX, centerY, centerZ, radius, expcpX, expcpY, expcpZ, expAngle, v0, c1, c2, CFL;
     bool calculateCurvature, writeVOF;
     VelocityField *field;
     BoundaryCondition boundaryCondition;
@@ -41,8 +41,8 @@ int main() {
 		    lenZ = std::stod(value);
 		else if (varName == "time")
 		    time = std::stod(value);
-		else if (varName == "timesteps")
-		    timesteps = std::stoi(value);
+		else if (varName == "CFL")
+		   CFL = std::stod(value);
 		else if (varName == "writesteps")
 		    writesteps =std::stoi(value);
 		else if (varName == "writeVOF")
@@ -59,7 +59,7 @@ int main() {
 			c2 = std::stod(value);
 		}
 		else if (varName == "field") {
-			field = new VelocityField(value, v0, c1, c2);
+			field = new VelocityField(value, v0, c1, c2, 0, lenX, 0, lenY, 0, lenZ, lenX/numX);
 		}
 		else if (varName == "BoundaryCondition") {
 			if (value == "homogeneousNeumann")
@@ -91,15 +91,11 @@ int main() {
     }
 
     double dx = lenX/numX;
-    double dt = time/timesteps;
+    double dt = CFL*dx/field->getMaxNormValue();
+    int timesteps = time/dt;
     double initCurvature = -1/radius;
     LevelSet Phi(numX, numY, numZ, dx, field, boundaryCondition);
 
-    if (dt/dx < 1) { // TODO this criterion does only make sense for |v|=1
-	std::cout << "The stability requirement is fullfilled" << std::endl;
-    } else {
-	std::cout << "The stability requirement is NOT fullfilled" << std::endl;
-    }
     array<double, 3> center = {centerX, centerY, centerZ};
     array<double, 3> expcp = {expcpX, expcpY, expcpZ};
     std::vector<double> angle(timesteps);
