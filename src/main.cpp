@@ -43,7 +43,7 @@ int main() {
 		    time = std::stod(value);
 		else if (varName == "CFL")
 		   CFL = std::stod(value);
-		else if (varName == "writesteps")
+		else if (varName == "writeSteps")
 		    writesteps =std::stoi(value);
 		else if (varName == "writeVOF")
 			std::stringstream(value) >> std::boolalpha >> writeVOF;
@@ -88,6 +88,7 @@ int main() {
     double dt = CFL*dx/field->getMaxNormValue();
     int timesteps = time/dt;
     double initCurvature = -1/radius;
+
     LevelSet Phi(numX, numY, numZ, dx, field, BoundaryCondition::homogeneousNeumann);
 
     array<double, 3> center = {centerX, centerY, centerZ};

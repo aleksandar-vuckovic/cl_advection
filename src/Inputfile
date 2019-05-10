@@ -1,14 +1,14 @@
 numX=1000
-numY=250
+numY=1000
 numZ=1
 lenX=1.0
-lenY=0.25
+lenY=1.0
 lenZ=0.001
 
 time=0.1
-CFL=0.2
-writesteps=100
-writeVOF=true
+CFL=0.8
+writeSteps=100
+writeField=true
 
 v0=0.2
 c1=0.1
@@ -26,4 +26,3 @@ expcpZ=0.0
 expAngle=60
 
 calculateCurvature=false
-
