@@ -180,16 +180,16 @@ void LevelSet::writeToFile(double dt, int timestep, int total_timesteps, int tot
     double *pointPhiValues = new double [Npoints];
 
     int index = 0;
-    for (int x = 0; x < numX; x++)
-        for (int y = 0; y < numY; y++)
-            for (int z = 0; z < numZ; z++) {
+    for (int k = 0; k < numZ; k++)
+        for (int j = 0; j < numY; j++)
+            for (int i = 0; i < numX; i++) {
                 if (timestep == 0) {
-                    pointCoordinates[index] = x*dx;
-                    pointCoordinates[index +1] = y*dx;
-                    pointCoordinates[index +2] = z*dx;
+                    pointCoordinates[index] = i*dx;
+                    pointCoordinates[index +1] = j*dx;
+                    pointCoordinates[index +2] = k*dx;
                     index += 3;
                 }
-                pointPhiValues[x + y*numX + z*numX*numY] = this->at(x, y, z);
+                pointPhiValues[i + j*numX + k*numX*numY] = this->at(i, j, k);
 	    }
 
     // If it is the first iteration, create coordinate file
@@ -204,7 +204,7 @@ void LevelSet::writeToFile(double dt, int timestep, int total_timesteps, int tot
                  << "<Time TimeType=\"List\">\n"
                  << "<DataItem Format=\"XML\" NumberType=\"Float\" Dimensions=\""+ std::to_string(total_writesteps)+"\">\n";
         for (int i = 0; i < total_writesteps; i++) {
-            *xmfFile << std::to_string(i*(total_timesteps/total_writesteps)*dt) << " ";
+            *xmfFile << std::to_string(i*((double)total_timesteps/total_writesteps)*dt) << " ";
         }
         *xmfFile <<"</DataItem>\n" << "</Time>\n";
 

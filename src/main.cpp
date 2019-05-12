@@ -13,10 +13,10 @@ using std::array;
 
 int main() {
 
-    int numX, numY, numZ, writesteps, numCores;
-    double lenX, lenY, lenZ, time, centerX, centerY, centerZ, radius, expcpX, expcpY, expcpZ, expAngle, v0, c1, c2, CFL;
-    numX = numY = numZ = writesteps = numCores = 0;
-    lenX = lenY = lenZ = time = centerX = centerY = centerZ = radius = expcpX = expcpY = expcpZ = expAngle = v0 = c1 = c2 = CFL = 0;
+    int numX, numY, numZ;
+    double lenX, lenY, lenZ, time, centerX, centerY, centerZ, radius, expcpX, expcpY, expcpZ, expAngle, v0, c1, c2, CFL, writestepsFraction;
+    numX = numY = numZ = 0;
+    lenX = lenY = lenZ = time = centerX = centerY = centerZ = radius = expcpX = expcpY = expcpZ = expAngle = v0 = c1 = c2 = CFL = writestepsFraction = 0;
     bool calculateCurvature = false, writeVOF = false;
     VelocityField *field = nullptr;
 
@@ -43,12 +43,10 @@ int main() {
 		    time = std::stod(value);
 		else if (varName == "CFL")
 		   CFL = std::stod(value);
-		else if (varName == "writeSteps")
-		    writesteps =std::stoi(value);
+		else if (varName == "writestepsFraction")
+		    writestepsFraction =std::stod(value);
 		else if (varName == "writeVOF")
 			std::stringstream(value) >> std::boolalpha >> writeVOF;
-		else if (varName == "numCores")
-		    numCores = std::stoi(value);
 		else if (varName == "v0") {
 			v0 = std::stod(value);
 		}
@@ -87,6 +85,8 @@ int main() {
     double dx = lenX/numX;
     double dt = CFL*dx/field->getMaxNormValue();
     int timesteps = time/dt;
+    int writesteps = floor(writestepsFraction*timesteps);
+    writesteps = timesteps/(ceil((double)timesteps/writesteps));
     double initCurvature = -1/radius;
 
     LevelSet Phi(numX, numY, numZ, dx, field, BoundaryCondition::homogeneousNeumann);
@@ -116,12 +116,12 @@ int main() {
     for (int i = 0; i < timesteps; i++) {
 		std::cout << "Step " << i << std::endl;
 		//Write field to file
-		if (writeVOF && i % (timesteps/writesteps) == 0) {
+		if (writeVOF && i % (int)ceil((double)timesteps/writesteps) == 0) {
 			Phi.writeToFile(dt, i, timesteps, writesteps, &xmfFile);
 		}
 		array<double, 3> newCP = Phi.getContactPoint(dt, i, timesteps, initCP);
 		array<int, 3> newCPCoord = Phi.getContactPointCoordinates(newCP);
-    angle[i] = Phi.getContactAngle(dt, i, newCPCoord);
+                angle[i] = Phi.getContactAngle(dt, i, newCPCoord);
 		std::cout << "Time: " + std::to_string(i*dt) + "\n";
 		positionFile << std::to_string(i*dt) + ", " << std::to_string(dx*newCPCoord[0])  + ", "<< std::to_string(newCP[0]) << std::endl;
 		angleFile << std::to_string(i*dt) + ", " + std::to_string(angle[i]/(2*M_PI)*360) + ", "

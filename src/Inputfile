@@ -1,14 +1,14 @@
 numX=1000
-numY=1000
+numY=250
 numZ=1
 lenX=1.0
-lenY=1.0
+lenY=0.25
 lenZ=0.001
 
 time=0.1
-CFL=0.8
-writeSteps=100
-writeField=true
+CFL=0.2
+writestepsFraction=0.5
+writeVOF=true
 
 v0=0.2
 c1=0.1
