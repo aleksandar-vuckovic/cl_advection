@@ -1,13 +1,13 @@
 numX=1000
-numY=200
+numY=100
 numZ=1
 lenX=1.0
-lenY=0.2
+lenY=0.1
 lenZ=0.001
 
 time=5.0
-CFL=0.2
-writesteps=2000
+CFL=0.5
+writestepsFraction=0.05
 writeVOF=true
 
 v0=-0.2
@@ -24,7 +24,7 @@ radius=0.4
 expcpX=0.8
 expcpY=0.0
 expcpZ=0.0
-expAngle=0.523599
+expAngle=30.0
 
 calculateCurvature=false
 
