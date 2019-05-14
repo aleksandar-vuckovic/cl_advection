@@ -17,7 +17,7 @@ int main() {
     double lenX, lenY, lenZ, time, centerX, centerY, centerZ, radius, expcpX, expcpY, expcpZ, expAngle, v0, c1, c2, CFL, writestepsFraction;
     numX = numY = numZ = 0;
     lenX = lenY = lenZ = time = centerX = centerY = centerZ = radius = expcpX = expcpY = expcpZ = expAngle = v0 = c1 = c2 = CFL = writestepsFraction = 0;
-    bool calculateCurvature = false, writeVOF = false;
+    bool calculateCurvature = false, writeField = false;
     VelocityField *field = nullptr;
 
     std::ifstream inFileStream("Inputfile");
@@ -45,8 +45,8 @@ int main() {
 		   CFL = std::stod(value);
 		else if (varName == "writestepsFraction")
 		    writestepsFraction =std::stod(value);
-		else if (varName == "writeVOF")
-			std::stringstream(value) >> std::boolalpha >> writeVOF;
+		else if (varName == "writeField")
+			std::stringstream(value) >> std::boolalpha >> writeField;
 		else if (varName == "v0") {
 			v0 = std::stod(value);
 		}
@@ -116,7 +116,7 @@ int main() {
     for (int i = 0; i < timesteps; i++) {
 		std::cout << "Step " << i << std::endl;
 		//Write field to file
-		if (writeVOF && i % (int)ceil((double)timesteps/writesteps) == 0) {
+		if (writeField && i % (int)ceil((double)timesteps/writesteps) == 0) {
 			Phi.writeToFile(dt, i, timesteps, writesteps, &xmfFile);
 		}
 		array<double, 3> newCP = Phi.getContactPoint(dt, i, timesteps, initCP);
