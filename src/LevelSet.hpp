@@ -34,7 +34,7 @@ public:
     double sumLevelSet();
     void writeToFile(double dt, int timestep, int total_timesteps, int total_writesteps, std::ofstream *xmfFile);
     void initDroplet(array<double, 3> center, double radius, double epsilon);
-    void calculateNextTimestep(double dt);
+    void calculateNextTimestep(double dt, int timestep);
 };
 
 #endif

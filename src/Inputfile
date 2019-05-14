@@ -5,15 +5,16 @@ lenX=1.0
 lenY=0.25
 lenZ=0.001
 
-time=0.1
-CFL=0.2
+time=1.0
+CFL=0.4
 writestepsFraction=0.5
 writeField=true
 
 v0=0.2
 c1=0.1
 c2=-2
-field=navierField
+tau=0.2
+field=timeDependentNavierField
 
 centerX=0.9
 centerY=-0.15

@@ -18,7 +18,7 @@ array<double, 3> LevelSet::getContactPoint(double dt, int timestep, int timestep
     array<double, 3> &temp = initCP;
     //Calculate current position of contact point
     for (int i = 0; i < timestep; i++)
-    	temp = temp + dt*field->at(temp[0], temp[1], temp[2]);
+    	temp = temp + dt*field->at(timestep*dt, temp[0], temp[1], temp[2]);
 
     return temp;
 }
@@ -77,7 +77,14 @@ double LevelSet::getContactAngle(double dt, double timestep, array<int, 3> cell)
 }
 
 double LevelSet::getReferenceAngleLinearField(double t, double c1, double c2, double theta0) {
-    return M_PI/2 + atan(-1/tan(theta0) * exp(2*c1*t) - c2 * (exp(2*c1*t) - 1)/(2*c1));
+	if (field->getName() == "navierField")
+		return M_PI/2 + atan(-1/tan(theta0) * exp(2*c1*t) - c2 * (exp(2*c1*t) - 1)/(2*c1));
+	else if (field->getName() == "timeDependentNavierField") {
+		double tau = field->getTau();
+		return M_PI/2 + atan(-1/tan(theta0) * exp(2*c1*tau/M_PI*sin(M_PI*t/tau)) - c2 * (exp(2*c1*tau/M_PI*sin(M_PI*t/tau)) - 1)/(2*c1));
+	}
+	else
+		throw std::invalid_argument("Please choose either navierField or timeDependentNavierField if analyzing linear fields.");
 }
 
 double LevelSet::getReferenceCurvature(double dt, double timestep, double initCurvature, array<double, 3> CP, array<int, 3> cell) {
@@ -100,7 +107,7 @@ double LevelSet::getReferenceCurvature(double dt, double timestep, double initCu
 
         array<double,3> tau = {normal[1], -normal[0], 0};
 
-        curvature = curvature + dt*(temp*normal - 2*curvature*(field->gradAt(CP[0], CP[1], CP[2])*tau)*tau);
+        curvature = curvature + dt*(temp*normal - 2*curvature*(field->gradAt(timestep*dt, CP[0], CP[1], CP[2])*tau)*tau);
     }
 
     return curvature;
@@ -252,7 +259,7 @@ void LevelSet::initDroplet(array<double, 3> center, double radius, double epsilo
 		this->at(x, y, z) = pow(x*dx - center[0], 2) + pow(y*dx - center[1], 2) + pow(z*dx - center[2], 2) - pow(radius, 2);
 }
 
-void LevelSet::calculateNextTimestep(double dt) {
+void LevelSet::calculateNextTimestep(double dt, int timestep) {
     LevelSet tempPhi(*this);
 
     const array<double, 3> upNormal = {0, 1, 0};
@@ -281,7 +288,7 @@ void LevelSet::calculateNextTimestep(double dt) {
 
 				switch(dir) {
 				case 0:
-							sp = field->at((x+1/2)*dx, (y+1)*dx, (z+1/2)*dx) * upNormal;
+							sp = field->at(timestep*dt, (x+1/2)*dx, (y+1)*dx, (z+1/2)*dx) * upNormal;
 							if (boundaryCondition == BoundaryCondition::homogeneousNeumann && y == numY - 1) {
 								flux += sp*tempPhi.at(x, y, z);
 								break;
@@ -290,7 +297,7 @@ void LevelSet::calculateNextTimestep(double dt) {
 							//flux +=(tempPhi.at(x, y+1, z) + tempPhi.at(x, y, z))/2* sp;
 							break;
 				case 1:
-							sp = field->at((x+1/2)*dx, y*dx, (z+1/2)*dx) * downNormal;
+							sp = field->at(timestep*dt, (x+1/2)*dx, y*dx, (z+1/2)*dx) * downNormal;
 							if (boundaryCondition == BoundaryCondition::homogeneousNeumann && y == 0 ) {
 								flux += sp*tempPhi.at(x, y, z);
 								break;
@@ -299,7 +306,7 @@ void LevelSet::calculateNextTimestep(double dt) {
 							//flux += (tempPhi.at(x, y, z) + tempPhi.at(x, y-1, z))/2 * sp;
 							break;
 				case 2:
-							sp = field->at(x*dx, (y+1/2)*dx, (z+1/2)*dx) * leftNormal;
+							sp = field->at(timestep*dt, x*dx, (y+1/2)*dx, (z+1/2)*dx) * leftNormal;
 							if (boundaryCondition == BoundaryCondition::homogeneousNeumann && x == 0) {
 								flux += sp*tempPhi.at(x, y, z);
 								break;
@@ -308,7 +315,7 @@ void LevelSet::calculateNextTimestep(double dt) {
 							//flux += (tempPhi.at(x, y, z) + tempPhi.at(x-1, y, z))/2 * sp;
 							break;
 				case 3:
-							sp = field->at((x+1)*dx, (y+1/2)*dx, (z+1/2)*dx) * rightNormal;
+							sp = field->at(timestep*dt, (x+1)*dx, (y+1/2)*dx, (z+1/2)*dx) * rightNormal;
 							if (boundaryCondition == BoundaryCondition::homogeneousNeumann && x == numX - 1) {
 								flux += sp*tempPhi.at(x, y, z);
 								break;
@@ -319,7 +326,7 @@ void LevelSet::calculateNextTimestep(double dt) {
 				case 4:
 							if (numZ == 1)
 								break;
-							sp = field->at((x+1/2)*dx, (y+1/2)*dx, (z+1)*dx) * frontNormal;
+							sp = field->at(timestep*dt, (x+1/2)*dx, (y+1/2)*dx, (z+1)*dx) * frontNormal;
 							if (boundaryCondition == BoundaryCondition::homogeneousNeumann && z == numZ - 1) {
 								flux += sp*tempPhi.at(x, y, z);
 								break;
@@ -330,7 +337,7 @@ void LevelSet::calculateNextTimestep(double dt) {
 				case 5:
 							if (numZ == 1)
 								break;
-							sp = field->at((x+1/2)*dx, (y+1/2)*dx, z*dx) * backNormal;
+							sp = field->at(timestep*dt, (x+1/2)*dx, (y+1/2)*dx, z*dx) * backNormal;
 							if (boundaryCondition == BoundaryCondition::homogeneousNeumann && z == 0) {
 								flux += sp*tempPhi.at(x, y, z);
 								break;

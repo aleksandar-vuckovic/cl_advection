@@ -14,9 +14,9 @@ using std::array;
 int main() {
 
     int numX, numY, numZ;
-    double lenX, lenY, lenZ, time, centerX, centerY, centerZ, radius, expcpX, expcpY, expcpZ, expAngle, v0, c1, c2, CFL, writestepsFraction;
+    double lenX, lenY, lenZ, time, centerX, centerY, centerZ, radius, expcpX, expcpY, expcpZ, expAngle, v0, c1, c2, tau, CFL, writestepsFraction;
     numX = numY = numZ = 0;
-    lenX = lenY = lenZ = time = centerX = centerY = centerZ = radius = expcpX = expcpY = expcpZ = expAngle = v0 = c1 = c2 = CFL = writestepsFraction = 0;
+    lenX = lenY = lenZ = time = centerX = centerY = centerZ = radius = expcpX = expcpY = expcpZ = expAngle = v0 = c1 = c2 = tau = CFL = writestepsFraction = 0;
     bool calculateCurvature = false, writeField = false;
     VelocityField *field = nullptr;
 
@@ -47,17 +47,16 @@ int main() {
 		    writestepsFraction =std::stod(value);
 		else if (varName == "writeField")
 			std::stringstream(value) >> std::boolalpha >> writeField;
-		else if (varName == "v0") {
+		else if (varName == "v0")
 			v0 = std::stod(value);
-		}
-		else if (varName == "c1") {
+		else if (varName == "c1")
 			c1 = std::stod(value);
-		}
-		else if (varName == "c2") {
+		else if (varName == "c2")
 			c2 = std::stod(value);
-		}
+		else if (varName == "tau")
+			tau = std::stod(value);
 		else if (varName == "field") {
-			field = new VelocityField(value, v0, c1, c2, 0, lenX, 0, lenY, 0, lenZ, lenX/numX);
+			field = new VelocityField(value, v0, c1, c2, tau, 0, lenX, 0, lenY, 0, lenZ, lenX/numX);
 		}
 		else if (varName == "centerX")
 		    centerX = std::stod(value);
@@ -126,7 +125,7 @@ int main() {
 		positionFile << std::to_string(i*dt) + ", " << std::to_string(dx*newCPCoord[0])  + ", "<< std::to_string(newCP[0]) << std::endl;
 		angleFile << std::to_string(i*dt) + ", " + std::to_string(angle[i]/(2*M_PI)*360) + ", "
                     + std::to_string(Phi.getReferenceAngleLinearField(i*dt, c1, c2, expAngle/180*M_PI)/M_PI*180.0) + "\n";
-		std::cout << "Actual: " << std::to_string(angle[i]/(2*M_PI)*360) + "\n";
+		std::cout << "Actual: " << std::to_string(angle[	i]/(2*M_PI)*360) + "\n";
                 std::cout << "Reference: " << std::to_string(Phi.getReferenceAngleLinearField(i*dt, c1, c2, expAngle/180*M_PI)/M_PI*180.0) + "\n";
 
 		if (calculateCurvature) {
@@ -138,7 +137,7 @@ int main() {
 			std::cout << "Reference curvature: " + std::to_string(curvatureTheoretical[i])  << std::endl;
 		}
                 // Calculate numerical flux through all faces of each cell and change Phi accordingly
-		Phi.calculateNextTimestep(dt);
+		Phi.calculateNextTimestep(dt, i);
 
 		positionFile.flush();
 		angleFile.flush();

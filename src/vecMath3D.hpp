@@ -6,26 +6,30 @@
 #define _USE_MATH_DEFINES
 #include <cmath>
 
-std::array<double, 3> operator+ (std::array<double, 3> vecA, std::array<double, 3> vecB);
+using std::array;
 
-std::array<int, 3> operator+ (std::array<int, 3> vecA, std::array<int, 3> vecB);
+array<double, 3> operator+ (array<double, 3> vecA, array<double, 3> vecB);
 
-std::array<double, 3> operator- (std::array<double, 3> vecA, std::array<double, 3> vecB);
+array<int, 3> operator+ (array<int, 3> vecA, array<int, 3> vecB);
 
-std::array<double, 3> operator- (std::array<double, 3> vecA, std::array<int, 3> vecB);
+array<double, 3> operator- (array<double, 3> vecA, array<double, 3> vecB);
 
-std::array<double, 3> operator*(double a, const std::array<double, 3>& vec);
+array<double, 3> operator- (array<double, 3> vecA, array<int, 3> vecB);
 
-std::array<double, 3> operator*(const std::array<double, 3>& vec, double a);
+array<double, 3> operator*(double a, const array<double, 3>& vec);
 
-std::array<double, 3> operator*(const std::array<int, 3>& vec, double a);
+array<double, 3> operator*(const array<double, 3>& vec, double a);
 
-double operator* (const std::array<double, 3>& vecA, const std::array<double, 3>& vecB);
+array<double, 3> operator*(const array<int, 3>& vec, double a);
 
-std::array<double, 3> operator* (const std::array<std::array<double,3>, 3>& matrix, const std::array<double, 3> vec);
+array<array<double, 3>, 3> operator* (double a, const array<array<double,3>, 3>& matrix);
 
-std::array<double, 3> operator/ (const std::array<double, 3>& vec, double a);
+double operator* (const array<double, 3>& vecA, const array<double, 3>& vecB);
 
-double abs (const std::array<double, 3> vec);
+array<double, 3> operator* (const array<array<double,3>, 3>& matrix, const array<double, 3> vec);
+
+array<double, 3> operator/ (const array<double, 3>& vec, double a);
+
+double abs (const array<double, 3> vec);
 
 #endif
