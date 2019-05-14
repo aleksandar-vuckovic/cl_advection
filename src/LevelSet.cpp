@@ -227,19 +227,30 @@ void LevelSet::writeToFile(double dt, int timestep, int total_timesteps, int tot
 	fwrite(pointPhiValues, sizeof(double), Npoints, PhiFile);
 	fclose(PhiFile);
 
+
+
 	*xmfFile << "<Grid>\n"
 			 << "<Topology TopologyType=\"Polyvertex\" NumberOfElements=\""+std::to_string(Npoints) +"\"/>\n"
 			 << "<Geometry GeometryType=\"XYZ\"> \n"
 			 << "<DataItem Name=\"points\" Format=\"Binary\" NumberType=\"Float\" Precision=\"8\" Endian=\"Little\" Dimensions=\"&Npoints; 3\">\n"
 			 << "field.bin\n"
-			 << "</DataItem>\n</Geometry>"
+			 << "</DataItem>\n</Geometry>\n"
 			 << "<Attribute Name =\"lvlset\" AttributeType=\"Scalar\" Center=\"Cell\">\n"
 			 << "<DataItem Format=\"Binary\" NumberType=\"Float\" Precision=\"8\"  Endian=\"Little\" Dimensions=\"&Npoints;\">\n"
-			 << "Phi_t="+ std::to_string(timestep*dt) +".bin\n"
-			 << "</DataItem></Attribute></Grid>\n";
+			 << "Phi_t=" + std::to_string(timestep*dt) +".bin\n"
+			 << "</DataItem></Attribute>\n"
+			 << "<Attribute Name =\"VelocityField\" AttributeType=\"Vector\" Center=\"Cell\">\n"
+			 << "<DataItem Format=\"Binary\" NumberType=\"Float\" Precision=\"8\" Endian=\"Little\" Dimensions=\"&Npoints; 3\">\n"
+			 << "Vel_t=" + std::to_string(timestep*dt) +".bin\n"
+			 << "</DataItem></Attribute>\n"
+			 <<"</Grid>\n";
 
 
     delete[] pointCoordinates;
+    delete[] pointPhiValues;
+
+    //Write velocity field
+	field->writeToFile(timestep*dt);
 }
 
 double LevelSet::sumLevelSet() {

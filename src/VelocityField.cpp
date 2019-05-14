@@ -17,6 +17,14 @@ VelocityField::VelocityField(std::string name, double v0, double c1, double c2, 
 	this->c2 = c2;
 	this->tau = tau;
 
+	this->xmin = xmin;
+	this->xmax = xmax;
+	this->ymin = ymin;
+	this->ymax = ymax;
+	this->zmin = zmin;
+	this->zmax = zmax;
+	this->dx = dx;
+
 	double maxNormValue = 0, currentVal = 0, x, y, z;
 
 	for (int i = 0; i < (xmax - xmin)/dx; i++) {
@@ -72,6 +80,39 @@ array<array<double, 3>, 3> VelocityField::gradAt(double t, double x, double y, d
 		return cos(M_PI*t/tau)*gradNavierField(x, y, z, v0, c1, c2);
 	}
 	return {0, 0, 0};
+}
+
+void VelocityField::writeToFile(double t) {
+	int numX = (xmax - xmin)/dx;
+	int numY = (ymax - ymin)/dx;
+	int numZ = (zmax - zmin)/dx;
+
+	double *fieldValues = new double[numX*numY*numZ*3];
+	double x, y, z;
+	int index = 0;
+
+	for (int k = 0; k < numZ; k++) {
+		for (int j = 0; j < numY; j++) {
+			for (int i = 0; i < numX; i++) {
+				x = i*dx - xmin;
+				y = j*dx - ymin;
+				z = k*dx - zmin;
+				array<double, 3> temp = this->at(t, x, y, z);
+				fieldValues[index] = temp[0];
+				fieldValues[index + 1] = temp[1];
+				fieldValues[index + 2] = temp[2];
+				index += 3;
+			}
+		}
+	}
+
+	std::string filename = "data/Vel_t=" + std::to_string(t) + ".bin";
+	FILE *velFile;
+	velFile = fopen(filename.data(), "wb");
+	fwrite(fieldValues, sizeof(double), numX*numY*numZ*3, velFile);
+	fclose(velFile);
+
+	delete[] fieldValues;
 }
 
 double VelocityField::getC1() {

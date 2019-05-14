@@ -5,7 +5,7 @@ initial level set field. The contact angle is calculated and written to text fil
 
 Authors:
 	Aleksandar Vučković (aleksandar.vuckovic@stud.tu-darmstadt.de)
-	Mathis Fricke
+	Mathis Fricke (fricke@mma.tu-darmstadt.de)
 
 ### Dependencies
 
@@ -25,7 +25,7 @@ The program assumes an equidistant cartesian grid, thus these parameters need to
 
 * time: The simulation time.
 * CFL: Courant-Friedrics-Lewy-number 
-* writeSteps: Number of steps to write to disk.
+* writestepsFraction: Fraction of total timesteps that will be written to disk.
 * writeField: Whether to write the levelset field binary files to disk. The files contactAngle.csv and position.csv are always written (see below).
 * v0, c1, c2, field: The field and its parameters. For the navier field all three parameters are relevant, but for the shear field, c1 and c2 are ignored and only the value of v0 matters.
 * centerX, centerY, centerZ: The initial center of the droplet.
@@ -43,7 +43,7 @@ Enter the src/ directory and enter
 Execute
 	./finiteVolumes
 Within the same directory you will find the files contactAngle.csv and position.csv. The first column represents the simulation time, the second is the actual value and the third is the reference value.
-
+You will find a folder named data/ as well. It will contain the binary files of the field, its levelset value, velocity field and the XMF file necessary to visualize everything in Paraview (version 5.5 and up).
 
 ### Implementation
 
