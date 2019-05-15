@@ -84,7 +84,7 @@ double LevelSet::getReferenceAngleLinearField(double t, double c1, double c2, do
 		return M_PI/2 + atan(-1/tan(theta0) * exp(2*c1*tau/M_PI*sin(M_PI*t/tau)) - c2 * (exp(2*c1*tau/M_PI*sin(M_PI*t/tau)) - 1)/(2*c1));
 	}
 	else
-		throw std::invalid_argument("Please choose either navierField or timeDependentNavierField if analyzing linear fields.");
+		throw std::invalid_argument("Please choose either navierField or timeDependentNavierField if analyzing linear fields."); 
 }
 
 double LevelSet::getReferenceCurvature(double dt, double timestep, double initCurvature, array<double, 3> CP, array<int, 3> cell) {
@@ -283,78 +283,65 @@ void LevelSet::calculateNextTimestep(double dt, int timestep) {
     for (int x = 0; x < numX; x++) {
     	for (int y = 0; y < numY; y++) {
     		for (int z = 0; z < numZ; z++) {
-			//Calculate the flux of the fluid through all sides of the square
+
+      //Calculate the flux of phi over the cell faces
 			double flux = 0;
 			double sp = 0;
 
 			for (int dir = 0; dir < 6; dir++) {
-					// no flux across the domain boundary
-					if (boundaryCondition == BoundaryCondition::Dirichlet &&
-					    ((x == 0 && dir == 2) || (x == numX-1 && dir == 3)
-					  || (y == 0 && dir == 1) || (y == numY-1 && dir == 0)
-					  || (z == 0 && dir == 5) || (z == numZ-1 && dir == 4)))
-							continue;
-
-
 
 				switch(dir) {
 				case 0:
 							sp = field->at(timestep*dt, (x+1/2)*dx, (y+1)*dx, (z+1/2)*dx) * upNormal;
-							if (boundaryCondition == BoundaryCondition::homogeneousNeumann && y == numY - 1) {
+							if (y == numY - 1) {
 								flux += sp*tempPhi.at(x, y, z);
 								break;
 							}
 							flux += fmax(sp,0.0)*tempPhi.at(x, y, z) + fmin(sp,0.0)*tempPhi.at(x, y+1, z); // upwind flux
-							//flux +=(tempPhi.at(x, y+1, z) + tempPhi.at(x, y, z))/2* sp;
 							break;
 				case 1:
 							sp = field->at(timestep*dt, (x+1/2)*dx, y*dx, (z+1/2)*dx) * downNormal;
-							if (boundaryCondition == BoundaryCondition::homogeneousNeumann && y == 0 ) {
+							if (y == 0 ) {
 								flux += sp*tempPhi.at(x, y, z);
 								break;
 							}
 							flux += fmax(sp,0.0)*tempPhi.at(x, y, z) + fmin(sp,0.0)*tempPhi.at(x, y-1, z); // upwind flux
-							//flux += (tempPhi.at(x, y, z) + tempPhi.at(x, y-1, z))/2 * sp;
 							break;
 				case 2:
 							sp = field->at(timestep*dt, x*dx, (y+1/2)*dx, (z+1/2)*dx) * leftNormal;
-							if (boundaryCondition == BoundaryCondition::homogeneousNeumann && x == 0) {
+							if (x == 0) {
 								flux += sp*tempPhi.at(x, y, z);
 								break;
 							}
 							flux += fmax(sp,0.0)*tempPhi.at(x, y, z) + fmin(sp,0.0)*tempPhi.at(x-1, y, z); // upwind flux
-							//flux += (tempPhi.at(x, y, z) + tempPhi.at(x-1, y, z))/2 * sp;
 							break;
 				case 3:
 							sp = field->at(timestep*dt, (x+1)*dx, (y+1/2)*dx, (z+1/2)*dx) * rightNormal;
-							if (boundaryCondition == BoundaryCondition::homogeneousNeumann && x == numX - 1) {
+							if (x == numX - 1) {
 								flux += sp*tempPhi.at(x, y, z);
 								break;
 							}
 							flux += fmax(sp,0.0)*tempPhi.at(x, y, z) + fmin(sp,0.0)*tempPhi.at(x+1, y, z); // upwind flux
-							//flux += (tempPhi.at(x, y, z) + tempPhi.at(x+1, y, z))/2 * sp;
 							break;
 				case 4:
 							if (numZ == 1)
 								break;
 							sp = field->at(timestep*dt, (x+1/2)*dx, (y+1/2)*dx, (z+1)*dx) * frontNormal;
-							if (boundaryCondition == BoundaryCondition::homogeneousNeumann && z == numZ - 1) {
+							if (z == numZ - 1) {
 								flux += sp*tempPhi.at(x, y, z);
 								break;
 							}
 							flux += fmax(sp,0.0)*tempPhi.at(x, y, z+1) + fmin(sp,0.0)*tempPhi.at(x, y, z); // upwind flux
-							//flux += (tempPhi.at(x, y, z) + tempPhi.at(x, y, z+1))/2 * sp;
 							break;
 				case 5:
 							if (numZ == 1)
 								break;
 							sp = field->at(timestep*dt, (x+1/2)*dx, (y+1/2)*dx, z*dx) * backNormal;
-							if (boundaryCondition == BoundaryCondition::homogeneousNeumann && z == 0) {
+							if (z == 0) {
 								flux += sp*tempPhi.at(x, y, z);
 								break;
 							}
 							flux += fmax(sp,0.0)*tempPhi.at(x, y, z-1) + fmin(sp,0.0)*tempPhi.at(x, y, z); // upwind flux
-							//flux += (tempPhi.at(x, y, z) + tempPhi.at(x, y, z-1))/2 * sp;
 							break;
 				}
 			}

@@ -20,10 +20,11 @@ int main() {
     bool calculateCurvature = false, writeField = false;
     VelocityField *field = nullptr;
 
+    // Read data from Inputfile
     std::ifstream inFileStream("Inputfile");
     std::string line, varName, value;
 
-    while(std::getline(inFileStream, line)) {
+  while(std::getline(inFileStream, line)) {
 	std::istringstream linestream(line);
 	if(std::getline(linestream, varName, '=')) {
 	    if ( std::getline(linestream, value)) {
@@ -78,10 +79,10 @@ int main() {
 			std::stringstream(value) >> std::boolalpha >> calculateCurvature;
 
 	    }
-	}
+	   }
     }
 
-    double dx = lenX/numX;
+    double dx = lenX/numX; // TODO mafri
     double dt = CFL*dx/field->getMaxNormValue();
     int timesteps = time/dt;
     int writesteps = floor(writestepsFraction*timesteps);
@@ -123,10 +124,11 @@ int main() {
                 angle[i] = Phi.getContactAngle(dt, i, newCPCoord);
 		std::cout << "Time: " + std::to_string(i*dt) + "\n";
 		positionFile << std::to_string(i*dt) + ", " << std::to_string(dx*newCPCoord[0])  + ", "<< std::to_string(newCP[0]) << std::endl;
-		angleFile << std::to_string(i*dt) + ", " + std::to_string(angle[i]/(2*M_PI)*360) + ", "
-                    + std::to_string(Phi.getReferenceAngleLinearField(i*dt, c1, c2, expAngle/180*M_PI)/M_PI*180.0) + "\n";
+
+//    angleFile << std::to_string(i*dt) + ", " + std::to_string(angle[i]/(2*M_PI)*360) + ", "
+//                    + std::to_string(Phi.getReferenceAngleLinearField(i*dt, c1, c2, expAngle/180*M_PI)/M_PI*180.0) + "\n";
 		std::cout << "Actual: " << std::to_string(angle[	i]/(2*M_PI)*360) + "\n";
-                std::cout << "Reference: " << std::to_string(Phi.getReferenceAngleLinearField(i*dt, c1, c2, expAngle/180*M_PI)/M_PI*180.0) + "\n";
+//                std::cout << "Reference: " << std::to_string(Phi.getReferenceAngleLinearField(i*dt, c1, c2, expAngle/180*M_PI)/M_PI*180.0) + "\n";
 
 		if (calculateCurvature) {
 			curvatureActual[i] = Phi.getCurvature(dt, i, newCPCoord);
