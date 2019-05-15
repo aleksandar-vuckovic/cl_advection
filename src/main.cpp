@@ -82,14 +82,26 @@ int main() {
 	   }
     }
 
-    double dx = lenX/numX; // TODO mafri
-    double dt = CFL*dx/field->getMaxNormValue();
+    double dx = lenX/numX;
+    double dy = lenY/numY;
+    double dz = lenZ/numZ;
+
+    double dt = 0.0;
+    if(lenZ == 1){
+      // 2D case
+      dt = CFL*std::min(dx,dy)/field->getMaxNormValue();
+    }
+    else{
+      // 3D case
+      dt = CFL*std::min(std::min(dx,dy),dz)/field->getMaxNormValue();
+    }
+
     int timesteps = time/dt;
     int writesteps = floor(writestepsFraction*timesteps);
     writesteps = timesteps/(ceil((double)timesteps/writesteps));
     double initCurvature = -1/radius;
 
-    LevelSet Phi(numX, numY, numZ, dx, field);
+    LevelSet Phi(numX, numY, numZ, dx, dy, dz, field);
 
     array<double, 3> center = {centerX, centerY, centerZ};
     array<double, 3> expcp = {expcpX, expcpY, expcpZ};
@@ -113,8 +125,11 @@ int main() {
     // XMF file for Paraview
     std::ofstream xmfFile("data/Phi.xmf");
 
+    // main loop
+
     for (int i = 0; i < timesteps; i++) {
-		std::cout << "Step " << i << std::endl;
+
+    std::cout << "Step " << i << std::endl;
 		//Write field to file
 		if (writeField && i % (int)ceil((double)timesteps/writesteps) == 0) {
 			Phi.writeToFile(dt, i, timesteps, writesteps, &xmfFile);

@@ -11,11 +11,15 @@
 class LevelSet : Field<double> {
 private:
     double dx;
+    double dy;
+    double dz;
     VelocityField *field;
 
 public:
-    LevelSet(int numX, int numY, int numZ, double dx, VelocityField *field) : Field<double>(numX, numY, numZ) {
+    LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz, VelocityField *field) : Field<double>(numX, numY, numZ) {
 		this->dx = dx;
+    this->dy = dy;
+    this->dz = dz;
 		this->field = field;
     }
 
