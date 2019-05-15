@@ -1,6 +1,5 @@
 #include "vecMath3D.hpp"
 #include "velocityFields.hpp"
-#include "BoundaryCondition.hpp"
 
 std::array<double, 3> shearField(double x, double y, double z, double v0) {
 	std::array<double, 3> tempReturn = {-sin(M_PI*x)*cos(M_PI*y), cos(M_PI*x)*sin(M_PI*y), 0};
@@ -29,4 +28,3 @@ std::array<std::array<double, 3>, 3> gradNavierField(double x, double y, double 
 	tempReturn[2] = {0, 0, 0};
 	return tempReturn;
 }
-

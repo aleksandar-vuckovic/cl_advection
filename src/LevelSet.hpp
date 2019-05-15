@@ -6,21 +6,17 @@
 
 #include "Field.hpp"
 #include "VelocityField.hpp"
-#include "BoundaryCondition.hpp"
 #include "vecMath3D.hpp"
 
 class LevelSet : Field<double> {
 private:
     double dx;
     VelocityField *field;
-    BoundaryCondition boundaryCondition;
 
 public:
-    LevelSet(int numX, int numY, int numZ, double dx, VelocityField *field,
-    		BoundaryCondition boundaryCondition) : Field<double>(numX, numY, numZ) {
+    LevelSet(int numX, int numY, int numZ, double dx, VelocityField *field) : Field<double>(numX, numY, numZ) {
 		this->dx = dx;
 		this->field = field;
-		this->boundaryCondition = boundaryCondition;
     }
 
     array<double, 3> getInitCP(double dt, array<double, 3> expcp, double epsilon);

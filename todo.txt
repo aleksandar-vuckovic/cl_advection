@@ -2,4 +2,3 @@ TODOs Level Set Implementierung
 ===============================
 * Schreibe Dokumentation mit Markdown.
 * Erlaube dx \neq dy \neq dz
-* Entferne BoundaryCondition::homogeneousNeumann aus dem Levelset Typ.
