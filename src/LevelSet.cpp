@@ -6,7 +6,7 @@ array<double, 3> LevelSet::getInitCP(double dt, array<double, 3> expcp, double e
     for (int x = 0; x < this->numX; x++)
 	for (int y = 0; y < this->numY; y++)
 	    for (int z = 0; z < this->numZ; z++) {
-		array<double, 3> other = {x*dx, y*dx, z*dx};
+		array<double, 3> other = {x*dx, y*dy, z*dz};
 		if (abs(candidate - expcp) > abs(other - expcp) && std::abs(this->at(x, y, z)) < epsilon && y == 0) {
 		    candidate = other;
 		}
@@ -40,7 +40,7 @@ array<int, 3> LevelSet::getContactPointCoordinates(array<double, 3> point) {
             for (int y = 0; y < this->numY; y++)
                 for (int z = 0; z < this->numZ; z++) {
                     array<int, 3> other = {x, y, z};
-                    if (abs(point - cell*dx) > abs(point - other*dx))
+                    if (abs(point - cell*dx) > abs(point - other*dx)) // TODO: unclear implementation
                         cell = other;
                 }
         return cell;
@@ -51,7 +51,7 @@ array<int, 3> LevelSet::getContactPointCoordinates(array<double, 3> point) {
 double LevelSet::getContactAngle(double dt, double timestep, array<int, 3> cell) {
 
      // find root of phi, alpha: coefficient for convex combination
-     double alpha = this->at(cell[0],0,0)-this->at(cell[0]-1,0,0);
+     double alpha = this->at(cell[0],0,0)-this->at(cell[0]-1,0,0); // TODO
      if(fabs(alpha)<1E-12){
        exit(-1);
      }
@@ -63,13 +63,13 @@ double LevelSet::getContactAngle(double dt, double timestep, array<int, 3> cell)
     + (1-alpha)*(this->at(cell[0]+1, cell[1], cell[2]) - this->at(cell[0]-1, cell[1], cell[2]))/(2*dx);
     double normalY = alpha*(-this->at(cell[0]-1, cell[1] + 2, cell[2])
                       + 4.0*this->at(cell[0]-1, cell[1] + 1, cell[2])
-                      - 3.0*this->at(cell[0]-1, cell[1], cell[2]))/(2*dx)
+                      - 3.0*this->at(cell[0]-1, cell[1], cell[2]))/(2*dy)
                       + (1-alpha)*(-this->at(cell[0], cell[1] + 2, cell[2])
                       + 4.0*this->at(cell[0], cell[1] + 1, cell[2])
-                      - 3.0*this->at(cell[0], cell[1], cell[2]))/(2*dx); // second order difference quotient
+                      - 3.0*this->at(cell[0], cell[1], cell[2]))/(2*dy); // second order difference quotient
     double normalZ;
     if (this->numZ > 1)
-	normalZ = (this->at(cell[0], cell[1], cell[2]+1) - this->at(cell[0]-1, cell[1], cell[2]-1))/(2*dx);
+	normalZ = (this->at(cell[0], cell[1], cell[2]+1) - this->at(cell[0]-1, cell[1], cell[2]-1))/(2*dz);
     else
 	normalZ = 0;
     array<double ,3> normal = {normalX, normalY, normalZ};
@@ -89,6 +89,7 @@ double LevelSet::getReferenceAngleLinearField(double t, double c1, double c2, do
 }
 
 double LevelSet::getReferenceCurvature(double dt, double timestep, double initCurvature, array<double, 3> CP, array<int, 3> cell) {
+    // TODO update for dx, dy, dz
     double curvature = initCurvature;
     for (int i = 0; i < timestep; i++){
 
@@ -115,6 +116,8 @@ double LevelSet::getReferenceCurvature(double dt, double timestep, double initCu
 }
 
 double LevelSet::getCurvature(double dt, int timestep, array<int, 3> cell) const {
+   // TODO update for dx, dy, dz
+
     /* Define what number of cells in each direction(excluding the main cell) are considered local.
        The resulting normal vector field is defined on a cuboid with  sidelength 2*local + 1 */
     int local = 2;
@@ -193,8 +196,8 @@ void LevelSet::writeToFile(double dt, int timestep, int total_timesteps, int tot
             for (int i = 0; i < numX; i++) {
                 if (timestep == 0) {
                     pointCoordinates[index] = i*dx;
-                    pointCoordinates[index +1] = j*dx;
-                    pointCoordinates[index +2] = k*dx;
+                    pointCoordinates[index +1] = j*dy;
+                    pointCoordinates[index +2] = k*dz;
                     index += 3;
                 }
                 pointPhiValues[i + j*numX + k*numX*numY] = this->at(i, j, k);
@@ -268,7 +271,7 @@ void LevelSet::initDroplet(array<double, 3> center, double radius, double epsilo
     for (int x = 0; x < this->numX; x++)
 	for (int y = 0; y < this->numY; y++)
 	    for (int z = 0; z < this->numZ; z++)
-		this->at(x, y, z) = pow(x*dx - center[0], 2) + pow(y*dx - center[1], 2) + pow(z*dx - center[2], 2) - pow(radius, 2);
+		this->at(x, y, z) = pow(x*dx - center[0], 2) + pow(y*dy - center[1], 2) + pow(z*dz - center[2], 2) - pow(radius, 2);
 }
 
 void LevelSet::calculateNextTimestep(double dt, int timestep) {

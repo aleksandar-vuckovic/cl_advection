@@ -11,7 +11,7 @@
 using std::array;
 
 VelocityField::VelocityField(std::string name, double v0, double c1, double c2, double tau,
-		double xmin, double xmax, double ymin, double ymax, double zmin, double zmax, double dx) {
+		double xmin, double xmax, double ymin, double ymax, double zmin, double zmax, double dx, double dy, double dz) {
 	this->v0 = v0;
 	this->c1 = c1;
 	this->c2 = c2;
@@ -24,6 +24,8 @@ VelocityField::VelocityField(std::string name, double v0, double c1, double c2, 
 	this->zmin = zmin;
 	this->zmax = zmax;
 	this->dx = dx;
+	this->dy = dy;
+	this->dz = dz;
 
 	double maxNormValue = 0, currentVal = 0, x, y, z;
 
@@ -31,8 +33,8 @@ VelocityField::VelocityField(std::string name, double v0, double c1, double c2, 
 		for (int j = 0; j < (ymax - ymin)/dx; j++) {
 			for (int k = 0; k < (zmax - zmin)/dx; k++) {
 				x = i*dx - xmin;
-				y = j*dx - ymin;
-				z = k*dx - zmin;
+				y = j*dy - ymin;
+				z = k*dz - zmin;
 				if (name == "shearField")
 					currentVal = abs(shearField(x, y, z, v0));
 				else if (name == "navierField")
@@ -84,8 +86,8 @@ array<array<double, 3>, 3> VelocityField::gradAt(double t, double x, double y, d
 
 void VelocityField::writeToFile(double t) {
 	int numX = (xmax - xmin)/dx;
-	int numY = (ymax - ymin)/dx;
-	int numZ = (zmax - zmin)/dx;
+	int numY = (ymax - ymin)/dy;
+	int numZ = (zmax - zmin)/dz;
 
 	double *fieldValues = new double[numX*numY*numZ*3];
 	double x, y, z;
@@ -95,8 +97,8 @@ void VelocityField::writeToFile(double t) {
 		for (int j = 0; j < numY; j++) {
 			for (int i = 0; i < numX; i++) {
 				x = i*dx - xmin;
-				y = j*dx - ymin;
-				z = k*dx - zmin;
+				y = j*dy - ymin;
+				z = k*dz - zmin;
 				array<double, 3> temp = this->at(t, x, y, z);
 				fieldValues[index] = temp[0];
 				fieldValues[index + 1] = temp[1];
@@ -130,5 +132,3 @@ std::string VelocityField::getName() {
 double VelocityField::getMaxNormValue() {
 	return maxNormValue;
 }
-
-
