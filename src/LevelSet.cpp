@@ -69,12 +69,25 @@ double LevelSet::getContactAngle(double dt, double timestep, array<int, 3> cell)
                       - 3.0*this->at(cell[0], cell[1], cell[2]))/(2*dy); // second order difference quotient
     double normalZ;
     if (this->numZ > 1)
-	normalZ = (this->at(cell[0], cell[1], cell[2]+1) - this->at(cell[0]-1, cell[1], cell[2]-1))/(2*dz);
+    	normalZ = (this->at(cell[0], cell[1], cell[2]+1) - this->at(cell[0]-1, cell[1], cell[2]-1))/(2*dz);
     else
-	normalZ = 0;
+    	normalZ = 0;
     array<double ,3> normal = {normalX, normalY, normalZ};
     normal = normal/abs(normal);
     return acos(normal[1]);
+}
+
+double LevelSet::getReferenceAngleExplicitEuler(double dt, int timestep, array<double, 3> n_sigma_init, array<double, 3> CP) {
+	array<double, 3> &n_sigma = n_sigma_init;
+	array<double, 3> deriv = {0, 0, 0};
+	double t = dt*timestep;
+	for (int i = 0; i < timestep; i++) {
+		deriv = -1*transpose(field->gradAt(t, CP[0], CP[1], CP[2]))*n_sigma + ((field->gradAt(t, CP[0], CP[1], CP[2])*n_sigma)*n_sigma)*n_sigma;
+		n_sigma = deriv*dt + n_sigma;
+	}
+	// Normalize n_sigma. In theory this should not be necessary since the vector should stay normalized, although it may reduce numerical inaccuracies.
+	n_sigma = n_sigma/abs(n_sigma);
+	return acos(n_sigma[1]);
 }
 
 double LevelSet::getReferenceAngleLinearField(double t, double c1, double c2, double theta0) {

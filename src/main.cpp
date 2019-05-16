@@ -101,6 +101,9 @@ int main() {
     writesteps = timesteps/(ceil((double)timesteps/writesteps));
     double initCurvature = -1/radius;
 
+    //This is used for the numerical reference solution. Currently this only applies in 2D.
+    array<double, 3> n_sigma_init = {-sin(expAngle/180*M_PI), cos(expAngle/180*M_PI), 0};
+
     LevelSet Phi(numX, numY, numZ, dx, dy, dz, field);
 
     array<double, 3> center = {centerX, centerY, centerZ};
@@ -128,7 +131,6 @@ int main() {
     // main loop
 
     for (int i = 0; i < timesteps; i++) {
-
     std::cout << "Step " << i << std::endl;
 		//Write field to file
 		if (writeField && i % (int)ceil((double)timesteps/writesteps) == 0) {
@@ -136,14 +138,21 @@ int main() {
 		}
 		array<double, 3> newCP = Phi.getContactPoint(dt, i, timesteps, initCP);
 		array<int, 3> newCPCoord = Phi.getContactPointCoordinates(newCP);
-                angle[i] = Phi.getContactAngle(dt, i, newCPCoord);
-		std::cout << "Time: " + std::to_string(i*dt) + "\n";
-		positionFile << std::to_string(i*dt) + ", " << std::to_string(dx*newCPCoord[0])  + ", "<< std::to_string(newCP[0]) << std::endl;
+		angle[i] = Phi.getContactAngle(dt, i, newCPCoord);
+		std::cout << "Time: " << i*dt << "\n";
+		positionFile << i*dt << ", " << dx*newCPCoord[0] << ", " << newCP[0] << std::endl;
 
-    angleFile << std::to_string(i*dt) + ", " + std::to_string(angle[i]/(2*M_PI)*360) + ", " // TODO
-                    + std::to_string(Phi.getReferenceAngleLinearField(i*dt, c1, c2, expAngle/180*M_PI)/M_PI*180.0) + "\n"; // TODO
-		std::cout << "Actual: " << std::to_string(angle[	i]/(2*M_PI)*360) + "\n";
-    std::cout << "Reference: " << std::to_string(Phi.getReferenceAngleLinearField(i*dt, c1, c2, expAngle/180*M_PI)/M_PI*180.0) + "\n"; // TODO
+
+		std::cout << "Actual: " << std::to_string(angle[i]/(2*M_PI)*360) + "\n";
+		if (field->getName() == "shearField") {
+			double reference_temp = Phi.getReferenceAngleExplicitEuler(dt, i, n_sigma_init, newCP)/M_PI*180;
+			angleFile << i*dt << ", " << angle[i]/(2*M_PI)*360 << ", " << reference_temp << "\n";
+			std::cout << "Reference: " << reference_temp << "\n";
+		} else {
+			double reference_temp = Phi.getReferenceAngleLinearField(i*dt, c1, c2, expAngle/180*M_PI)/M_PI*180.0;
+			angleFile << i*dt << ", " << angle[i]/(2*M_PI)*360 << ", " 	<< reference_temp << "\n";
+			std::cout << "Reference: " << reference_temp << "\n";
+		}
 
 		if (calculateCurvature) {
 			curvatureActual[i] = Phi.getCurvature(dt, i, newCPCoord);
@@ -154,7 +163,7 @@ int main() {
 			std::cout << "Reference curvature: " + std::to_string(curvatureTheoretical[i])  << std::endl;
 		}
 
-    // Calculate numerical flux through all faces of each cell and change Phi accordingly
+		// Calculate numerical flux through all faces of each cell and change Phi accordingly
 		Phi.calculateNextTimestep(dt, i);
 
 		positionFile.flush();

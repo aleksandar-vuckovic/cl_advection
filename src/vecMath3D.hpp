@@ -32,4 +32,6 @@ array<double, 3> operator/ (const array<double, 3>& vec, double a);
 
 double abs (const array<double, 3> vec);
 
+array<array<double, 3>, 3> transpose(const array<array<double, 3>, 3> matrix);
+
 #endif

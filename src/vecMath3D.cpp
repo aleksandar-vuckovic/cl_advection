@@ -59,3 +59,11 @@ array<double, 3> operator/ (const array<double, 3>& vec, double a) {
 double abs (const array<double, 3> vec) {
   return sqrt(pow(vec[0], 2) + pow(vec[1], 2) + pow(vec[2], 2));
 }
+
+array<array<double, 3>, 3> transpose(array<array<double, 3>, 3> matrix) {
+	for (int i = 0; i < 3; i++)
+		for (int j = 0; j < i; j++)
+			std::swap(matrix[i][j], matrix[i][j]);
+
+	return matrix;
+}
