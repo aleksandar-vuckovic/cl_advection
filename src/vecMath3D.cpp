@@ -46,8 +46,7 @@ double operator* (const array<double, 3>& vecA, const array<double, 3>& vecB) {
 array<double, 3> operator* (const array<array<double,3>, 3>& matrix, const array<double, 3> vec) {
     array<double, 3> tempReturn;
     for (int row = 0; row < 3; row++)
-        for (int col = 0; col < 3; col++)
-            tempReturn[row] = matrix[row]*vec;
+		tempReturn[row] = matrix[row]*vec;
 
     return tempReturn;
 }
@@ -63,7 +62,7 @@ double abs (const array<double, 3> vec) {
 array<array<double, 3>, 3> transpose(array<array<double, 3>, 3> matrix) {
 	for (int i = 0; i < 3; i++)
 		for (int j = 0; j < i; j++)
-			std::swap(matrix[i][j], matrix[i][j]);
+			std::swap(matrix[i][j], matrix[j][i]);
 
 	return matrix;
 }
