@@ -1,3 +1,7 @@
+/**
+ * A library for the definitions of the various velocity fields and its gradients.
+ */
+
 #include "vecMath3D.hpp"
 #include "velocityFields.hpp"
 

@@ -1,35 +1,75 @@
-#include "LevelSet.hpp"
-//#include<iostream>
+/**
+ * @class LevelSet
+ * The class of the Level set field.
+ *
+ * This class contains most of the methods used in the program, such as calculating the reference contact angle,
+ * calculating the contact angle from the simulation data, tracking the contact point and evolving the field with time.
+ */
 
-array<double, 3> LevelSet::getInitCP(double dt, array<double, 3> expcp, double epsilon) {
-    array<double, 3> candidate = {0, 0, 0};
+#include "LevelSet.hpp"
+
+/**
+ * The constructor.
+ * @param numX The number of cells in x direction
+ * @param dx Width of one cell in x direction
+ * @param field Pointer to the velocity field object acting on the levelset field
+ */
+LevelSet::LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz, VelocityField *field) : Field<double>(numX, numY, numZ) {
+		this->dx = dx;
+		this->dy = dy;
+		this->dz = dz;
+		this->field = field;
+    }
+
+/**
+ * Calculate the initial contact point from a given expected contact point.
+ * Using the expected contact point, iterate over all points of the field, looking for the closest point to expcp which
+ * has an absolute Level set value of less than epsilon and lies of on the interface.
+ *
+ * @param expcp The expected contact point
+ * @param epsilon Maximum absolute Level set value to consider a point "on the interface"
+ */
+array<double, 3> LevelSet::getInitCP(array<double, 3> expcp, double epsilon) {
+array<double, 3> candidate = {0, 0, 0};
     for (int x = 0; x < this->numX; x++)
-	for (int y = 0; y < this->numY; y++)
-	    for (int z = 0; z < this->numZ; z++) {
-		array<double, 3> other = {x*dx, y*dy, z*dz};
-		if (abs(candidate - expcp) > abs(other - expcp) && std::abs(this->at(x, y, z)) < epsilon && y == 0) {
-		    candidate = other;
+        for (int y = 0; y < this->numY; y++)
+            for (int z = 0; z < this->numZ; z++) {
+                array<double, 3> other = {x*dx, y*dy, z*dz};
+                if (abs(candidate - expcp) > abs(other - expcp) && std::abs(this->at(x, y, z)) < epsilon && y == 0) {
+                    candidate = other;
 		}
 	}
 
     return candidate;
 }
 
+/**
+ * Calculate the new position of the contact point at a given time.
+ * Using the explicit euler method, calculate the position of the contact point initCP at time timestep*dt.
+ *
+ * @param dt The length of a single timestep
+ * @param timestep The index of the timestep
+ * @param initCP The position of the contact point at timestep 0
+ */
 array<double, 3> LevelSet::getContactPoint(double dt, int timestep, int timesteps, array<double, 3> initCP) {
     array<double, 3> &temp = initCP;
-    //Calculate current position of contact point
     for (int i = 0; i < timestep; i++)
     	temp = temp + dt*field->at(timestep*dt, temp[0], temp[1], temp[2]);
 
     return temp;
 }
 
+/**
+ * Return the coordinates of the left contact point in 2D or the coordinates most closely matching the given parameter.
+ * This function works differently for 2D and 3D. If the simulation is 2D, it ignores the input parameter and returns
+ * coordinates of the /left/ contact point by checking where the sign of the LevelSet field changes.
+ * In 3D, it returns the coordinates of the point on the grid which is closest to the parameter.
+ *
+ * @param point A point in the space of the Level set field.
+ */
 array<int, 3> LevelSet::getContactPointCoordinates(array<double, 3> point) {
-    // If simulation is 2D, ignore input parameter and return
-    // coordinates of /left/ contact point by checking where the sign of the
-    // LevelSet field changes
     if (this->numZ == 1){
-        double initSign = this->at(0, 0, 0)/abs(this->at(0, 0, 0));
+        double initSign = this->at(0, 0, 0)/std::abs(this->at(0, 0, 0));
         for (int x = 0; x < this->numX; x++)
             if (this->at(x, 0, 0)*initSign < 0)
                 return {x, 0, 0};
@@ -48,7 +88,14 @@ array<int, 3> LevelSet::getContactPointCoordinates(array<double, 3> point) {
     return array<int, 3> {0,0,0};
 }
 
-double LevelSet::getContactAngle(double dt, double timestep, array<int, 3> cell) {
+/**
+ * Calculate the contact angle.
+ * This function uses finite differences to calculate the normal vector of the Level set field at cell and
+ * thus calculate the contact angle.
+ *
+ * @param The coordinates of the contact point.
+ */
+double LevelSet::getContactAngle(array<int, 3> cell) {
 
      // find root of phi, alpha: coefficient for convex combination
      double alpha = this->at(cell[0],0,0)-this->at(cell[0]-1,0,0); // TODO
@@ -77,6 +124,14 @@ double LevelSet::getContactAngle(double dt, double timestep, array<int, 3> cell)
     return acos(normal[1]);
 }
 
+/**
+ * Calculate the contact angle at a given time using the explicit Euler method.
+ *
+ * @param dt The length of a timestep
+ * @param timestep The index of the timestep
+ * @param n_sigma_init The initial normal vector of the interface
+ * @param CP The current position of the contact point
+ */
 double LevelSet::getReferenceAngleExplicitEuler(double dt, int timestep, array<double, 3> n_sigma_init, array<double, 3> CP) {
 	array<double, 3> &n_sigma = n_sigma_init;
 	array<double, 3> deriv = {0, 0, 0};
@@ -84,12 +139,20 @@ double LevelSet::getReferenceAngleExplicitEuler(double dt, int timestep, array<d
 	for (int i = 0; i < timestep; i++) {
 		deriv = -1*transpose(field->gradAt(t, CP[0], CP[1], CP[2]))*n_sigma + ((field->gradAt(t, CP[0], CP[1], CP[2])*n_sigma)*n_sigma)*n_sigma;
 		n_sigma = deriv*dt + n_sigma;
+		n_sigma = n_sigma/abs(n_sigma);
 	}
-	// Normalize n_sigma. In theory this should not be necessary since the vector should stay normalized, although it may reduce numerical inaccuracies.
-	n_sigma = n_sigma/abs(n_sigma);
+	// Normalize n_sigma. In theory this should not be necessary since the vector should stay normalized, although it may reduce numerical inaccuracies
 	return acos(n_sigma[1]);
 }
 
+/**
+ * Calculate the contact angle at a given time for the navier field using the analytic solution.
+ *
+ * @param t The time at which to calculate the contact angle
+ * @param c1 A parameter of the navier field
+ * @param c2 A parameter of the naveir field
+ * @param theta0 The contact angle at time t == 0
+ */
 double LevelSet::getReferenceAngleLinearField(double t, double c1, double c2, double theta0) {
 	if (field->getName() == "navierField")
 		return M_PI/2 + atan(-1/tan(theta0) * exp(2*c1*t) - c2 * (exp(2*c1*t) - 1)/(2*c1));
@@ -101,6 +164,15 @@ double LevelSet::getReferenceAngleLinearField(double t, double c1, double c2, do
 		throw std::invalid_argument("Please choose either navierField or timeDependentNavierField if analyzing linear fields.");
 }
 
+/**
+ * Calcluates the reference curvature at the contact point with the explicit Euler method at a given time.
+ *
+ * @param dt The length of a timestep
+ * @param timestep The index of the timestep.
+ * @param initCurvature The initial curvature at time t == 0
+ * @param CP The coordinates of the contact point
+ * @param cell The indices of the contact point
+ */
 double LevelSet::getReferenceCurvature(double dt, double timestep, double initCurvature, array<double, 3> CP, array<int, 3> cell) {
     // TODO update for dx, dy, dz
     double curvature = initCurvature;
@@ -128,7 +200,17 @@ double LevelSet::getReferenceCurvature(double dt, double timestep, double initCu
     return curvature;
 }
 
-double LevelSet::getCurvature(double dt, int timestep, array<int, 3> cell) const {
+/**
+ * Calculates the curvature of the droplet at the contact point.
+ *
+ * First, it calculates a local field of normal vectors around the contact point with dimension 5x3x5 cells in 2D
+ * and 5x3x1 in 2D.
+ * Afterwards, it uses the local field to calculate the divergence in the middle of the slice with y = 0 and uses this
+ * to calculate the curvature.
+ *
+ * @param cell The indices of the contact point
+ */
+double LevelSet::getCurvature(array<int, 3> cell) const {
    // TODO update for dx, dy, dz
 
     /* Define what number of cells in each direction(excluding the main cell) are considered local.
@@ -140,7 +222,10 @@ double LevelSet::getCurvature(double dt, int timestep, array<int, 3> cell) const
         sidelengthZ = sidelength;
     else
         sidelengthZ = 1;
-    // Declare a field of normal vectors
+    /** Declare a field of normal vectors
+     TODO: Currently a 5x5x5 (5x5x1 in 2D) field is initialized, but it is only populated from y = 2 to y = 4.
+     This is wasteful and combined with the fact that the loop below iterates over y = 0 to y = 2 makes it confusing.
+    */
     Field<array<double, 3> > localField(sidelength, sidelength, sidelengthZ);
 
     for (int x = -sidelength/2; x <= sidelength/2; x++)
@@ -197,7 +282,19 @@ double LevelSet::getCurvature(double dt, int timestep, array<int, 3> cell) const
 }
 
 
-
+/**
+ * Write the files necessary to visualize the field and its velocity field in Paraview.
+ *
+ * Write the XMF file to disk, as well as the grid of the Level set field. This is done only once.
+ * At each point in time, write the Level set field to disk and call the writeToFile member function
+ * of the class VelocityField to write its value as well.
+ *
+ * @param dt The width of a timestep
+ * @param The index of the timestep
+ * @param total_timesteps The total number of timesteps
+ * @param total_writesteps The total number of steps that will be written to disk
+ * @param xmfFile A pointer to the XMF file.
+ */
 void LevelSet::writeToFile(double dt, int timestep, int total_timesteps, int total_writesteps, std::ofstream *xmfFile) {
     int Npoints = numX*numY*numZ;
     double *pointCoordinates = new double[Npoints*3];
@@ -270,23 +367,47 @@ void LevelSet::writeToFile(double dt, int timestep, int total_timesteps, int tot
 	field->writeToFile(timestep*dt);
 }
 
+/**
+ * Calculate the sum of the Level set field.
+ * @return The value of the sum
+ */
 double LevelSet::sumLevelSet() {
     double temp = 0;
     for (int x = 0; x < this->numX; x++)
-	for (int y = 0; y < this->numY; y++)
-	    for (int z = 0; z < this->numZ; z++)
-		temp = temp + this->at(x, y, z);
+        for (int y = 0; y < this->numY; y++)
+            for (int z = 0; z < this->numZ; z++)
+                temp = temp + this->at(x, y, z);
 
     return temp;
 }
 
-void LevelSet::initDroplet(array<double, 3> center, double radius, double epsilon) {
+/**
+ * Initialize the droplet.
+ * The droplet is initialized on the Level set field by setting the space occupied by the fluid to be negative,
+ * the space occupied by the gas to be positive and the zero set to be the interface. More specifically, each
+ * point on the grid is set to the value
+ * \Phi = (x - x_0)^2 + (y - y_0)^2 + (z - z_0)^2 - R^2
+ * Where x0, y0, z0 are the coordinates of the droplet center and R is its radius.
+ *
+ * @param center The center of the droplet
+ * @param radius The radius of the droplet
+ */
+void LevelSet::initDroplet(array<double, 3> center, double radius) {
     for (int x = 0; x < this->numX; x++)
-	for (int y = 0; y < this->numY; y++)
-	    for (int z = 0; z < this->numZ; z++)
-		this->at(x, y, z) = pow(x*dx - center[0], 2) + pow(y*dy - center[1], 2) + pow(z*dz - center[2], 2) - pow(radius, 2);
+        for (int y = 0; y < this->numY; y++)
+            for (int z = 0; z < this->numZ; z++)
+                this->at(x, y, z) = pow(x*dx - center[0], 2) + pow(y*dy - center[1], 2) + pow(z*dz - center[2], 2) - pow(radius, 2);
 }
 
+/**
+ * Calculates the next timestep at a given time and evolves the field.
+ *
+ * For the flux calculation, the upwind method is used to ensure stability. Furthermore we impose
+ * the Neumann boundary condition onto the field
+ *
+ * @param dt The width of the timestep by which to evolve the field
+ * @param timestep The index of the timestep
+ */
 void LevelSet::calculateNextTimestep(double dt, int timestep) {
     LevelSet tempPhi(*this);
 
@@ -299,81 +420,83 @@ void LevelSet::calculateNextTimestep(double dt, int timestep) {
 
     // loop over all cells
     for (int x = 0; x < numX; x++) {
-    	for (int y = 0; y < numY; y++) {
-    		for (int z = 0; z < numZ; z++) {
+        for (int y = 0; y < numY; y++) {
+            for (int z = 0; z < numZ; z++) {
 
-      //Calculate the flux of phi over the cell faces
-			double flux = 0;
-			double sp = 0;
+                //Calculate the flux of phi over the cell faces
+                double flux = 0;
+                double sp = 0;
 
-			for (int dir = 0; dir < 6; dir++) {
+                for (int dir = 0; dir < 6; dir++) {
 
-				switch(dir) {
-				case 0:
-							sp = field->at(timestep*dt, (x+1/2)*dx, (y+1)*dy, (z+1/2)*dz) * upNormal;
-							if (y == numY - 1) {
-								flux += sp*tempPhi.at(x, y, z)*dx*dz;
-							}
-              else{
-							  flux += (fmax(sp,0.0)*tempPhi.at(x, y, z) + fmin(sp,0.0)*tempPhi.at(x, y+1, z))*dx*dz;
-              }
-							break;
-				case 1:
-							sp = field->at(timestep*dt, (x+1/2)*dx, y*dy, (z+1/2)*dz) * downNormal;
-							if (y == 0 ) {
-								flux += sp*tempPhi.at(x, y, z)*dx*dz;
-							}
-              else{
-							  flux += (fmax(sp,0.0)*tempPhi.at(x, y, z) + fmin(sp,0.0)*tempPhi.at(x, y-1, z))*dx*dz;
-              }
-							break;
-				case 2:
-							sp = field->at(timestep*dt, x*dx, (y+1/2)*dy, (z+1/2)*dz) * leftNormal;
-							if (x == 0) {
-								flux += sp*tempPhi.at(x, y, z)*dy*dz;
-							}
-              else{
-							  flux += (fmax(sp,0.0)*tempPhi.at(x, y, z) + fmin(sp,0.0)*tempPhi.at(x-1, y, z))*dy*dz;
-              }
-							break;
-				case 3:
-							sp = field->at(timestep*dt, (x+1)*dx, (y+1/2)*dy, (z+1/2)*dz) * rightNormal;
-							if (x == numX - 1) {
-								flux += sp*tempPhi.at(x, y, z)*dy*dz;
-							}
-              else{
-							  flux += (fmax(sp,0.0)*tempPhi.at(x, y, z) + fmin(sp,0.0)*tempPhi.at(x+1, y, z))*dy*dz;
-              }
-							break;
-				case 4:
-							if (numZ == 1)
-								break; // only relevant for 3D
+                    switch(dir) {
+                    case 0:
+                        sp = field->at(timestep*dt, (x+1/2)*dx, (y+1)*dy, (z+1/2)*dz) * upNormal;
+                        if (y == numY - 1) {
+                            flux += sp*tempPhi.at(x, y, z)*dx*dz;
+                        }
+                        else{
+                            flux += (fmax(sp,0.0)*tempPhi.at(x, y, z) + fmin(sp,0.0)*tempPhi.at(x, y+1, z))*dx*dz;
+                        }
+                        break;
 
-							sp = field->at(timestep*dt, (x+1/2)*dx, (y+1/2)*dy, (z+1)*dz) * frontNormal;
-							if (z == numZ - 1) {
-								flux += sp*tempPhi.at(x, y, z)*dx*dy;
-							}
-              else{
-							  flux += (fmax(sp,0.0)*tempPhi.at(x, y, z+1) + fmin(sp,0.0)*tempPhi.at(x, y, z))*dx*dy;
-              }
-							break;
-				case 5:
-							if (numZ == 1)
-								break; // only relevant for 3D
+                    case 1:
+                        sp = field->at(timestep*dt, (x+1/2)*dx, y*dy, (z+1/2)*dz) * downNormal;
+                        if (y == 0 ) {
+                            flux += sp*tempPhi.at(x, y, z)*dx*dz;
+                        }
+                        else{
+                            flux += (fmax(sp,0.0)*tempPhi.at(x, y, z) + fmin(sp,0.0)*tempPhi.at(x, y-1, z))*dx*dz;
+                        }
+                        break;
 
-							sp = field->at(timestep*dt, (x+1/2)*dx, (y+1/2)*dy, z*dz) * backNormal;
-							if (z == 0) {
-								flux += sp*tempPhi.at(x, y, z)*dx*dy;
-							}
-              else{
-							  flux += (fmax(sp,0.0)*tempPhi.at(x, y, z-1) + fmin(sp,0.0)*tempPhi.at(x, y, z))*dx*dy;
-              }
-							break;
-				}
-			}
+                    case 2:
+                        sp = field->at(timestep*dt, x*dx, (y+1/2)*dy, (z+1/2)*dz) * leftNormal;
+                        if (x == 0) {
+                            flux += sp*tempPhi.at(x, y, z)*dy*dz;
+                        }
+                        else{
+                            flux += (fmax(sp,0.0)*tempPhi.at(x, y, z) + fmin(sp,0.0)*tempPhi.at(x-1, y, z))*dy*dz;
+                        }
+                        break;
 
-      this->at(x, y, z) = this->at(x, y, z) - dt/(dx*dy*dz)*flux;
-			}
-     }
+                    case 3:
+                        sp = field->at(timestep*dt, (x+1)*dx, (y+1/2)*dy, (z+1/2)*dz) * rightNormal;
+                        if (x == numX - 1) {
+                            flux += sp*tempPhi.at(x, y, z)*dy*dz;
+                        }
+                        else{
+                            flux += (fmax(sp,0.0)*tempPhi.at(x, y, z) + fmin(sp,0.0)*tempPhi.at(x+1, y, z))*dy*dz;
+                        }
+                        break;
+
+                    case 4:
+                        if (numZ == 1)
+                            break; // only relevant for 3D
+                        sp = field->at(timestep*dt, (x+1/2)*dx, (y+1/2)*dy, (z+1)*dz) * frontNormal;
+                        if (z == numZ - 1) {
+                            flux += sp*tempPhi.at(x, y, z)*dx*dy;
+                        }
+                        else{
+                            flux += (fmax(sp,0.0)*tempPhi.at(x, y, z+1) + fmin(sp,0.0)*tempPhi.at(x, y, z))*dx*dy;
+                        }
+                        break;
+
+                    case 5:
+                        if (numZ == 1)
+                            break; // only relevant for 3D
+                        sp = field->at(timestep*dt, (x+1/2)*dx, (y+1/2)*dy, z*dz) * backNormal;
+                        if (z == 0) {
+                            flux += sp*tempPhi.at(x, y, z)*dx*dy;
+                        }
+                        else{
+                            flux += (fmax(sp,0.0)*tempPhi.at(x, y, z-1) + fmin(sp,0.0)*tempPhi.at(x, y, z))*dx*dy;
+                        }
+                        break;
+                    }
+                }
+                this->at(x, y, z) = this->at(x, y, z) - dt/(dx*dy*dz)*flux;
+            }
+        }
     }
 }

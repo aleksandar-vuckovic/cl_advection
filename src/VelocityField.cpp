@@ -1,3 +1,11 @@
+/**
+ * @class VelocityField
+ * The class of the velocity field acting on the Level set field.
+ *
+ * An object of class VelocityField represents a velocity field that knows its type, meaning whether it is
+ * a navier or a shear field, its parameters and the space it is defined on.
+ */
+
 #include <string>
 #include <array>
 #include "VelocityField.hpp"
@@ -10,6 +18,16 @@
 
 using std::array;
 
+/**
+ * The constructor.
+ *
+ * @param name The kind of the field. This decides the underlying function the velocity field will apply at each point
+ * @param v0 For the shear field, this is a scaling factor. For the navier field, this is the velocity of the x-component in the origin.
+ * @param c1 A parameter of the velocity field
+ * @param c2 A parameter of the velocity field
+ * @param tau tau/2 is the period of osciallation of the time dependent navier field.
+ * @param
+ */
 VelocityField::VelocityField(std::string name, double v0, double c1, double c2, double tau,
 		double xmin, double xmax, double ymin, double ymax, double zmin, double zmax, double dx, double dy, double dz) {
 	this->v0 = v0;

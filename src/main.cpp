@@ -1,3 +1,14 @@
+/**
+ * @file
+ *
+ * @section Description
+ *
+ * This file reads all input parameters from the Inputfile and contains the main for-loop which iterates over all timesteps.
+ * It opens and writes the output files.
+ *
+ */
+
+
 #include <iostream>   // Terminal IO
 #include <iomanip>    // IO manipulation, set::fixed, set::setprecision
 #include <stdio.h>
@@ -112,8 +123,8 @@ int main() {
     std::vector<double> curvatureActual(timesteps);
     std::vector<double> curvatureTheoretical(timesteps);
 
-    Phi.initDroplet(center, radius, 0.005);
-    array<double, 3> initCP = Phi.getInitCP(dt, expcp, 0.001);
+    Phi.initDroplet(center, radius);
+    array<double, 3> initCP = Phi.getInitCP(expcp, 0.001);
 
     int sysRet = system("mkdir data");
 
@@ -138,7 +149,7 @@ int main() {
 		}
 		array<double, 3> newCP = Phi.getContactPoint(dt, i, timesteps, initCP);
 		array<int, 3> newCPCoord = Phi.getContactPointCoordinates(newCP);
-		angle[i] = Phi.getContactAngle(dt, i, newCPCoord);
+		angle[i] = Phi.getContactAngle(newCPCoord);
 		std::cout << "Time: " << i*dt << "\n";
 		positionFile << i*dt << ", " << dx*newCPCoord[0] << ", " << newCP[0] << std::endl;
 
@@ -149,13 +160,14 @@ int main() {
 			angleFile << i*dt << ", " << angle[i]/(2*M_PI)*360 << ", " << reference_temp << "\n";
 			std::cout << "Reference: " << reference_temp << "\n";
 		} else {
-			double reference_temp = Phi.getReferenceAngleLinearField(i*dt, c1, c2, expAngle/180*M_PI)/M_PI*180.0;
+			//double reference_temp = Phi.getReferenceAngleLinearField(i*dt, c1, c2, expAngle/180*M_PI)/M_PI*180.0;
+			double reference_temp = Phi.getReferenceAngleExplicitEuler(dt, i, n_sigma_init, newCP)/M_PI*180;
 			angleFile << i*dt << ", " << angle[i]/(2*M_PI)*360 << ", " 	<< reference_temp << "\n";
 			std::cout << "Reference: " << reference_temp << "\n";
 		}
 
 		if (calculateCurvature) {
-			curvatureActual[i] = Phi.getCurvature(dt, i, newCPCoord);
+			curvatureActual[i] = Phi.getCurvature(newCPCoord);
 			curvatureTheoretical[i] = Phi.getReferenceCurvature(dt, i, initCurvature, newCP, newCPCoord);
 			curvatureFile << std::to_string(i*dt) + "," + std::to_string(curvatureActual[i]) + "," + std::to_string(curvatureTheoretical[i]) + "\n";
 

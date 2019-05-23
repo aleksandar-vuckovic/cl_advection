@@ -6,11 +6,11 @@ lenY=0.25
 lenZ=0.001
 
 time=1.0
-CFL=0.3
+CFL=0.1
 writestepsFraction=0.5
 writeField=true
 
-v0=0.2
+v0=1.0
 c1=0.1
 c2=-2
 tau=0.2
@@ -21,7 +21,7 @@ centerY=-0.15
 centerZ=0.0
 radius=0.3
 
-expcpX=0.618
+expcpX=0.64
 expcpY=0.0
 expcpZ=0.0
 expAngle=60

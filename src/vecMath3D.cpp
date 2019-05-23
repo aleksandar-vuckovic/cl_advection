@@ -1,3 +1,11 @@
+/**
+ * @file vecMath3D
+ * @brief Operator overloads and functions used for vector analysis in three dimensions.
+ *
+ * Contains addition and subtracting of vectors with other vectors and scalars,
+ * matrix and vector multiplication, calculating the absolute value of vectors and
+ * multiplication of matrices with vectors.
+ */
 #include "vecMath3D.hpp"
 
 using std::array;

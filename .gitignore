@@ -10,9 +10,14 @@ src/finiteVolumes.debug
 
 #output files
 src/data/*
+src/testcases/shear_field_2d/data/
 src/contactAngle.csv
 *.csv*
 *.txt
+*.pdf
+
+#testcase directories
+/src/testcases/
 
 #eclipse project files
 .cproject
