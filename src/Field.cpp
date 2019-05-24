@@ -30,7 +30,9 @@ T& Field<T>::at(int x, int y, int z) {
 }
 
 /**
- * Evalutes the field at the given indices in cases where
+ * Evalutes the field at the given indices.
+ * This function is called when the field is evaluated within another function defined as "const".
+ * Further, is is used when a const variable is set to the value of a point of the field.
  *
  * @param x, y, z The indices of the point
  * @return The value of T a the point

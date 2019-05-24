@@ -19,12 +19,10 @@ All parameters in the Inputfile need to be set in order for the program to work 
 The order of the paramters is NOT interchangeable.
 The physical parameters have arbitrary units.
 They are as follows:
-* numX, numY, numZ: Number of cells in the given direction
-* lenX, lenY, lenZ: Length of simulation plane in the given direction
-The program assumes an equidistant cartesian grid, thus these parameters need to be set accordingly.
-
 Variable name | Description
 ---------------|-----------
+numX, numY, numZ| Number of cells in the given direction
+lenX, lenY, lenZ| Length of simulation plane in the given direction
 time | The simulation time
 CFL  | Courant-Friedrics-Lewy-number
 writestepsFraction | Fraction of total timesteps that will be written to disk|
@@ -32,6 +30,7 @@ writeField| Whether to write the levelset field binary files to disk. The files 
 v0, c1, c2, field |  The field and its parameters. For the navier field all three parameters are relevant, but for the shear field, c1 and c2 are ignored and only the value of v0 matters.
 centerX, centerY, centerZ | The initial center of the droplet.
 expcpX, expcpY, expcpZ, expAngle | The expected coordinates for the initial contact point and the expected initial contact angle. Those are used for the reference solutions.
+trackedContactPoint | Whether to track the left or right contact point. Only applicable in 2D.
 
 ## Compilation
 
@@ -59,7 +58,7 @@ File name  | Description
 ----------------------|------------------
 main.cpp | Reads the inputfile and handles the top-level loop which evolves the field with time.
 Field.cpp/hpp | The fundamental field class. Each instance of field represents a equidistant grid of any type parameter.
-LevelSet.cpp/hpp | This class extends Field, instantiated with "double" as its type parameter and obviously represents the levelset field. <br>It is contains most of the important methods such as calculatedNextTimestep and getContactAngle. An object of class LevelSet is instantiated at the beginning within the main() function.
+LevelSet.cpp/hpp | This class extends Field, instantiated with "double" as its type parameter and obviously represents the levelset field. <br>It is contains most of the important methods such as \ref LevelSet::calculateNextTimestep "calculatedNextTimestep" and \ref LevelSet::getContactAngle "getContactAngle". An object of class LevelSet is instantiated at the beginning within the main() function.
 VelocityField.cpp/hpp | An object of class VelocityField represents a chosen velocity field. It is aware of its parameters type (for example whether it is a shear field with v0 = 2) and the domain it is applicable on.
 velocityFields.cpp/hpp | This is a library that contains the definitions of the velocity fields.
 vecMath3D.cpp/hpp |  This is a library of operator overloads and functions for vector analysis.

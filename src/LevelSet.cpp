@@ -13,12 +13,14 @@
  * @param numX The number of cells in x direction
  * @param dx Width of one cell in x direction
  * @param field Pointer to the velocity field object acting on the levelset field
+ * @param trackedCP Which contact point to track. Only applicable in 2D.
  */
-LevelSet::LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz, VelocityField *field) : Field<double>(numX, numY, numZ) {
+LevelSet::LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz, VelocityField *field, std::string trackedCP) : Field<double>(numX, numY, numZ) {
 		this->dx = dx;
 		this->dy = dy;
 		this->dz = dz;
 		this->field = field;
+		this->trackedCP = trackedCP;
     }
 
 /**
@@ -63,20 +65,27 @@ array<double, 3> LevelSet::getContactPoint(double dt, int timestep, int timestep
 }
 
 /**
- * Return the indices of the left contact point in 2D or the coordinates most closely matching the given parameter.
+ * Return the indices of the contact point in 2D or the coordinates most closely matching the given parameter.
  * This function works differently for 2D and 3D. If the simulation is 2D, it ignores the input parameter and returns
- * indices of the /left/ contact point by checking where the sign of the LevelSet field changes.
+ * indices of the contact point by checking where the sign of the LevelSet field changes.
  * In 3D, it returns the coordinates of the point on the grid which is closest to the parameter.
  *
  * @param point A point in the space of the Level set field.
- * @return 2D: Indices of the left contact point. 3D: Indices of the point closest to point.
+ * @return 2D: Indices of the contact point. 3D: Indices of the point closest to point.
  */
 array<int, 3> LevelSet::getContactPointIndices(array<double, 3> point) {
     if (this->numZ == 1){
-        double initSign = this->at(0, 0, 0)/std::abs(this->at(0, 0, 0));
-        for (int x = 0; x < this->numX; x++)
-            if (this->at(x, 0, 0)*initSign < 0)
-                return {x, 0, 0};
+        if (trackedCP == "left") {
+            double initSign = this->at(0, 0, 0)/std::abs(this->at(0, 0, 0));
+            for (int i = 0; i < numX; i++)
+                if (this->at(i, 0, 0)*initSign < 0)
+                    return {i, 0, 0};
+        } else {
+            double initSign = this->at(numX - 1, 0, 0)/std::abs(this->at(numX - 1, 0, 0));
+            for (int i = numX - 1; i >= 0; i--)
+                if (this->at(i, 0, 0)*initSign < 0)
+                    return {i, 0, 0};
+        }
     } else {
         //Find cell corresponding to this point
         array<int, 3> cell = {0, 0, 0};
@@ -162,10 +171,18 @@ double LevelSet::getReferenceAngleExplicitEuler(double dt, int timestep, array<d
  */
 double LevelSet::getReferenceAngleLinearField(double t, double c1, double c2, double theta0) {
 	if (field->getName() == "navierField")
-		return M_PI/2 + atan(-1/tan(theta0) * exp(2*c1*t) - c2 * (exp(2*c1*t) - 1)/(2*c1));
+	    if (trackedCP == "left") {
+	        return M_PI/2 + atan(-1/tan(theta0) * exp(2*c1*t) - c2 * (exp(2*c1*t) - 1)/(2*c1));
+	    } else {
+	        return M_PI/2 + atan(-1/tan(theta0) * exp(2*c1*t) + c2 * (exp(2*c1*t) - 1)/(2*c1));
+	    }
 	else if (field->getName() == "timeDependentNavierField") {
 		double tau = field->getTau();
-		return M_PI/2 + atan(-1/tan(theta0) * exp(2*c1*tau/M_PI*sin(M_PI*t/tau)) - c2 * (exp(2*c1*tau/M_PI*sin(M_PI*t/tau)) - 1)/(2*c1));
+		if (trackedCP == "left") {
+		    return M_PI/2 + atan(-1/tan(theta0) * exp(2*c1*tau/M_PI*sin(M_PI*t/tau)) - c2 * (exp(2*c1*tau/M_PI*sin(M_PI*t/tau)) - 1)/(2*c1));
+		} else {
+		    return M_PI/2 + atan(-1/tan(theta0) * exp(2*c1*tau/M_PI*sin(M_PI*t/tau)) + c2 * (exp(2*c1*tau/M_PI*sin(M_PI*t/tau)) - 1)/(2*c1));
+		}
 	}
 	else
 		throw std::invalid_argument("Please choose either navierField or timeDependentNavierField if analyzing linear fields.");

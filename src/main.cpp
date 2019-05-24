@@ -29,6 +29,7 @@ int main() {
     numX = numY = numZ = 0;
     lenX = lenY = lenZ = time = centerX = centerY = centerZ = radius = expcpX = expcpY = expcpZ = expAngle = v0 = c1 = c2 = tau = CFL = writestepsFraction = 0;
     bool calculateCurvature = false, writeField = false;
+    std::string trackedContactPoint = "left";
     VelocityField *field = nullptr;
 
     // Read data from Inputfile
@@ -86,6 +87,8 @@ int main() {
 		    expcpZ = std::stod(value);
 		else if (varName == "expAngle")
 		    expAngle = std::stod(value);
+		else if (varName == "trackedContactPoint")
+		    trackedContactPoint = value;
 		else if (varName == "calculateCurvature")
 			std::stringstream(value) >> std::boolalpha >> calculateCurvature;
 
@@ -115,7 +118,7 @@ int main() {
     //This is used for the numerical reference solution. Currently this only applies in 2D.
     array<double, 3> n_sigma_init = {-sin(expAngle/180*M_PI), cos(expAngle/180*M_PI), 0};
 
-    LevelSet Phi(numX, numY, numZ, dx, dy, dz, field);
+    LevelSet Phi(numX, numY, numZ, dx, dy, dz, field, trackedContactPoint);
 
     array<double, 3> center = {centerX, centerY, centerZ};
     array<double, 3> expcp = {expcpX, expcpY, expcpZ};
@@ -166,8 +169,8 @@ int main() {
 			angleFile << i*dt << ", " << angle[i]/(2*M_PI)*360 << ", " << reference_temp << "\n";
 			std::cout << "Reference: " << reference_temp << "\n";
 		} else {
-		    //double reference_temp = Phi.getReferenceAngleLinearField(i*dt, c1, c2, expAngle/180*M_PI)/M_PI*180.0;
-			double reference_temp = Phi.getReferenceAngleExplicitEuler(dt, i, n_sigma_init, newCP)/M_PI*180;
+		    double reference_temp = Phi.getReferenceAngleLinearField(i*dt, c1, c2, expAngle/180*M_PI)/M_PI*180.0;
+			//double reference_temp = Phi.getReferenceAngleExplicitEuler(dt, i, n_sigma_init, newCP)/M_PI*180;
 			angleFile << i*dt << ", " << angle[i]/(2*M_PI)*360 << ", " 	<< reference_temp << "\n";
 			std::cout << "Reference: " << reference_temp << "\n";
 		}

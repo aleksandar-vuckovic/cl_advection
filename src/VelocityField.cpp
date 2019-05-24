@@ -99,7 +99,7 @@ array<double, 3> VelocityField::at(double t, double x, double y, double z) {
 }
 
 /**
- * Evaluates jacobian matrix at a given point
+ * Evaluates the jacobian matrix at a given point
  *
  * @param t The time
  * @param x, y, z The coordinates of the point
