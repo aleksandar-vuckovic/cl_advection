@@ -28,6 +28,8 @@ LevelSet::LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz
  *
  * @param expcp The expected contact point
  * @param epsilon Maximum absolute Level set value to consider a point "on the interface"
+ * @return The contact point closest to the expected contact point
+ *
  */
 array<double, 3> LevelSet::getInitCP(array<double, 3> expcp, double epsilon) {
 array<double, 3> candidate = {0, 0, 0};
@@ -50,6 +52,7 @@ array<double, 3> candidate = {0, 0, 0};
  * @param dt The length of a single timestep
  * @param timestep The index of the timestep
  * @param initCP The position of the contact point at timestep 0
+ * @return The theoretical position of the contact point after a given time
  */
 array<double, 3> LevelSet::getContactPoint(double dt, int timestep, int timesteps, array<double, 3> initCP) {
     array<double, 3> &temp = initCP;
@@ -60,14 +63,15 @@ array<double, 3> LevelSet::getContactPoint(double dt, int timestep, int timestep
 }
 
 /**
- * Return the coordinates of the left contact point in 2D or the coordinates most closely matching the given parameter.
+ * Return the indices of the left contact point in 2D or the coordinates most closely matching the given parameter.
  * This function works differently for 2D and 3D. If the simulation is 2D, it ignores the input parameter and returns
- * coordinates of the /left/ contact point by checking where the sign of the LevelSet field changes.
+ * indices of the /left/ contact point by checking where the sign of the LevelSet field changes.
  * In 3D, it returns the coordinates of the point on the grid which is closest to the parameter.
  *
  * @param point A point in the space of the Level set field.
+ * @return 2D: Indices of the left contact point. 3D: Indices of the point closest to point.
  */
-array<int, 3> LevelSet::getContactPointCoordinates(array<double, 3> point) {
+array<int, 3> LevelSet::getContactPointIndices(array<double, 3> point) {
     if (this->numZ == 1){
         double initSign = this->at(0, 0, 0)/std::abs(this->at(0, 0, 0));
         for (int x = 0; x < this->numX; x++)
@@ -93,7 +97,8 @@ array<int, 3> LevelSet::getContactPointCoordinates(array<double, 3> point) {
  * This function uses finite differences to calculate the normal vector of the Level set field at cell and
  * thus calculate the contact angle.
  *
- * @param The coordinates of the contact point.
+ * @param cell The indices of the contact point.
+ * @return The contact angle in degrees
  */
 double LevelSet::getContactAngle(array<int, 3> cell) {
 
@@ -131,6 +136,7 @@ double LevelSet::getContactAngle(array<int, 3> cell) {
  * @param timestep The index of the timestep
  * @param n_sigma_init The initial normal vector of the interface
  * @param CP The current position of the contact point
+ * @return The reference contact angle in degrees
  */
 double LevelSet::getReferenceAngleExplicitEuler(double dt, int timestep, array<double, 3> n_sigma_init, array<double, 3> CP) {
 	array<double, 3> &n_sigma = n_sigma_init;
@@ -152,6 +158,7 @@ double LevelSet::getReferenceAngleExplicitEuler(double dt, int timestep, array<d
  * @param c1 A parameter of the navier field
  * @param c2 A parameter of the naveir field
  * @param theta0 The contact angle at time t == 0
+ * @return The reference contact angle in degrees
  */
 double LevelSet::getReferenceAngleLinearField(double t, double c1, double c2, double theta0) {
 	if (field->getName() == "navierField")
@@ -165,13 +172,14 @@ double LevelSet::getReferenceAngleLinearField(double t, double c1, double c2, do
 }
 
 /**
- * Calcluates the reference curvature at the contact point with the explicit Euler method at a given time.
+ * Calculate the reference curvature at the contact point with the explicit Euler method at a given time.
  *
  * @param dt The length of a timestep
  * @param timestep The index of the timestep.
  * @param initCurvature The initial curvature at time t == 0
  * @param CP The coordinates of the contact point
  * @param cell The indices of the contact point
+ * @return The curvature
  */
 double LevelSet::getReferenceCurvature(double dt, double timestep, double initCurvature, array<double, 3> CP, array<int, 3> cell) {
     // TODO update for dx, dy, dz
@@ -201,7 +209,7 @@ double LevelSet::getReferenceCurvature(double dt, double timestep, double initCu
 }
 
 /**
- * Calculates the curvature of the droplet at the contact point.
+ * Calculate the curvature of the droplet at the contact point.
  *
  * First, it calculates a local field of normal vectors around the contact point with dimension 5x3x5 cells in 2D
  * and 5x3x1 in 2D.
@@ -209,6 +217,7 @@ double LevelSet::getReferenceCurvature(double dt, double timestep, double initCu
  * to calculate the curvature.
  *
  * @param cell The indices of the contact point
+ * @return The curvature
  */
 double LevelSet::getCurvature(array<int, 3> cell) const {
    // TODO update for dx, dy, dz
@@ -286,8 +295,7 @@ double LevelSet::getCurvature(array<int, 3> cell) const {
  * Write the files necessary to visualize the field and its velocity field in Paraview.
  *
  * Write the XMF file to disk, as well as the grid of the Level set field. This is done only once.
- * At each point in time, write the Level set field to disk and call the writeToFile member function
- * of the class VelocityField to write its value as well.
+ * At each point in time, write the Level set field to disk and call VelocityField::writeToFile to write its values as well.
  *
  * @param dt The width of a timestep
  * @param The index of the timestep
@@ -386,8 +394,8 @@ double LevelSet::sumLevelSet() {
  * The droplet is initialized on the Level set field by setting the space occupied by the fluid to be negative,
  * the space occupied by the gas to be positive and the zero set to be the interface. More specifically, each
  * point on the grid is set to the value
- * \Phi = (x - x_0)^2 + (y - y_0)^2 + (z - z_0)^2 - R^2
- * Where x0, y0, z0 are the coordinates of the droplet center and R is its radius.
+ * \f[ \Phi = (x - x_0)^2 + (y - y_0)^2 + (z - z_0)^2 - R^2 \f]
+ * Where \f$ x_0, y_0, z_0 \f$ are the coordinates of the droplet center and R is its radius.
  *
  * @param center The center of the droplet
  * @param radius The radius of the droplet
@@ -400,7 +408,7 @@ void LevelSet::initDroplet(array<double, 3> center, double radius) {
 }
 
 /**
- * Calculates the next timestep at a given time and evolves the field.
+ * Calculate the next timestep at a given time and evolves the field.
  *
  * For the flux calculation, the upwind method is used to ensure stability. Furthermore we impose
  * the Neumann boundary condition onto the field

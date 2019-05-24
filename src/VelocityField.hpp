@@ -6,10 +6,25 @@ using std::array;
 
 class VelocityField {
 private:
-	double xmin, xmax, ymin, ymax, zmin, zmax, dx, dy, dz;
+    //@{
+    /** The space the velocity field is defined on */
+	double xmin, xmax, ymin, ymax, zmin, zmax;
+	//@}
+
+	//@{
+	/** The width of a cell in each direction */
+	double dx, dy, dz;
+	//@}
+
+	//@{
+	/** The parameters of the velocity field */
 	double v0, c1, c2, tau;
+	//@}
+
+	/// The kind of velocity field, either navier, navier with cosine modulation or shear.
 	std::string name;
-	double maxNormValue;
+	///The maximum absolute value of the field on the space it is defined on.
+	double maxAbsoluteValue;
 public:
 	VelocityField(std::string name, double v0, double c1, double c2, double tau,
 			double xmin, double xmax, double ymin, double ymax, double zmin, double zmax, double dx, double dy, double dz);

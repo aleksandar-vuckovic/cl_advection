@@ -142,47 +142,55 @@ int main() {
     // main loop
 
     for (int i = 0; i < timesteps; i++) {
-    std::cout << "Step " << i << std::endl;
-		//Write field to file
-		if (writeField && i % (int)ceil((double)timesteps/writesteps) == 0) {
-			Phi.writeToFile(dt, i, timesteps, writesteps, &xmfFile);
-		}
-		array<double, 3> newCP = Phi.getContactPoint(dt, i, timesteps, initCP);
-		array<int, 3> newCPCoord = Phi.getContactPointCoordinates(newCP);
-		angle[i] = Phi.getContactAngle(newCPCoord);
-		std::cout << "Time: " << i*dt << "\n";
-		positionFile << i*dt << ", " << dx*newCPCoord[0] << ", " << newCP[0] << std::endl;
+        std::cout << "Step " << i << std::endl;
+        //Write field to file
+        if (writeField && i % (int)ceil((double)timesteps/writesteps) == 0) {
+            Phi.writeToFile(dt, i, timesteps, writesteps, &xmfFile);
+        }
+
+		// Calculate the theoretical position of the contact point
+        array<double, 3> newCP = Phi.getContactPoint(dt, i, timesteps, initCP);
+
+        // Get the indices of the new contact point
+        array<int, 3> newCPIndices = Phi.getContactPointIndices(newCP);
+
+        angle[i] = Phi.getContactAngle(newCPIndices);
+
+        std::cout << "Time: " << i*dt << "\n";
+        positionFile << i*dt << ", " << dx*newCPIndices[0] << ", " << newCP[0] << std::endl;
 
 
-		std::cout << "Actual: " << std::to_string(angle[i]/(2*M_PI)*360) + "\n";
-		if (field->getName() == "shearField") {
+        std::cout << "Actual: " << std::to_string(angle[i]/(2*M_PI)*360) + "\n";
+        if (field->getName() == "shearField") {
 			double reference_temp = Phi.getReferenceAngleExplicitEuler(dt, i, n_sigma_init, newCP)/M_PI*180;
 			angleFile << i*dt << ", " << angle[i]/(2*M_PI)*360 << ", " << reference_temp << "\n";
 			std::cout << "Reference: " << reference_temp << "\n";
 		} else {
-			//double reference_temp = Phi.getReferenceAngleLinearField(i*dt, c1, c2, expAngle/180*M_PI)/M_PI*180.0;
+		    //double reference_temp = Phi.getReferenceAngleLinearField(i*dt, c1, c2, expAngle/180*M_PI)/M_PI*180.0;
 			double reference_temp = Phi.getReferenceAngleExplicitEuler(dt, i, n_sigma_init, newCP)/M_PI*180;
 			angleFile << i*dt << ", " << angle[i]/(2*M_PI)*360 << ", " 	<< reference_temp << "\n";
 			std::cout << "Reference: " << reference_temp << "\n";
 		}
 
-		if (calculateCurvature) {
-			curvatureActual[i] = Phi.getCurvature(newCPCoord);
-			curvatureTheoretical[i] = Phi.getReferenceCurvature(dt, i, initCurvature, newCP, newCPCoord);
-			curvatureFile << std::to_string(i*dt) + "," + std::to_string(curvatureActual[i]) + "," + std::to_string(curvatureTheoretical[i]) + "\n";
+        if (calculateCurvature) {
+            curvatureActual[i] = Phi.getCurvature(newCPIndices);
+            curvatureTheoretical[i] = Phi.getReferenceCurvature(dt, i, initCurvature, newCP, newCPIndices);
+            curvatureFile << std::to_string(i*dt) + "," + std::to_string(curvatureActual[i]) + "," + std::to_string(curvatureTheoretical[i]) + "\n";
 
-			std::cout << "Measured curvature: " + std::to_string(curvatureActual[i]) + "\n";
-			std::cout << "Reference curvature: " + std::to_string(curvatureTheoretical[i])  << std::endl;
+            std::cout << "Measured curvature: " + std::to_string(curvatureActual[i]) + "\n";
+            std::cout << "Reference curvature: " + std::to_string(curvatureTheoretical[i])  << std::endl;
 		}
 
-		// Calculate numerical flux through all faces of each cell and change Phi accordingly
-		Phi.calculateNextTimestep(dt, i);
+        // Calculate numerical flux through all faces of each cell and change Phi accordingly
+        Phi.calculateNextTimestep(dt, i);
 
-		positionFile.flush();
+        positionFile.flush();
 		angleFile.flush();
 		curvatureFile.flush();
     }
+    // Add closing line to the XMF file
     xmfFile << "</Grid>\n</Domain>\n</Xdmf>" << std::endl;
+
     std::cout << std::endl;
     std::cout << "Sum of Phi at start: " << sumAtStart << std::endl;
     std::cout << "Sum of Phi at end: " << Phi.sumLevelSet() << std::endl;

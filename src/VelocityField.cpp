@@ -23,10 +23,10 @@ using std::array;
  *
  * @param name The kind of the field. This decides the underlying function the velocity field will apply at each point
  * @param v0 For the shear field, this is a scaling factor. For the navier field, this is the velocity of the x-component in the origin.
- * @param c1 A parameter of the velocity field
- * @param c2 A parameter of the velocity field
+ * @param c1, c2 Parameters of the velocity field, currently only used for the navier field
  * @param tau tau/2 is the period of osciallation of the time dependent navier field.
- * @param
+ * @param xmin, xmax, ymin, ymax, zmin, zmax The space the velocity field is defined on
+ * @param dx, dy, dz The width of a cell in each direction
  */
 VelocityField::VelocityField(std::string name, double v0, double c1, double c2, double tau,
 		double xmin, double xmax, double ymin, double ymax, double zmin, double zmax, double dx, double dy, double dz) {
@@ -67,7 +67,7 @@ VelocityField::VelocityField(std::string name, double v0, double c1, double c2, 
 		}
 	}
 
-	this->maxNormValue = maxNormValue;
+	this->maxAbsoluteValue = maxNormValue;
 
 	if (name == "shearField") {
 		this->name = "shearField";
@@ -80,6 +80,13 @@ VelocityField::VelocityField(std::string name, double v0, double c1, double c2, 
 	}
 }
 
+/**
+ * Evaluates the velocity field at the given point.
+ *
+ * @param t The time
+ * @param x, y, z The coordinates of the point
+ * @return The velocity field at the given coordinates
+ */
 array<double, 3> VelocityField::at(double t, double x, double y, double z) {
 	if (name == "shearField") {
 		return shearField(x, y, z, v0);
@@ -91,6 +98,13 @@ array<double, 3> VelocityField::at(double t, double x, double y, double z) {
 	return {0, 0, 0};
 }
 
+/**
+ * Evaluates jacobian matrix at a given point
+ *
+ * @param t The time
+ * @param x, y, z The coordinates of the point
+ * @return The jacobian matrix at the given coordinates
+ */
 array<array<double, 3>, 3> VelocityField::gradAt(double t, double x, double y, double z) {
 	if (name == "shearField") {
 		return gradShearField(x, y, z, v0);
@@ -102,6 +116,15 @@ array<array<double, 3>, 3> VelocityField::gradAt(double t, double x, double y, d
 	return {0, 0, 0};
 }
 
+/**
+ * Writes the velocity field at a given time to disk
+ *
+ * Writes the velocity field for visualization in Paraview. Since no XMF file is written,
+ * simply calling this function is not enough for visualization. Thus, this function is called within
+ * LevelSet::writeToFile, which does write a XMF file.
+ *
+ * @param t The time
+ */
 void VelocityField::writeToFile(double t) {
 	int numX = (xmax - xmin)/dx;
 	int numY = (ymax - ymin)/dy;
@@ -148,5 +171,5 @@ std::string VelocityField::getName() {
 }
 
 double VelocityField::getMaxNormValue() {
-	return maxNormValue;
+	return maxAbsoluteValue;
 }

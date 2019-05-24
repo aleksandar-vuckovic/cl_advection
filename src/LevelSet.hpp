@@ -10,9 +10,12 @@
 
 class LevelSet : Field<double> {
 private:
-    double dx;
-    double dy;
-    double dz;
+    /// The width of a cell in each direction
+    ///@{
+    double dx, dy, dz;
+    ///@}
+
+    // A pointer to the VelocityField acting on the LevelSet field.
     VelocityField *field;
 
 public:
@@ -20,7 +23,7 @@ public:
 
     array<double, 3> getInitCP(array<double, 3> expcp, double epsilon);
     array<double, 3> getContactPoint(double dt, int timestep, int timesteps, array<double, 3> initCP);
-    array<int, 3> getContactPointCoordinates(array<double, 3> point);
+    array<int, 3> getContactPointIndices(array<double, 3> point);
     double getReferenceAngleExplicitEuler(double dt, int timestep, array<double, 3> n_sigma_init, array<double, 3> CP);
     double getReferenceAngleLinearField(double t, double c1, double c2, double theta0);
     double getContactAngle(array<int, 3> cell);

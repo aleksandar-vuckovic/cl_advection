@@ -14,7 +14,7 @@ v0=1.0
 c1=0.1
 c2=-2
 tau=0.2
-field=shearField
+field=timeDependentNavierField
 
 centerX=0.9
 centerY=-0.15
