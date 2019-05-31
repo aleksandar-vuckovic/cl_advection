@@ -93,7 +93,13 @@ vecMath3D.cpp/hpp |  This is a library of operator overloads and functions for v
 To add a new velocity field, add it and its Jacobian matrix to the files velocityFields.cpp and .hpp. Next, add the appropriate if-statement to the VelocityField::at member function.
 
 # Examples
+
+## Navier slip type field
 ![Contact Angle Error for the Navier testcase.](images/error_angle_navier.jpg)
+
+## Vortex-in-a-box field
+
+## Time-dependent field
 
 # Further information
 (xxx doxygen, contact to us, sfb info, licence?)
