@@ -22,6 +22,22 @@
 
 using std::array;
 
+/**
+ * The main function of the program.
+ *
+ * Reads the Inputfile and handles the top-level loop which evolves the field with time.
+ * The Inputfile parameters are as follows:
+ * numX, numY, numZ | Number of cells in the given direction
+ * lenX, lenY, lenZ | Length of simulation plane in the given direction
+ * time | The simulation time
+ * CFL  | Courant-Friedrics-Lewy-number
+ * writestepsFraction | Fraction of total timesteps that will be written to disk|
+ * writeField| Whether to write the levelset field binary files to disk. The files contactAngle.csv and position.csv are always written (see below)
+ * v0, c1, c2, field |  The field and its parameters. For the navier field all three parameters are relevant, but for the shear field, c1 and c2 are ignored and only the value of v0 matters.
+ * centerX, centerY, centerZ | The initial center of the droplet.
+ * expcpX, expcpY, expcpZ, expAngle | The expected coordinates for the initial contact point and the expected initial contact angle. Those are used for the reference solutions.
+ * trackedContactPoint | Whether to track the left or right contact point. Only applicable in 2D.
+ */
 int main() {
 
     int numX, numY, numZ;
