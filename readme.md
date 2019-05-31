@@ -33,7 +33,7 @@ Note that [2] is also available on the arXiv preprint server, see https://arxiv.
 ### Dependencies
 The software is most easily compiled on Unix system using the GNU compiler. It has also been tested successfully on Windows 10 using the Cygwin project (https://www.cygwin.com/).
 
-* g++ (GCC) 8.1.0 (xx do we need 8.1.0?)
+* g++ (GCC) 6.1
 * make
 * ParaView for Visualization
 
