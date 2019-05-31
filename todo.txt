@@ -1,4 +1,0 @@
-TODOs Level Set Implementierung
-===============================
-* Schreibe Dokumentation mit Markdown.
-* Windows?

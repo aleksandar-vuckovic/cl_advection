@@ -25,7 +25,7 @@ finiteVolumes: $(objects)
 	g++ $(objects) -O3 -Wall -o finiteVolumes
 
 clean:
-	rm -r data/ $(objects) finiteVolumes finiteVolumes.debug *csv* *xmf*
+	rm -rf data/ $(objects) finiteVolumes finiteVolumes.debug *csv* *xmf*
 
 debug: $(sourceFiles)
 	g++ -g $(sourceFiles) -o finiteVolumes.debug
