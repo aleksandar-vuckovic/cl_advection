@@ -1,8 +1,8 @@
 # Contact Line Advection using the Level Set Method
 
-This software uses a Finite Volume based discretization of the level set equation to solve for the evolution of an interface being in contact with the domain boundary. The present implementation has been used to produce the results in the manuscript [1], which has been submitted to the Proceedings in Applied Mathematics and Mechanics (https://onlinelibrary.wiley.com/journal/16177061).
+This software uses a Finite Volume based discretization of the level set equation to solve for the evolution of an interface being in contact with the domain boundary. The present implementation has been used to produce the results in the manuscript [1], which has been submitted to the Proceedings in Applied Mathematics and Mechanics (https://onlinelibrary.wiley.com/journal/16177061). An additional publication concerning the contact line advection with the Volume-of-Fluid method is in preparation [4].
 
-Within the level set method (see, e.g. [4]), the interface is represented as the zero contour of some smooth function, i.e. the interface at time t is given as the set
+Within the level set method (see, e.g. [5]), the interface is represented as the zero contour of some smooth function, i.e. the interface at time t is given as the set
 
 \f[ \Sigma(t) = \{x \in \Omega: \phi(t,x) = 0 \}. \f]
 
@@ -23,9 +23,12 @@ The method is capable of solving the transport equation in both two and three di
 * [1] M. Fricke, T. Marić and D. Bothe: Contact Line Advection using the Level Set Method, Proceedings in Applied Mathematics and Mechanics, submitted
 * [2] M. Fricke, M. Köhne and D. Bothe: A Kinematic Evolution Equation for the Dynamic Contact Angle and some Consequences. Physica D: Nonlinear Phenomena, 394:26–43, https://doi.org/10.1016/j.physd.2019.01.008 (2019)
 * [3] M. Fricke, M. Köhne and D. Bothe: On the Kinematics of Contact Line Motion, Proceedings in Applied Mathematics and Mechanics, https://doi.org/10.1002/pamm.201800451 (2018)
-* [4] Y. Giga: Surface Evolution Equations: A Level set Approach, in: Monographs in Mathematics, vol. 99, Birkhäuser, Basel, http://dx.doi.org/10.1007/3-7643-7391-1 (2006)
+* [4] M. Fricke, T. Marić and D. Bothe: Contact Line Advection using the Volume-of-Fluid Method, in preparation
+* [5] Y. Giga: Surface Evolution Equations: A Level set Approach, in: Monographs in Mathematics, vol. 99, Birkhäuser, Basel, http://dx.doi.org/10.1007/3-7643-7391-1 (2006)
 
 Note that [2] is also available on the arXiv preprint server, see https://arxiv.org/abs/1810.00830.
+
+# Installation
 
 ### Dependencies
 The software is most easily compiled on Unix system using the GNU compiler. It has also been tested successfully on Windows 10 using the Cygwin project (https://www.cygwin.com/).
@@ -34,23 +37,25 @@ The software is most easily compiled on Unix system using the GNU compiler. It h
 * make
 * ParaView for Visualization
 
-## Installation
+In order to rebuild the documentation from the source code, one further needs the software *doxygen* which is available for all platforms (see www.doxygen.nl).
+
+### Compiling the software
 
 On a Unix system enter the src/ directory and run make:
 
     cd src/
     make
 
-## Usage
+# Usage
 
-Execute
+To run the program, execute
 
     ./finiteVolumes
 
 Within the same directory, you will find the files contactAngle.csv and position.csv. The first column represents the simulation time, the second is the actual value and the third is the reference value.
 You will find a folder named data/ as well. It will contain the binary files of the field, its level set value, velocity field and the XMF file necessary to visualize everything in Paraview (version 5.5 and higher).
 
-### Inputfile
+## Inputfile
 
 All parameters in the Inputfile need to be set in order for the program to work correctly.
 The order of the parameters is NOT interchangeable.
@@ -88,6 +93,6 @@ vecMath3D.cpp/hpp |  This is a library of operator overloads and functions for v
 To add a new velocity field, add it and its Jacobian matrix to the files velocityFields.cpp and .hpp. Next, add the appropriate if-statement to the VelocityField::at member function.
 
 
-
-
+# Further information
+(xxx doxygen, contact to us, sfb info, licence?)
 
