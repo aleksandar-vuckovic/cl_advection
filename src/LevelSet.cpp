@@ -21,7 +21,7 @@ LevelSet::LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz
 		this->dz = dz;
 		this->field = field;
 		this->trackedCP = trackedCP;
-    }
+}
 
 /**
  * Calculate the initial contact point from a given expected contact point.
