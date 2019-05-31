@@ -56,6 +56,7 @@ All parameters in the Inputfile need to be set in order for the program to work 
 The order of the parameters is NOT interchangeable.
 The physical parameters have arbitrary units.
 They are as follows:
+
 Variable name | Description
 ---------------|-----------
 numX, numY, numZ| Number of cells in the given direction
