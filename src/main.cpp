@@ -29,7 +29,7 @@ int main() {
     numX = numY = numZ = 0;
     lenX = lenY = lenZ = time = centerX = centerY = centerZ = radius = expcpX = expcpY = expcpZ = expAngle = v0 = c1 = c2 = tau = CFL = writestepsFraction = 0;
     bool calculateCurvature = false, writeField = false;
-    std::string trackedContactPoint = "left";
+    std::string trackedContactPoint = "left", fieldName = "";
     VelocityField *field = nullptr;
 
     // Read data from Inputfile
@@ -69,7 +69,7 @@ int main() {
 		else if (varName == "tau")
 			tau = std::stod(value);
 		else if (varName == "field") {
-			field = new VelocityField(value, v0, c1, c2, tau, 0, lenX, 0, lenY, 0, lenZ, lenX/numX,lenY/numY,lenZ/numZ);
+			fieldName = value;
 		}
 		else if (varName == "centerX")
 		    centerX = std::stod(value);
@@ -95,6 +95,8 @@ int main() {
 	    }
 	   }
     }
+
+	field = new VelocityField(fieldName, v0, c1, c2, tau, 0, lenX, 0, lenY, 0, lenZ, lenX/numX,lenY/numY,lenZ/numZ);
 
     double dx = lenX/numX;
     double dy = lenY/numY;
