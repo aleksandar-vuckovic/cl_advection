@@ -11,9 +11,6 @@ folder = "./"
 DeltaX = []
 maxDifferenceAngle = []
 
-maxTime = 1.0
-theta0 = np.pi/3
-
 theoreticalPlotted = True
 
 #def reference(t):
@@ -28,6 +25,7 @@ for case in os.listdir(folder):
         continue
     angleFile = open(folder + case + "/contactAngle.csv")
     angleData = np.genfromtxt(folder + case + "/contactAngle.csv", delimiter = ",")
+    
     
     #if (not theoreticalPlotted):
      #   plt.plot(curvatureData[:, 0], curvatureData[:, 2])
@@ -51,9 +49,8 @@ for case in os.listdir(folder):
     for i in range(length):
         time = angleData[i, 0]
         timesteps.append(time)
-        if (time < maxTime):
-            theoreticalAngle.append(angleData[i, 2])
-            actualAngle.append(angleData[i, 1])
+	theoreticalAngle.append(angleData[i, 2])
+	actualAngle.append(angleData[i, 1])
 
     theoreticalAngle = np.array(theoreticalAngle)
     actualAngle = np.array(actualAngle)
