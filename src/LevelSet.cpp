@@ -228,7 +228,7 @@ double LevelSet::getReferenceCurvature(double dt, double timestep, double initCu
 /**
  * Calculate the curvature of the droplet at the contact point.
  *
- * First, it calculates a local field of normal vectors around the contact point with dimension 5x3x5 cells in 2D
+ * First, it calculates a local field of normal vectors around the contact point with dimension 5x3x5 cells in 3D
  * and 5x3x1 in 2D.
  * Afterwards, it uses the local field to calculate the divergence in the middle of the slice with y = 0 and uses this
  * to calculate the curvature.
