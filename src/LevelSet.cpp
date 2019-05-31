@@ -64,6 +64,15 @@ array<double, 3> LevelSet::getContactPointExplicitEuler(double dt, int timestep,
     return temp;
 }
 
+/**
+ * Calculate the contact point position for the navier field using the analytic solution.
+ *
+ * @param t The time at which to calculate the contact point position
+ * @param c1 A parameter of the navier field
+ * @param x0 The initial position of the contact point
+ * @param v0 A parameter of the navier field
+ * @return The position of the contact point in arbitrary units
+ */
 array<double, 3> LevelSet::getContactPointLinearField(double t, double c1, double x0, double v0) {
 	if (field->getName() == "navierField") {
 		return {x0 * exp(c1 * t) + v0/c1 * (exp(c1 * t) - 1), 0, 0};
