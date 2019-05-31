@@ -77,7 +77,7 @@ trackedContactPoint | Whether to track the left or right contact point. Only app
 
 ### Implementation
 
-The numerical method is based on an Explicit Euler Finite Volume Method on a regular cartesian grid. The program is structured into six files.
+The numerical method is based on an Explicit Euler Finite Volume Method on a regular cartesian grid (xxx). The program is structured into six files.
 
 File name  | Description
 ----------------------|------------------
@@ -94,12 +94,18 @@ To add a new velocity field, add it and its Jacobian matrix to the files velocit
 
 # Examples
 
-## Navier slip type field
+## Navier slip type field (src/testcases/navier)
+![Contact Angle Evolution for the Navier testcase.](images/results_angle_navier.jpg)
+
 ![Contact Angle Error for the Navier testcase.](images/error_angle_navier.jpg)
 
-## Vortex-in-a-box field
+![Contact Line Position for the Navier testcase.](images/results_position_navier.jpg)
 
-## Time-dependent field
+![Position Error for the Navier testcase.](images/error_position_navier.jpg)
+
+## Vortex-in-a-box field (src/testcases/shear)
+
+## Time-dependent field (src/testcases/timedependent)
 
 # Further information
 (xxx doxygen, contact to us, sfb info, licence?)
