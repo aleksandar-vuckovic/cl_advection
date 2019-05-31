@@ -29,4 +29,3 @@ expAngle=60
 // Whether to track the left or right contact point. Only applicable in 2D.
 trackedContactPoint=left
 
-calculateCurvature=false

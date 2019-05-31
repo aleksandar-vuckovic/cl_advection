@@ -44,7 +44,7 @@ int main() {
     double lenX, lenY, lenZ, time, centerX, centerY, centerZ, radius, expcpX, expcpY, expcpZ, expAngle, v0, c1, c2, tau, CFL, writestepsFraction;
     numX = numY = numZ = 0;
     lenX = lenY = lenZ = time = centerX = centerY = centerZ = radius = expcpX = expcpY = expcpZ = expAngle = v0 = c1 = c2 = tau = CFL = writestepsFraction = 0;
-    bool calculateCurvature = false, writeField = false;
+    bool writeField = false;
     std::string trackedContactPoint = "left";
     VelocityField *field = nullptr;
 
@@ -105,9 +105,6 @@ int main() {
 		    expAngle = std::stod(value);
 		else if (varName == "trackedContactPoint")
 		    trackedContactPoint = value;
-		else if (varName == "calculateCurvature")
-			std::stringstream(value) >> std::boolalpha >> calculateCurvature;
-
 	    }
 	   }
     }
@@ -129,7 +126,6 @@ int main() {
     int timesteps = time/dt;
     int writesteps = floor(writestepsFraction*timesteps);
     writesteps = timesteps/(ceil((double)timesteps/writesteps));
-    double initCurvature = -1/radius;
 
     //This is used for the numerical reference solution. Currently this only applies in 2D.
     array<double, 3> n_sigma_init = {-sin(expAngle/180*M_PI), cos(expAngle/180*M_PI), 0};
@@ -139,8 +135,6 @@ int main() {
     array<double, 3> center = {centerX, centerY, centerZ};
     array<double, 3> expcp = {expcpX, expcpY, expcpZ};
     std::vector<double> angle(timesteps);
-    std::vector<double> curvatureActual(timesteps);
-    std::vector<double> curvatureTheoretical(timesteps);
 
     Phi.initDroplet(center, radius);
     array<double, 3> initCP = Phi.getInitCP(expcp, 0.001);
@@ -152,7 +146,6 @@ int main() {
     }
     std::ofstream positionFile("position.csv");
     std::ofstream angleFile("contactAngle.csv");
-    std::ofstream curvatureFile("curvature.csv");
     double sumAtStart = Phi.sumLevelSet();
 
     // XMF file for Paraview
@@ -191,21 +184,11 @@ int main() {
 			std::cout << "Reference: " << reference_temp << "\n";
 		}
 
-        if (calculateCurvature) {
-            curvatureActual[i] = Phi.getCurvature(newCPIndices);
-            curvatureTheoretical[i] = Phi.getReferenceCurvature(dt, i, initCurvature, newCP, newCPIndices);
-            curvatureFile << std::to_string(i*dt) + "," + std::to_string(curvatureActual[i]) + "," + std::to_string(curvatureTheoretical[i]) + "\n";
-
-            std::cout << "Measured curvature: " + std::to_string(curvatureActual[i]) + "\n";
-            std::cout << "Reference curvature: " + std::to_string(curvatureTheoretical[i])  << std::endl;
-		}
-
         // Calculate numerical flux through all faces of each cell and change Phi accordingly
         Phi.calculateNextTimestep(dt, i);
 
         positionFile.flush();
 		angleFile.flush();
-		curvatureFile.flush();
     }
     // Add closing line to the XMF file
     xmfFile << "</Grid>\n</Domain>\n</Xdmf>" << std::endl;
