@@ -56,12 +56,23 @@ array<double, 3> candidate = {0, 0, 0};
  * @param initCP The position of the contact point at timestep 0
  * @return The theoretical position of the contact point after a given time
  */
-array<double, 3> LevelSet::getContactPoint(double dt, int timestep, int timesteps, array<double, 3> initCP) {
+array<double, 3> LevelSet::getContactPointExplicitEuler(double dt, int timestep, int timesteps, array<double, 3> initCP) {
     array<double, 3> &temp = initCP;
     for (int i = 0; i < timestep; i++)
     	temp = temp + dt*field->at(timestep*dt, temp[0], temp[1], temp[2]);
 
     return temp;
+}
+
+array<double, 3> LevelSet::getContactPointLinearField(double t, double c1, double x0, double v0) {
+	if (field->getName() == "navierField") {
+		return {x0 * exp(c1 * t) + v0/c1 * (exp(c1 * t) - 1), 0, 0};
+	} else if (field->getName() == "timeDependentNavierField") {
+		double tau = field->getTau();
+		return {x0 *exp(c1/M_PI * tau*sin(M_PI*t/tau)) + v0/c1 * (exp(c1/M_PI * tau*sin(M_PI*t/tau)) -1), 0, 0};
+	} else {
+		throw std::invalid_argument("Please choose either navierField or timeDependentNavierField if analyzing linear fields.");
+	}
 }
 
 /**
@@ -78,14 +89,16 @@ array<int, 3> LevelSet::getContactPointIndices(array<double, 3> point) {
         if (trackedCP == "left") {
             double initSign = this->at(0, 0, 0)/std::abs(this->at(0, 0, 0));
             for (int i = 0; i < numX; i++)
-                if (this->at(i, 0, 0)*initSign < 0)
-                    return {i, 0, 0};
+                if (this->at(i, 0, 0)*initSign < 0) {
+                	return {i, 0, 0};
+                }
         } else {
             double initSign = this->at(numX - 1, 0, 0)/std::abs(this->at(numX - 1, 0, 0));
             for (int i = numX - 1; i >= 0; i--)
-                if (this->at(i, 0, 0)*initSign < 0)
-                    return {i, 0, 0};
-        }
+                if (this->at(i, 0, 0)*initSign < 0) {
+                	return {i, 0, 0};
+				}
+		}
     } else {
         //Find cell corresponding to this point
         array<int, 3> cell = {0, 0, 0};
@@ -102,6 +115,41 @@ array<int, 3> LevelSet::getContactPointIndices(array<double, 3> point) {
 }
 
 /**
+ * Get contact point coordinates from contact point indices.
+ *
+ * Uses a convex combination of neighboring LevelSet values depending on whether the right or the
+ * left contact point is being tracked.
+ *
+ * @param indices The indices of the cell where the first change of sign occured during iteration
+ * inside LevelSet::getContactPointIndices
+ */
+array<double, 3> LevelSet::getContactPoint(array<int, 3> indices) {
+	int i = indices[0];
+	if (trackedCP == "left") {
+		double alpha = this->at(i,0,0)-this->at(i -1,0,0);
+
+		if(std::abs(alpha) < 1E-12){
+			throw std::runtime_error("Difference of LevelSet values at contact point too small for convex combination");
+		}
+
+		alpha = this->at(i,0,0)/(alpha);
+		return {(1 - alpha)*i*dx + alpha*(i - 1)*dx, 0, 0};
+
+	} else if (trackedCP == "right") {
+		double alpha = this->at(i + 1, 0, 0) - this->at(i, 0, 0);
+		if(std::abs(alpha) < 1E-12) {
+		   throw std::runtime_error("Difference of LevelSet values at contact point too small for convex combination");
+		}
+
+		alpha = this->at(i + 1, 0, 0) / alpha;
+		return {alpha*i*dx + (1 - alpha)*(i+1)*dx, 0, 0};
+
+	} else {
+		throw std::runtime_error("Variable \"trackedContactPoint\" is not set to left or right");
+	}
+}
+
+/**
  * Calculate the contact angle.
  * This function uses finite differences to calculate the normal vector of the Level set field at cell and
  * thus calculate the contact angle.
@@ -111,24 +159,45 @@ array<int, 3> LevelSet::getContactPointIndices(array<double, 3> point) {
  */
 double LevelSet::getContactAngle(array<int, 3> cell) {
 
-     // find root of phi, alpha: coefficient for convex combination
-     double alpha = this->at(cell[0],0,0)-this->at(cell[0]-1,0,0); // TODO
-     if(fabs(alpha)<1E-12){
-       exit(-1);
-     }
+	double normalX = 0, normalY = 0, normalZ = 0;
 
-     alpha = this->at(cell[0],0,0)/(alpha);
+	if (trackedCP == "left") {
+		 // find root of phi, alpha: coefficient for convex combination
+		 double alpha = this->at(cell[0],0,0)-this->at(cell[0]-1,0,0);
 
-    //Calculate angle at this cell with finite differences
-    double normalX = alpha*(this->at(cell[0], cell[1], cell[2]) - this->at(cell[0]-2, cell[1], cell[2]))/(2*dx)
-    + (1-alpha)*(this->at(cell[0]+1, cell[1], cell[2]) - this->at(cell[0]-1, cell[1], cell[2]))/(2*dx);
-    double normalY = alpha*(-this->at(cell[0]-1, cell[1] + 2, cell[2])
-                      + 4.0*this->at(cell[0]-1, cell[1] + 1, cell[2])
-                      - 3.0*this->at(cell[0]-1, cell[1], cell[2]))/(2*dy)
-                      + (1-alpha)*(-this->at(cell[0], cell[1] + 2, cell[2])
-                      + 4.0*this->at(cell[0], cell[1] + 1, cell[2])
-                      - 3.0*this->at(cell[0], cell[1], cell[2]))/(2*dy); // second order difference quotient
-    double normalZ;
+		 if(std::abs(alpha) < 1E-12){
+		   throw std::runtime_error("Difference of LevelSet values at contact point too small for convex combination");
+		 }
+
+		 alpha = this->at(cell[0],0,0)/(alpha);
+
+		//Calculate angle at this cell with finite differences
+		normalX = alpha*(this->at(cell[0], cell[1], cell[2]) - this->at(cell[0]-2, cell[1], cell[2]))/(2*dx)
+		+ (1-alpha)*(this->at(cell[0]+1, cell[1], cell[2]) - this->at(cell[0]-1, cell[1], cell[2]))/(2*dx);
+		normalY = alpha*(-this->at(cell[0]-1, cell[1] + 2, cell[2])
+						  + 4.0*this->at(cell[0]-1, cell[1] + 1, cell[2])
+						  - 3.0*this->at(cell[0]-1, cell[1], cell[2]))/(2*dy)
+						  + (1-alpha)*(-this->at(cell[0], cell[1] + 2, cell[2])
+						  + 4.0*this->at(cell[0], cell[1] + 1, cell[2])
+						  - 3.0*this->at(cell[0], cell[1], cell[2]))/(2*dy); // second order difference quotient
+
+	} else if (trackedCP == "right") {
+		double alpha = this->at(cell[0] + 1, 0, 0) - this->at(cell[0], 0, 0);
+        if(std::abs(alpha) < 1E-12) {
+		   throw std::runtime_error("Difference of LevelSet values at contact point too small for convex combination");
+        }
+
+        alpha = this->at(cell[0] + 1, 0, 0) / alpha;
+
+        normalX = alpha*(this->at(cell[0] + 1, 0, 0) - this->at(cell[0] - 1, 0, 0))/(2*dx)
+        		+ (1 - alpha)*(this->at(cell[0] + 2, 0, 0) - this->at(cell[0], 0, 0))/(2*dx);
+        normalY = alpha*(-this->at(cell[0], cell[1] + 2, cell[2])
+						  + 4.0*this->at(cell[0], cell[1] + 1, cell[2])
+						  - 3.0*this->at(cell[0], cell[1], cell[2]))/(2*dy)
+						  + (1 - alpha)*(-this->at(cell[0] + 1, cell[1] + 2, cell[2])
+						  + 4.0*this->at(cell[0] + 1, cell[1] + 1, cell[2])
+						  - 3.0*this->at(cell[0] + 1, cell[1], cell[2]))/(2*dy);
+	}
     if (this->numZ > 1)
     	normalZ = (this->at(cell[0], cell[1], cell[2]+1) - this->at(cell[0]-1, cell[1], cell[2]-1))/(2*dz);
     else

@@ -10,6 +10,7 @@ folder = "./"
 
 DeltaX = []
 maxDifferenceAngle = []
+maxDifferencePosition = []
 
 theoreticalPlotted = True
 
@@ -23,8 +24,9 @@ theoreticalPlotted = True
 for case in os.listdir(folder):
     if (os.path.isfile(folder + case)):
         continue
-    angleFile = open(folder + case + "/contactAngle.csv")
+
     angleData = np.genfromtxt(folder + case + "/contactAngle.csv", delimiter = ",")
+    positionData = np.genfromtxt(folder + case + "/position.csv", delimiter = ",")
     
     
     #if (not theoreticalPlotted):
@@ -40,6 +42,9 @@ for case in os.listdir(folder):
     timesteps = []
     theoreticalAngle = []
     actualAngle = []
+
+    theoreticalPosition = []
+    actualPosition = []
     
     try:
         length = len(angleData[:, 0])
@@ -49,20 +54,35 @@ for case in os.listdir(folder):
     for i in range(length):
         time = angleData[i, 0]
         timesteps.append(time)
-	theoreticalAngle.append(angleData[i, 2])
-	actualAngle.append(angleData[i, 1])
+        actualAngle.append(angleData[i, 1])
+        theoreticalAngle.append(angleData[i, 2])
+        actualPosition.append(positionData[i, 1])
+        theoreticalPosition.append(positionData[i, 2]) 	
 
     theoreticalAngle = np.array(theoreticalAngle)
     actualAngle = np.array(actualAngle)
     
+    theoreticalPosition = np.array(theoreticalPosition)
+    actualPosition = np.array(actualPosition)
+
     maxDiffAngle = max(np.abs(theoreticalAngle - actualAngle))
+    maxDiffPosition = max(np.abs(theoreticalPosition - actualPosition))
     
     maxDifferenceAngle.append(maxDiffAngle)
+    maxDifferencePosition.append(maxDiffPosition)
 
-print(maxDifferenceAngle)
 print(DeltaX)
+print(maxDifferenceAngle)
+print(maxDifferencePosition)
+
+plt.subplot(2, 1, 1)
 plt.plot(DeltaX, maxDifferenceAngle, linestyle="None", marker ="x")
-plt.xlabel("Cell Width")
+plt.xlabel("Cell width")
 plt.ylabel("max difference in angle")
 #plt.savefig("maxDiffAngle.pdf")
+
+plt.subplot(2, 1, 2)
+plt.plot(DeltaX, maxDifferencePosition, linestyle="None", marker="x")
+plt.xlabel("Cell width")
+plt.ylabel("max differnce in position")
 plt.show()     

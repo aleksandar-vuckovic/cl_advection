@@ -23,8 +23,10 @@ public:
     LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz, VelocityField *field, std::string trackedCP);
 
     array<double, 3> getInitCP(array<double, 3> expcp, double epsilon);
-    array<double, 3> getContactPoint(double dt, int timestep, int timesteps, array<double, 3> initCP);
+    array<double, 3> getContactPointExplicitEuler(double dt, int timestep, int timesteps, array<double, 3> initCP);
+    array<double, 3> getContactPointLinearField(double t, double c1, double x0, double v0);
     array<int, 3> getContactPointIndices(array<double, 3> point);
+    array<double, 3> getContactPoint(array<int, 3> indices);
     double getReferenceAngleExplicitEuler(double dt, int timestep, array<double, 3> n_sigma_init, array<double, 3> CP);
     double getReferenceAngleLinearField(double t, double c1, double c2, double theta0);
     double getContactAngle(array<int, 3> cell);
