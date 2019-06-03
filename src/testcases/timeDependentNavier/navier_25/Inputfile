@@ -16,14 +16,14 @@ c2=-2
 tau=0.4
 field=timeDependentNavierField
 
-centerX=1.0
+centerX=0.4
 centerY=-0.34641
 centerZ=0.0
 radius=0.4
 
-expcpX=0.8
+expcpX=0.6
 expcpY=0.0
 expcpZ=0.0
 expAngle=30.0
 
-trackedContactPoint=left
+trackedContactPoint=right
