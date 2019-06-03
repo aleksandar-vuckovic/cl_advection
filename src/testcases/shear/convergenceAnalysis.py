@@ -37,7 +37,7 @@ for case in os.listdir(folder):
     
 
 
-    DeltaX.append(0.1/float(case[7:]))
+    DeltaX.append(0.1/float(case[6:]))
     
     timesteps = []
     theoreticalAngle = []
