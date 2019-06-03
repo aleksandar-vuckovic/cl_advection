@@ -111,6 +111,8 @@ To add a new velocity field, add it and its Jacobian matrix to the files velocit
 
 ![Position Error for the shear testcase.](images/error_position_shear.jpg)
 
+![A snapshot of the simulation](images/snapshotShear.png)
+
 ## Time-dependent field (src/testcases/timeDependentNavier)
 ![Contact Angle Evolution for the time dependent Navier testcase.](images/results_angle_time_dependent_navier.jpg)
 
@@ -119,8 +121,6 @@ To add a new velocity field, add it and its Jacobian matrix to the files velocit
 ![Contact Line Position for the time dependent Navier testcase.](images/results_position_time_dependent_navier.jpg)
 
 ![Position Error for the time dependent Navier testcase.](images/error_position_time_dependent_navier.jpg)
-
-## Time-dependent field (src/testcases/timedependent)
 
 # Further information
 (xxx doxygen, contact to us, sfb info, licence?)
