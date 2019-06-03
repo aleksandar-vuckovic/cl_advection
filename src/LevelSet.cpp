@@ -56,7 +56,7 @@ array<double, 3> candidate = {0, 0, 0};
  * @param initCP The position of the contact point at timestep 0
  * @return The theoretical position of the contact point after a given time
  */
-array<double, 3> LevelSet::getContactPointExplicitEuler(double dt, int timestep, int timesteps, array<double, 3> initCP) {
+array<double, 3> LevelSet::getContactPointExplicitEuler(double dt, int timestep, array<double, 3> initCP) {
     array<double, 3> &temp = initCP;
     for (int i = 0; i < timestep; i++)
     	temp = temp + dt*field->at(timestep*dt, temp[0], temp[1], temp[2]);
@@ -225,11 +225,12 @@ double LevelSet::getContactAngle(array<int, 3> cell) {
  * @param CP The current position of the contact point
  * @return The reference contact angle in degrees
  */
-double LevelSet::getReferenceAngleExplicitEuler(double dt, int timestep, array<double, 3> n_sigma_init, array<double, 3> CP) {
+double LevelSet::getReferenceAngleExplicitEuler(double dt, int timestep, array<double, 3> n_sigma_init, array<double, 3> CP_init) {
 	array<double, 3> &n_sigma = n_sigma_init;
 	array<double, 3> deriv = {0, 0, 0};
 	double t = dt*timestep;
 	for (int i = 0; i < timestep; i++) {
+	    array<double, 3> CP = getContactPointExplicitEuler(dt, i, CP_init);
 		deriv = -1*transpose(field->gradAt(t, CP[0], CP[1], CP[2]))*n_sigma + ((field->gradAt(t, CP[0], CP[1], CP[2])*n_sigma)*n_sigma)*n_sigma;
 		n_sigma = deriv*dt + n_sigma;
 		n_sigma = n_sigma/abs(n_sigma);

@@ -165,7 +165,7 @@ int main() {
 		// Calculate the theoretical position of the contact point
         array<double, 3> newCPReference;
         if (field->getName() == "shearField")
-        	newCPReference = Phi.getContactPointExplicitEuler(dt, i, timesteps, initCP);
+        	newCPReference = Phi.getContactPointExplicitEuler(dt, i, initCP);
         else
         	newCPReference = Phi.getContactPointLinearField(dt*i, c1, expcpX, v0);
 
@@ -181,7 +181,7 @@ int main() {
 
         std::cout << "Actual: " << std::to_string(angle[i]/(2*M_PI)*360) + "\n";
         if (field->getName() == "shearField") {
-			double reference_temp = Phi.getReferenceAngleExplicitEuler(dt, i, n_sigma_init, newCPReference)/M_PI*180;
+			double reference_temp = Phi.getReferenceAngleExplicitEuler(dt, i, n_sigma_init, expcp)/M_PI*180;
 			angleFile << i*dt << ", " << angle[i]/(2*M_PI)*360 << ", " << reference_temp << "\n";
 			std::cout << "Reference: " << reference_temp << "\n";
 		} else {
