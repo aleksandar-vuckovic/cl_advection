@@ -91,7 +91,7 @@ vecMath3D.cpp/hpp |  This is a library of operator overloads and functions for v
 ### Adding a new velocity field
 
 To add a new velocity field, add it and its Jacobian matrix to the files velocityFields.cpp and .hpp. Next, add the appropriate if-statement to the VelocityField::at member function.
-
+   
 # Examples
 
 ## Navier slip type field (src/testcases/navier)
@@ -104,8 +104,23 @@ To add a new velocity field, add it and its Jacobian matrix to the files velocit
 ![Position Error for the Navier testcase.](images/error_position_navier.jpg)
 
 ## Vortex-in-a-box field (src/testcases/shear)
+![Contact Angle Evolution for the shear testcase.](images/results_angle_shear.jpg)
 
-## Time-dependent field (src/testcases/timedependent)
+![Contact Angle Error for the shear testcase.](images/error_angle_shear.jpg)
+
+![Contact Line Position for the shear testcase.](images/results_position_shear.jpg)
+
+![Position Error for the shear testcase.](images/error_position_shear.jpg)
+
+## Time-dependent field (src/testcases/timeDependentNavier)
+![Contact Angle Evolution for the time dependent Navier testcase.](images/results_angle_time_dependent_navier.jpg)
+
+![Contact Angle Error for the time dependent Navier testcase.](images/error_angle_time_dependent_navier.jpg)
+
+![Contact Line Position for the time dependent Navier testcase.](images/results_position_time_dependent_navier.jpg)
+
+![Position Error for the time dependent Navier testcase.](images/error_position_time_dependent_navier.jpg)
+
 
 # Further information
 (xxx doxygen, contact to us, sfb info, licence?)
