@@ -6,7 +6,7 @@ lenY=0.25
 lenZ=0.001
 
 time=0.1
-CFL=0.5
+CFL=0.8
 writestepsFraction=0.5
 writeField=true
 
@@ -21,11 +21,13 @@ centerY=-0.15
 centerZ=0.0
 radius=0.3
 
-expcpX=0.64
+expcpX=0.24
 expcpY=0.0
 expcpZ=0.0
 expAngle=60
 
 // Whether to track the left or right contact point. Only applicable in 2D.
 trackedContactPoint=left
+
+calculateCurvature=true
 

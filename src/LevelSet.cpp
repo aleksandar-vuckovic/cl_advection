@@ -279,6 +279,127 @@ double LevelSet::getReferenceAngleLinearField(double t, double c1, double c2, do
  * @param total_writesteps The total number of steps that will be written to disk
  * @param xmfFile A pointer to the XMF file.
  */
+
+/**
+ * Calculate the reference curvature at the contact point with the explicit Euler method at a given time.
+ *
+ * @param dt The length of a timestep
+ * @param timestep The index of the timestep.
+ * @param initCurvature The initial curvature at time t == 0
+ * @param CP The coordinates of the contact point
+ * @param cell The indices of the contact point
+ * @return The curvature
+ */
+double LevelSet::getReferenceCurvature(double dt, double timestep, double initCurvature, array<double, 3> CP_init) {
+    // TODO update for dx, dy, dz
+    double curvature = initCurvature;
+    for (int i = 0; i < timestep; i++){
+        array<double, 3> CP = getContactPointExplicitEuler(dt, i, CP_init);
+        array<int, 3> cell = getContactPointIndices(CP);
+        //Calculate angle at this cell with finite differences
+        double normalX = (this->at(cell[0]+1, cell[1], cell[2]) - this->at(cell[0]-1, cell[1], cell[2])) / (2*dx);
+        double normalY = (-this->at(cell[0], cell[1] + 2, cell[2]) + 4.0*this->at(cell[0], cell[1] + 1, cell[2]) - 3.0*this->at(cell[0], cell[1], cell[2]))/(2*dx);
+        double normalZ;
+        if (this->numZ > 1)
+            normalZ = (this->at(cell[0], cell[1], cell[2]+1) - this->at(cell[0]-1, cell[1], cell[2]-1))/(2*dx);
+        else
+            normalZ = 0;
+        array<double, 3> normal = {normalX, normalY, normalZ};
+        normal = normal/abs(normal);
+
+        // This is the second derivative of v in the tau direction (= y direction)
+        array<double, 3> temp = {M_PI*M_PI*sin(M_PI*CP[0])*cos(M_PI*CP[1]), -M_PI*M_PI*cos(M_PI*CP[0])*sin(M_PI*CP[1]), 0};
+
+        array<double,3> tau = {normal[1], -normal[0], 0};
+
+        curvature = curvature + dt*(temp*normal - 2*curvature*(field->gradAt(i*dt, CP[0], CP[1], CP[2])*tau)*tau);
+    }
+
+    return curvature;
+}
+
+/**
+ * Calculate the curvature of the droplet at the contact point.
+ *
+ * First, it calculates a local field of normal vectors around the contact point with dimension 5x3x5 cells in 2D
+ * and 5x3x1 in 2D.
+ * Afterwards, it uses the local field to calculate the divergence in the middle of the slice with y = 0 and uses this
+ * to calculate the curvature.
+ *
+ * @param cell The indices of the contact point
+ * @return The curvature
+ */
+double LevelSet::getCurvature(array<int, 3> cell) const {
+   // TODO update for dx, dy, dz
+
+    /* Define what number of cells in each direction(excluding the main cell) are considered local.
+       The resulting normal vector field is defined on a cuboid with  sidelength 2*local + 1 */
+    int local = 2;
+    int sidelength = 2*local + 1;
+    int sidelengthZ;
+    if (this->numZ > 1)
+        sidelengthZ = sidelength;
+    else
+        sidelengthZ = 1;
+    /** Declare a field of normal vectors
+     TODO: Currently a 5x5x5 (5x5x1 in 2D) field is initialized, but it is only populated from y = 2 to y = 4.
+     This is wasteful and combined with the fact that the loop below iterates over y = 0 to y = 2 makes it confusing.
+    */
+    Field<array<double, 3> > localField(sidelength, sidelength, sidelengthZ);
+
+    for (int x = -sidelength/2; x <= sidelength/2; x++)
+        for (int y = 0; y <= sidelength/2; y++)
+            for (int z = -sidelength/2; z <= sidelength/2; z++) {
+                if (this->numZ == 1 && z != 0) {
+                    continue;
+                }
+                array<int, 3> temp = {x, y, z};
+                temp = temp + cell;
+
+                double normalX = (this->at(temp[0] + 1, temp[1], temp[2]) - this->at(temp[0]-1, temp[1], temp[2])) / (2*dx);
+                // second order difference quotient
+                double normalY = (-this->at(temp[0], temp[1] + 2, temp[2]) + 4.0*this->at(temp[0], temp[1] + 1, temp[2]) - 3.0*this->at(temp[0], temp[1], temp[2])) / (2*dx);
+                double normalZ;
+                if (this->numZ > 1)
+                    normalZ = (this->at(temp[0], temp[1], temp[2] + 1) - this->at(temp[0], temp[1], temp[2] - 1)) / (2*dx);
+                else
+                    normalZ = 0;
+                array<double ,3> normal = {normalX, normalY, normalZ};
+                normal = normal/abs(normal);
+                if (this->numZ > 1)
+                    localField.at(x+local, y+local, z+local) = normal;
+                else
+                    localField.at(x+local, y+local, 0) = normal;
+            }
+
+    // Calculate divergence of localfield at cell, which by definition
+    // is in the "middle" of localField
+    double dnx_dx = (localField.at(sidelength/2 + 1, sidelength/2, sidelengthZ/2)[0] - localField.at(sidelength/2 - 1, sidelength/2, sidelengthZ/2)[0]) / (2*dx);
+
+    double dnx_dy = (-localField.at(sidelength/2, sidelength/2 + 2, sidelengthZ/2)[0]
+                          + 4.0*localField.at(sidelength/2, sidelength/2 + 1, sidelengthZ/2)[0]
+                          - 3.0*localField.at(sidelength/2, sidelength/2, sidelengthZ/2)[0] ) / (2*dx);
+
+
+    double dny_dx = (localField.at(sidelength/2 + 1, sidelength/2, sidelengthZ/2)[1] - localField.at(sidelength/2 - 1, sidelength/2, sidelengthZ/2)[1]) / (2*dx);
+
+    double dny_dy = (-localField.at(sidelength/2, sidelength/2 + 2, sidelengthZ/2)[1]
+                          + 4.0*localField.at(sidelength/2, sidelength/2 + 1, sidelengthZ/2)[1]
+                          - 3.0*localField.at(sidelength/2, sidelength/2, sidelengthZ/2)[1] ) / (2*dx);
+    //2D only
+    array<double, 3> normal = localField.at(sidelength/2, sidelength/2, sidelengthZ/2);
+    array<double, 3> tau = {normal[1], -normal[0], 0};
+    array<double, 3> row1 = {dnx_dx, dnx_dy, 0};
+    array<double, 3> row2 = {dny_dx, dny_dy, 0};
+    array<double, 3> row3 = {0,      0,      0};
+    //For this line, eclipse is complaining even though it compiles just fine
+    array< array<double, 3>, 3> gradNormal = {row1, row2, row3}; // @suppress("Invalid arguments")
+
+    double kappa = -1*(gradNormal*tau)*tau;
+
+    return kappa;
+}
+
 void LevelSet::writeToFile(double dt, int timestep, int total_timesteps, int total_writesteps, std::ofstream *xmfFile) {
     int Npoints = numX*numY*numZ;
     double *pointCoordinates = new double[Npoints*3];
