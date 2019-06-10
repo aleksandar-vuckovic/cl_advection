@@ -29,9 +29,4 @@ clean:
 
 debug: $(sourceFiles)
 	g++ -g $(sourceFiles) -o cl_advection.debug
-run:
-	./cl_advection
 
-brun:
-	make
-	./cl_advection

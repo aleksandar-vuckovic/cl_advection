@@ -31,7 +31,7 @@ Note that [2] is also available on the arXiv preprint server, see https://arxiv.
 # Installation
 
 ### Dependencies
-The software is most easily compiled on Unix system using the GNU compiler. It has also been tested successfully on Windows 10 using the MinGW project (http://www.mingw.org/).
+The software is most easily compiled on Unix system using the GNU compiler. It has also been tested successfully on Windows 10 using the *MinGW* project (http://www.mingw.org/).
 
 * g++ (GCC) 6.1
 * make
@@ -46,11 +46,13 @@ On a Unix system enter the src/ directory and run make:
     cd src/
     make
 
+If the program is compiled properly, you will find an executable called "cl_advection" in the src/ folder.
+
 # Usage
 
-To run the program, execute
+To run the program, go to a testcase folder (containing a file named "Inputfile") and execute
 
-    ./cl_advection
+    cl_advection
 
 Within the same directory, you will find the files contactAngle.csv and position.csv. The first column represents the simulation time, the second is the actual value and the third is the reference value.
 You will find a folder named data/ as well. It will contain the binary files of the field, its level set value, velocity field and the XMF file necessary to visualize everything in Paraview (version 5.5 and higher).
@@ -64,13 +66,15 @@ They are as follows:
 
 Variable name | Description
 ---------------|-----------
-numX, numY, numZ| Number of cells in the given direction
-lenX, lenY, lenZ| Length of simulation plane in the given direction
-time | The simulation time
-CFL  | Courant-Friedrichs-Lewy-number
-writestepsFraction | Fraction of total timesteps that will be written to disk|
-writeField| Whether to write the level set field binary files to disk. The files contactAngle.csv and position.csv are always written (see below)
-v0, c1, c2, field |  The field and its parameters. For the navier field all three parameters are relevant, but for the shear field, c1 and c2 are ignored and only the value of v0 matters.
+numX, numY, numZ| Number of cells in the given direction.
+lenX, lenY, lenZ| Length of simulation domain in the coordinate directions.
+time | The total simulation time.
+CFL  | Courant-Friedrichs-Lewy-number (determines the numerical timestep).
+writestepsFraction | Fraction of total timesteps that will be written to disk.
+writeField| Whether to write the level set field binary files to disk. The files contactAngle.csv and position.csv are always written (see below).
+field | The velocity field that is used to transport the interface. By default, the possible choices are "navierField", "shearField", "timeDependentNavierField".
+v0, c1, c2 |  The field parameters. For the navier field all three parameters are relevant, but for the shear field, c1 and c2 are ignored and only the value of v0 matters.
+tau | Parameter for the field "timeDependentNavierField" (see examples below).
 centerX, centerY, centerZ | The initial center of the droplet.
 expcpX, expcpY, expcpZ, expAngle | The expected coordinates for the initial contact point and the expected initial contact angle. Those are used for the reference solutions.
 trackedContactPoint | Whether to track the left or right contact point. Only applicable in 2D.
