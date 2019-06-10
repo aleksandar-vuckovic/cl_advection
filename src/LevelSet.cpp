@@ -244,7 +244,7 @@ double LevelSet::getReferenceAngleExplicitEuler(double dt, int timestep, array<d
  *
  * @param t The time at which to calculate the contact angle
  * @param c1 A parameter of the navier field
- * @param c2 A parameter of the naveir field
+ * @param c2 A parameter of the navier field
  * @param theta0 The contact angle at time t == 0
  * @return The reference contact angle in degrees
  */
@@ -274,7 +274,7 @@ double LevelSet::getReferenceAngleLinearField(double t, double c1, double c2, do
  * At each point in time, write the Level set field to disk and call VelocityField::writeToFile to write its values as well.
  *
  * @param dt The width of a timestep
- * @param The index of the timestep
+ * @param timestep The index of the timestep
  * @param total_timesteps The total number of timesteps
  * @param total_writesteps The total number of steps that will be written to disk
  * @param xmfFile A pointer to the XMF file.

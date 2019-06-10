@@ -1,4 +1,4 @@
-default: finiteVolumes
+default: cl_advection
 
 sourceFiles = main.cpp Field.cpp LevelSet.cpp VelocityField.cpp velocityFields.cpp vecMath3D.cpp
 objects = main.o Field.o LevelSet.o VelocityField.o velocityFields.o vecMath3D.o
@@ -21,17 +21,17 @@ velocityFields.o : velocityFields.cpp
 vecMath3D.o : vecMath3D.cpp
 	g++ -c -O3 -Wall vecMath3D.cpp -o vecMath3D.o
 
-finiteVolumes: $(objects)
-	g++ $(objects) -O3 -Wall -o finiteVolumes
+cl_advection: $(objects)
+	g++ $(objects) -O3 -Wall -o cl_advection
 
 clean:
-	rm -rf data/ $(objects) finiteVolumes finiteVolumes.debug *csv* *xmf*
+	rm -rf data/ $(objects) cl_advection cl_advection.debug *csv* *xmf*
 
 debug: $(sourceFiles)
-	g++ -g $(sourceFiles) -o finiteVolumes.debug
+	g++ -g $(sourceFiles) -o cl_advection.debug
 run:
-	./finiteVolumes
+	./cl_advection
 
 brun:
 	make
-	./finiteVolumes
+	./cl_advection

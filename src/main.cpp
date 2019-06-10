@@ -162,7 +162,7 @@ int main() {
             Phi.writeToFile(dt, i, timesteps, writesteps, &xmfFile);
         }
 
-		// Calculate the theoretical position of the contact point
+	// Calculate the reference position of the contact point
         array<double, 3> newCPReference;
         if (field->getName() == "shearField")
         	newCPReference = Phi.getContactPointExplicitEuler(dt, i, initCP);
@@ -173,29 +173,32 @@ int main() {
         array<int, 3> newCPIndicesActual = Phi.getContactPointIndices(newCPReference);
         array<double, 3> newCPActual = Phi.getContactPoint(newCPIndicesActual);
 
+        // Evaluate te Contact Angle numerically based on Phi
         angle[i] = Phi.getContactAngle(newCPIndicesActual);
 
+        // Output to command line and positionFile
         std::cout << "Time: " << i*dt << "\n";
         positionFile << i*dt << ", " << newCPActual[0] << ", " << newCPReference[0] << std::endl;
 
 
         std::cout << "Actual: " << std::to_string(angle[i]/(2*M_PI)*360) + "\n";
         if (field->getName() == "shearField") {
+                        // compute reference for the contact angle (numerically)
 			double reference_temp = Phi.getReferenceAngleExplicitEuler(dt, i, n_sigma_init, expcp)/M_PI*180;
 			angleFile << i*dt << ", " << angle[i]/(2*M_PI)*360 << ", " << reference_temp << "\n";
 			std::cout << "Reference: " << reference_temp << "\n";
-		} else {
-		    double reference_temp = Phi.getReferenceAngleLinearField(i*dt, c1, c2, expAngle/180*M_PI)/M_PI*180.0;
-			//double reference_temp = Phi.getReferenceAngleExplicitEuler(dt, i, n_sigma_init, newCP)/M_PI*180;
+		} else { //TODO mafri
+                        // compute reference for the contact angle (from analytical solution)
+		        double reference_temp = Phi.getReferenceAngleLinearField(i*dt, c1, c2, expAngle/180*M_PI)/M_PI*180.0;
 			angleFile << i*dt << ", " << angle[i]/(2*M_PI)*360 << ", " 	<< reference_temp << "\n";
 			std::cout << "Reference: " << reference_temp << "\n";
 		}
 
-        // Calculate numerical flux through all faces of each cell and change Phi accordingly
+        // Calculate numerical flux through all faces of each cell and update Phi
         Phi.calculateNextTimestep(dt, i);
 
         positionFile.flush();
-		angleFile.flush();
+	angleFile.flush();
     }
     // Add closing line to the XMF file
     xmfFile << "</Grid>\n</Domain>\n</Xdmf>" << std::endl;

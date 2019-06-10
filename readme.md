@@ -31,7 +31,7 @@ Note that [2] is also available on the arXiv preprint server, see https://arxiv.
 # Installation
 
 ### Dependencies
-The software is most easily compiled on Unix system using the GNU compiler. It has also been tested successfully on Windows 10 using the MinGW project (https://www.cygwin.com/).
+The software is most easily compiled on Unix system using the GNU compiler. It has also been tested successfully on Windows 10 using the MinGW project (http://www.mingw.org/).
 
 * g++ (GCC) 6.1
 * make
@@ -50,7 +50,7 @@ On a Unix system enter the src/ directory and run make:
 
 To run the program, execute
 
-    ./finiteVolumes
+    ./cl_advection
 
 Within the same directory, you will find the files contactAngle.csv and position.csv. The first column represents the simulation time, the second is the actual value and the third is the reference value.
 You will find a folder named data/ as well. It will contain the binary files of the field, its level set value, velocity field and the XMF file necessary to visualize everything in Paraview (version 5.5 and higher).
