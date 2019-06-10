@@ -129,7 +129,7 @@ The vortex-in-a-box field, also known as the shear field, is given by
 
 \f[ v(x,y) = (-\sin(\pi x)\cos(\pi y), \cos(\pi x) \sin(\pi y) ) \f]
 
-Similarly to the navier field above, we again find that the numerical results agree with the reference solution. For the referenc solution, we solved the equation above numerically with the explicit euler method. The additional numerical errors from the reference solution appear to not be relevant, as again we find a linear convergence of the simulation.
+Similarly to the navier field above, we again find that the numerical results agree with the reference solution. For the reference solution, we solved the equation above numerically with the explicit euler method. The additional numerical errors from the reference solution appear to not be relevant, as again we find a linear convergence of the simulation.
 
 ![Contact Angle Evolution for the shear testcase.](images/results_angle_shear.jpg)
 
@@ -157,13 +157,13 @@ where
 
 Again we can verify the linear convergence of the simulation, although, as expected, the errors appear to diverge with time.
 
-![Contact Angle Evolution for the time dependent Navier testcase.](images/results_angle_time_dependent_navier.jpg)
+![Contact Angle Evolution for the time-dependent Navier testcase.](images/results_angle_time_dependent_navier.jpg)
 
-![Contact Angle Error for the time dependent Navier testcase.](images/error_angle_time_dependent_navier.jpg)
+![Contact Angle Error for the time-dependent Navier testcase.](images/error_angle_time_dependent_navier.jpg)
 
-![Contact Line Position for the time dependent Navier testcase.](images/results_position_time_dependent_navier.jpg)
+![Contact Line Position for the time-dependent Navier testcase.](images/results_position_time_dependent_navier.jpg)
 
-![Position Error for the time dependent Navier testcase.](images/error_position_time_dependent_navier.jpg)
+![Position Error for the time-dependent Navier testcase.](images/error_position_time_dependent_navier.jpg)
 
 123VIDEO123
 
