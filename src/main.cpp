@@ -50,12 +50,17 @@ int main() {
 
     // Read data from Inputfile
     std::ifstream inFileStream("Inputfile");
+    if(!inFileStream.good()){
+     std::cout << "Error: File 'Inputfile' not found in current folder.\n";
+     exit(-1);
+    }
+
     std::string line, varName, value;
 
   while(std::getline(inFileStream, line)) {
 	std::istringstream linestream(line);
 	if(std::getline(linestream, varName, '=')) {
-	    if ( std::getline(linestream, value)) {
+	    if (std::getline(linestream, value)) {
 	        if (varName == "numX")
 		    numX = std::stoi(value);
 		else if (varName == "numY")
