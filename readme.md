@@ -31,7 +31,7 @@ Note that [2] is also available on the arXiv preprint server, see https://arxiv.
 # Installation
 
 ### Dependencies
-The software is most easily compiled on Unix system using the GNU compiler. It has also been tested successfully on Windows 10 using the Cygwin project (https://www.cygwin.com/).
+The software is most easily compiled on Unix system using the GNU compiler. It has also been tested successfully on Windows 10 using the *MinGW* project (http://www.mingw.org/).
 
 * g++ (GCC) 6.1
 * make
@@ -46,11 +46,13 @@ On a Unix system enter the src/ directory and run make:
     cd src/
     make
 
+If the program is compiled properly, you will find an executable called "cl_advection" in the src/ folder.
+
 # Usage
 
-To run the program, execute
+To run the program, go to a testcase folder (containing a file named "Inputfile") and execute
 
-    ./finiteVolumes
+    cl_advection
 
 Within the same directory, you will find the files contactAngle.csv and position.csv. The first column represents the simulation time, the second is the actual value and the third is the reference value.
 You will find a folder named data/ as well. It will contain the binary files of the field, its level set value, velocity field and the XMF file necessary to visualize everything in Paraview (version 5.5 and higher).
@@ -64,13 +66,15 @@ They are as follows:
 
 Variable name | Description
 ---------------|-----------
-numX, numY, numZ| Number of cells in the given direction
-lenX, lenY, lenZ| Length of simulation plane in the given direction
-time | The simulation time
-CFL  | Courant-Friedrichs-Lewy-number
-writestepsFraction | Fraction of total timesteps that will be written to disk|
-writeField| Whether to write the level set field binary files to disk. The files contactAngle.csv and position.csv are always written (see below)
-v0, c1, c2, field |  The field and its parameters. For the navier field all three parameters are relevant, but for the shear field, c1 and c2 are ignored and only the value of v0 matters.
+numX, numY, numZ| Number of cells in the given direction.
+lenX, lenY, lenZ| Length of simulation domain in the coordinate directions.
+time | The total simulation time.
+CFL  | Courant-Friedrichs-Lewy-number (determines the numerical timestep).
+writestepsFraction | Fraction of total timesteps that will be written to disk.
+writeField| Whether to write the level set field binary files to disk. The files contactAngle.csv and position.csv are always written (see below).
+field | The velocity field that is used to transport the interface. By default, the possible choices are "navierField", "shearField", "timeDependentNavierField".
+v0, c1, c2 |  The field parameters. For the navier field all three parameters are relevant, but for the shear field, c1 and c2 are ignored and only the value of v0 matters.
+tau | Parameter for the field "timeDependentNavierField" (see examples below).
 centerX, centerY, centerZ | The initial center of the droplet.
 expcpX, expcpY, expcpZ, expAngle | The expected coordinates for the initial contact point and the expected initial contact angle. Those are used for the reference solutions.
 trackedContactPoint | Whether to track the left or right contact point. Only applicable in 2D.
@@ -93,7 +97,24 @@ vecMath3D.cpp/hpp |  This is a library of operator overloads and functions for v
 To add a new velocity field, add it and its Jacobian matrix to the files velocityFields.cpp and .hpp. Next, add the appropriate if-statement to the VelocityField::at member function.
 # Examples
 
+In the following, we will look at three examples that numerically verify the proven equation
+
+\f[ \dfrac{D n_{\Sigma}}{Dt} = - (\nabla v)^{\intercal} n_{\Sigma} + \langle \nabla v \cdot n_{\Sigma}, n_{\Sigma} \rangle \, n_{\Sigma} \f]
+
+where \f$ n_{\Sigma} \f$ is the normal vector at the contact point and \f$ \dfrac{D}{Dt} \f$ is the Lagrangian derivative.
 ## Navier slip type field (src/testcases/navier)
+The navier slip field is given by
+
+\f[ v(x,y) = (v_0 + c_1 x + c_2 y, -c_y y) \f]
+
+where \f$v_0, c_1\f$ and \f$c_2 \f$ correspond to v0, c1 and c2 defined above. As is evident from the plots of the contact angle and position, the results of the simulation are in agreement with the analytic solutions. They are given by
+
+\f[ x_1(t) = x_1^0 e^{c_1 t} + \dfrac{v_0}{c_1} (e^{c_1 t} - 1), \qquad \theta (t) = \dfrac{\pi}{2} + \arctan(-\cot\theta_0 e^{2c_1 t} \pm c_2 \dfrac{e^{2c_1 t} - 1}{2c_1}), \quad c_1 \neq 0. \f]
+
+Where \f$ ``-``\f$ is used for the left contact angle and \f$ ``+``\f$ is for the right contact angle.
+
+Further, we can see from the plots of the errors that the numerical values converge to their analytic counterparts and that this convergence is linear in the cell width. 
+
 ![Contact Angle Evolution for the Navier testcase.](images/results_angle_navier.jpg)
 
 ![Contact Angle Error for the Navier testcase.](images/error_angle_navier.jpg)
@@ -103,24 +124,48 @@ To add a new velocity field, add it and its Jacobian matrix to the files velocit
 ![Position Error for the Navier testcase.](images/error_position_navier.jpg)
 
 ## Vortex-in-a-box field (src/testcases/shear)
+
+The vortex-in-a-box field, also known as the shear field, is given by
+
+\f[ v(x,y) = (-\sin(\pi x)\cos(\pi y), \cos(\pi x) \sin(\pi y) ) \f]
+
+Similarly to the navier field above, we again find that the numerical results agree with the reference solution. For the reference solution, we solved the equation above numerically with the explicit euler method. The additional numerical errors from the reference solution appear to not be relevant, as again we find a linear convergence of the simulation.
+
 ![Contact Angle Evolution for the shear testcase.](images/results_angle_shear.jpg)
 
 ![Contact Angle Error for the shear testcase.](images/error_angle_shear.jpg)
 
 ![Contact Line Position for the shear testcase.](images/results_position_shear.jpg)
 
-![Position Error for the shear testcase.](images/error_position_shear.jpg)
+![Position Error for the shear testcase.](images/error_position_shear.jpg)	
 
 ![A snapshot of the simulation](images/snapshotShear.png)
 
 ## Time-dependent field (src/testcases/timeDependentNavier)
-![Contact Angle Evolution for the time dependent Navier testcase.](images/results_angle_time_dependent_navier.jpg)
+The time-depentent navier field is given by
 
-![Contact Angle Error for the time dependent Navier testcase.](images/error_angle_time_dependent_navier.jpg)
+\f[ v(x,y) = \dfrac{\cos(\pi t)}{\tau} \cdot (v_0 + c_1 x + c_2 y, -c_y y) \f]
 
-![Contact Line Position for the time dependent Navier testcase.](images/results_position_time_dependent_navier.jpg)
+As expected, both the values in the contact angle and the position oscillate with a constant period. The results for the contact angle and position agree with the numerical solutions
 
-![Position Error for the time dependent Navier testcase.](images/error_position_time_dependent_navier.jpg)
+\f[ x_1(t) = x_1^0 e^{c_1 s(t)} + \dfrac{v_0}{c_1} (e^{c_1 s(t)} - 1) \f]
+\f[ \theta (t) = \dfrac{\pi}{2} + \arctan(-\cot\theta_0 e^{2c_1 s(t)} \pm c_2 \dfrac{e^{2c_1 s(t)} - 1}{2c_1}), \quad c_1 \neq 0.\f]
+
+where
+
+\f[ s(t) = \dfrac{\tau}{\pi}\sin(\dfrac{\pi}{\tau}t) \f]
+
+Again we can verify the linear convergence of the simulation, although, as expected, the errors appear to diverge with time.
+
+![Contact Angle Evolution for the time-dependent Navier testcase.](images/results_angle_time_dependent_navier.jpg)
+
+![Contact Angle Error for the time-dependent Navier testcase.](images/error_angle_time_dependent_navier.jpg)
+
+![Contact Line Position for the time-dependent Navier testcase.](images/results_position_time_dependent_navier.jpg)
+
+![Position Error for the time-dependent Navier testcase.](images/error_position_time_dependent_navier.jpg)
+
+123VIDEO123
 
 # Further information
 (xxx doxygen, contact to us, sfb info, licence?)
