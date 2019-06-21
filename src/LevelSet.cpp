@@ -26,7 +26,7 @@ LevelSet::LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz
 /**
  * Calculate the initial contact point from a given expected contact point.
  * Using the expected contact point, iterate over all points of the field, looking for the closest point to expcp which
- * has an absolute Level set value of less than epsilon and lies of on the interface.
+ * has an absolute Level set value of less than epsilon and lies on the interface.
  *
  * @param expcp The expected contact point
  * @param epsilon Maximum absolute Level set value to consider a point "on the interface"
@@ -290,7 +290,7 @@ double LevelSet::getReferenceAngleLinearField(double t, double c1, double c2, do
  * @param cell The indices of the contact point
  * @return The curvature
  */
-double LevelSet::getReferenceCurvature(double dt, double timestep, double initCurvature, array<double, 3> CP_init) {
+double LevelSet::getReferenceCurvatureExplicitEuler(double dt, int timestep, double initCurvature, array<double, 3> CP_init) {
     // TODO update for dx, dy, dz
     double curvature = initCurvature;
     for (int i = 0; i < timestep; i++){
@@ -298,17 +298,25 @@ double LevelSet::getReferenceCurvature(double dt, double timestep, double initCu
         array<int, 3> cell = getContactPointIndices(CP);
         //Calculate angle at this cell with finite differences
         double normalX = (this->at(cell[0]+1, cell[1], cell[2]) - this->at(cell[0]-1, cell[1], cell[2])) / (2*dx);
-        double normalY = (-this->at(cell[0], cell[1] + 2, cell[2]) + 4.0*this->at(cell[0], cell[1] + 1, cell[2]) - 3.0*this->at(cell[0], cell[1], cell[2]))/(2*dx);
+        double normalY = (-this->at(cell[0], cell[1] + 2, cell[2]) + 4.0*this->at(cell[0], cell[1] + 1, cell[2]) - 3.0*this->at(cell[0], cell[1], cell[2]))/(2*dy);
         double normalZ;
         if (this->numZ > 1)
-            normalZ = (this->at(cell[0], cell[1], cell[2]+1) - this->at(cell[0]-1, cell[1], cell[2]-1))/(2*dx);
+            normalZ = (this->at(cell[0], cell[1], cell[2]+1) - this->at(cell[0]-1, cell[1], cell[2]-1))/(2*dz);
         else
             normalZ = 0;
         array<double, 3> normal = {normalX, normalY, normalZ};
         normal = normal/abs(normal);
 
         // This is the second derivative of v in the tau direction (= y direction)
-        array<double, 3> temp = {M_PI*M_PI*sin(M_PI*CP[0])*cos(M_PI*CP[1]), -M_PI*M_PI*cos(M_PI*CP[0])*sin(M_PI*CP[1]), 0};
+        array<double, 3> temp;
+
+        if (field->getName() == "shearField") {
+            temp = {field->getV0()*M_PI*M_PI*sin(M_PI*CP[0])*cos(M_PI*CP[1]),
+                   -field->getV0()*M_PI*M_PI*cos(M_PI*CP[0])*sin(M_PI*CP[1]),
+                    0};
+        } else if (field->getName() == "navierField") {
+        }
+
 
         array<double,3> tau = {normal[1], -normal[0], 0};
 
@@ -316,6 +324,16 @@ double LevelSet::getReferenceCurvature(double dt, double timestep, double initCu
     }
 
     return curvature;
+}
+
+/**
+ * Calculate the reference curvature for a specific case of the navier field (c0 = 0 = c2)
+ *
+ * @param t The time
+ * @param init_curvature The initial curvature
+ */
+double LevelSet::getReferenceCurvatureLinearField(double t, double init_curvature) {
+    return init_curvature * exp(2*field->getC1()*t);
 }
 
 /**
@@ -358,10 +376,10 @@ double LevelSet::getCurvature(array<int, 3> cell) const {
 
                 double normalX = (this->at(temp[0] + 1, temp[1], temp[2]) - this->at(temp[0]-1, temp[1], temp[2])) / (2*dx);
                 // second order difference quotient
-                double normalY = (-this->at(temp[0], temp[1] + 2, temp[2]) + 4.0*this->at(temp[0], temp[1] + 1, temp[2]) - 3.0*this->at(temp[0], temp[1], temp[2])) / (2*dx);
+                double normalY = (-this->at(temp[0], temp[1] + 2, temp[2]) + 4.0*this->at(temp[0], temp[1] + 1, temp[2]) - 3.0*this->at(temp[0], temp[1], temp[2])) / (2*dy);
                 double normalZ;
                 if (this->numZ > 1)
-                    normalZ = (this->at(temp[0], temp[1], temp[2] + 1) - this->at(temp[0], temp[1], temp[2] - 1)) / (2*dx);
+                    normalZ = (this->at(temp[0], temp[1], temp[2] + 1) - this->at(temp[0], temp[1], temp[2] - 1)) / (2*dz);
                 else
                     normalZ = 0;
                 array<double ,3> normal = {normalX, normalY, normalZ};
@@ -372,7 +390,7 @@ double LevelSet::getCurvature(array<int, 3> cell) const {
                     localField.at(x+local, y+local, 0) = normal;
             }
 
-    // Calculate divergence of localfield at cell, which by definition
+    // Calculate divergence of localField at cell, which by definition
     // is in the "middle" of localField
     double dnx_dx = (localField.at(sidelength/2 + 1, sidelength/2, sidelengthZ/2)[0] - localField.at(sidelength/2 - 1, sidelength/2, sidelengthZ/2)[0]) / (2*dx);
 
@@ -381,11 +399,11 @@ double LevelSet::getCurvature(array<int, 3> cell) const {
                           - 3.0*localField.at(sidelength/2, sidelength/2, sidelengthZ/2)[0] ) / (2*dx);
 
 
-    double dny_dx = (localField.at(sidelength/2 + 1, sidelength/2, sidelengthZ/2)[1] - localField.at(sidelength/2 - 1, sidelength/2, sidelengthZ/2)[1]) / (2*dx);
+    double dny_dx = (localField.at(sidelength/2 + 1, sidelength/2, sidelengthZ/2)[1] - localField.at(sidelength/2 - 1, sidelength/2, sidelengthZ/2)[1]) / (2*dy);
 
     double dny_dy = (-localField.at(sidelength/2, sidelength/2 + 2, sidelengthZ/2)[1]
                           + 4.0*localField.at(sidelength/2, sidelength/2 + 1, sidelengthZ/2)[1]
-                          - 3.0*localField.at(sidelength/2, sidelength/2, sidelengthZ/2)[1] ) / (2*dx);
+                          - 3.0*localField.at(sidelength/2, sidelength/2, sidelengthZ/2)[1] ) / (2*dy);
     //2D only
     array<double, 3> normal = localField.at(sidelength/2, sidelength/2, sidelengthZ/2);
     array<double, 3> tau = {normal[1], -normal[0], 0};

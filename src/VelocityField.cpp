@@ -158,6 +158,10 @@ void VelocityField::writeToFile(double t) {
 	delete[] fieldValues;
 }
 
+double VelocityField::getV0() {
+    return v0;
+}
+
 double VelocityField::getC1() {
 	return c1;
 }

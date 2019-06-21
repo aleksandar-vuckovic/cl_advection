@@ -158,7 +158,9 @@ int main() {
     }
     std::ofstream positionFile("position.csv");
     std::ofstream angleFile("contactAngle.csv");
-    std::ofstream curvatureFile("curvature.csv");
+    std::ofstream curvatureFile;
+    if (calculateCurvature)
+        curvatureFile = std::ofstream("curvature.csv");
     double sumAtStart = Phi.sumLevelSet();
 
     // XMF file for Paraview
@@ -195,7 +197,7 @@ int main() {
         std::cout << "Actual: " << std::to_string(angle[i]/(2*M_PI)*360) + "\n";
         if (field->getName() == "shearField") {
                         // compute reference for the contact angle (numerically)
-			double reference_temp = Phi.getReferenceAngleExplicitEuler(dt, i, n_sigma_init, expcp)/M_PI*180;
+			double reference_temp = Phi.getReferenceAngleExplicitEuler(dt, i, n_sigma_init, initCP)/M_PI*180;
 			angleFile << i*dt << ", " << angle[i]/(2*M_PI)*360 << ", " << reference_temp << "\n";
 			std::cout << "Reference: " << reference_temp << "\n";
 		} else { //TODO mafri
@@ -207,7 +209,8 @@ int main() {
         
         if (calculateCurvature) {
             curvatureActual[i] = Phi.getCurvature(newCPIndicesActual);
-            curvatureTheoretical[i] = Phi.getReferenceCurvature(dt, i, initCurvature, expcp);
+            //curvatureTheoretical[i] = Phi.getReferenceCurvatureExplicitEuler(dt, i, initCurvature, initCP);
+            curvatureTheoretical[i] = Phi.getReferenceCurvatureLinearField(dt*i, initCurvature);
             curvatureFile << std::to_string(i*dt) + "," + std::to_string(curvatureActual[i]) + "," + std::to_string(curvatureTheoretical[i]) + "\n";
 
             std::cout << "Measured curvature: " + std::to_string(curvatureActual[i]) + "\n";
@@ -219,7 +222,9 @@ int main() {
         Phi.calculateNextTimestep(dt, i);
 
         positionFile.flush();
-	angleFile.flush();
+        angleFile.flush();
+        if (calculateCurvature)
+            curvatureFile.flush();
     }
     // Add closing line to the XMF file
     xmfFile << "</Grid>\n</Domain>\n</Xdmf>" << std::endl;

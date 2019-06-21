@@ -31,6 +31,7 @@ public:
 	array<double, 3> at(double t, double x, double y, double z);
 	array<array<double, 3>, 3> gradAt(double t, double x, double y, double z);
 	void writeToFile(double t);
+	double getV0();
 	double getC1();
 	double getTau();
 	std::string getName();
