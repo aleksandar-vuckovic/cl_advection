@@ -57,6 +57,11 @@ To run the program, go to a testcase folder (containing a file named "Inputfile"
 Within the same directory, you will find the files contactAngle.csv and position.csv. The first column represents the simulation time, the second is the actual value and the third is the reference value.
 You will find a folder named data/ as well. It will contain the binary files of the field, its level set value, velocity field and the XMF file necessary to visualize everything in Paraview (version 5.5 and higher).
 
+# Visualization
+To visualize the problem with Paraview, open the file "Phi.xmf" within Paraview. Choose "Xdmf Reader", then press "Apply". Now, in the third row from the top, choose "Rescale to Custom Data Range" and select appropriate scaling values. We recommend -0.001 to 0.001, although this is arbitrary. Now, select "Play" at the top.
+
+To visualize the velocity field, choose the filter "Glyph", then under "Masking" change the Maximum Number of Sample Points to a smaller value, we recommend using 50. Under coloring, click on "GlyphScale" and select "Solid Color". Searching for filters is done with Ctrl+Space.
+
 ## Inputfile
 
 All parameters in the Inputfile need to be set in order for the program to work correctly.
