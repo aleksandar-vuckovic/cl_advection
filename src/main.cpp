@@ -209,8 +209,14 @@ int main() {
         
         if (calculateCurvature) {
             curvatureActual[i] = Phi.getCurvature(newCPIndicesActual);
-            //curvatureTheoretical[i] = Phi.getReferenceCurvatureExplicitEuler(dt, i, initCurvature, initCP);
-            curvatureTheoretical[i] = Phi.getReferenceCurvatureLinearField(dt*i, initCurvature);
+
+            if (field->getName() == "shearField")
+                curvatureTheoretical[i] = Phi.getReferenceCurvatureExplicitEuler(dt, i, initCurvature, initCP);
+            else if (field->getName() == "navierField")
+                curvatureTheoretical[i] = Phi.getReferenceCurvatureLinearField(dt*i, initCurvature);
+            else
+                throw std::invalid_argument("Please choose shearField or navierField for curvature analysis.");
+
             curvatureFile << std::to_string(i*dt) + "," + std::to_string(curvatureActual[i]) + "," + std::to_string(curvatureTheoretical[i]) + "\n";
 
             std::cout << "Measured curvature: " + std::to_string(curvatureActual[i]) + "\n";

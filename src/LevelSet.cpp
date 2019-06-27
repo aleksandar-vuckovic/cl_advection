@@ -320,7 +320,7 @@ double LevelSet::getReferenceCurvatureExplicitEuler(double dt, int timestep, dou
 
         array<double,3> tau = {normal[1], -normal[0], 0};
 
-        curvature = curvature + dt*(temp*normal - 2*curvature*(field->gradAt(i*dt, CP[0], CP[1], CP[2])*tau)*tau);
+        curvature = curvature + dt*(temp*normal - 3*curvature*(field->gradAt(i*dt, CP[0], CP[1], CP[2])*tau)*tau);
     }
 
     return curvature;
@@ -333,7 +333,8 @@ double LevelSet::getReferenceCurvatureExplicitEuler(double dt, int timestep, dou
  * @param init_curvature The initial curvature
  */
 double LevelSet::getReferenceCurvatureLinearField(double t, double init_curvature) {
-    return init_curvature * exp(2*field->getC1()*t);
+    //Testing 3 instead of 2!! Not identical to mathematical formula!
+    return init_curvature * exp(3*field->getC1()*t);
 }
 
 /**
@@ -348,29 +349,21 @@ double LevelSet::getReferenceCurvatureLinearField(double t, double init_curvatur
  * @return The curvature
  */
 double LevelSet::getCurvature(array<int, 3> cell) const {
-   // TODO update for dx, dy, dz
-
     /* Define what number of cells in each direction(excluding the main cell) are considered local.
-       The resulting normal vector field is defined on a cuboid with  sidelength 2*local + 1 */
+       The resulting normal vector field is defined on a cuboid with sidelength 2*local + 1 */
     int local = 2;
-    int sidelength = 2*local + 1;
     int sidelengthZ;
     if (this->numZ > 1)
-        sidelengthZ = sidelength;
+        sidelengthZ = 2*local + 1;
     else
         sidelengthZ = 1;
-    /** Declare a field of normal vectors
-     TODO: Currently a 5x5x5 (5x5x1 in 2D) field is initialized, but it is only populated from y = 2 to y = 4.
-     This is wasteful and combined with the fact that the loop below iterates over y = 0 to y = 2 makes it confusing.
-    */
-    Field<array<double, 3> > localField(sidelength, sidelength, sidelengthZ);
 
-    for (int x = -sidelength/2; x <= sidelength/2; x++)
-        for (int y = 0; y <= sidelength/2; y++)
-            for (int z = -sidelength/2; z <= sidelength/2; z++) {
-                if (this->numZ == 1 && z != 0) {
-                    continue;
-                }
+    // Declare a field of normal vectors
+    Field<array<double, 3> > localField(2*local + 1, local + 1, sidelengthZ);
+
+    for (int x = -local; x <= local; x++)
+        for (int y = 0; y <= local; y++)
+            for (int z = sidelengthZ/2; z <= sidelengthZ/2; z++) {
                 array<int, 3> temp = {x, y, z};
                 temp = temp + cell;
 
@@ -385,27 +378,27 @@ double LevelSet::getCurvature(array<int, 3> cell) const {
                 array<double ,3> normal = {normalX, normalY, normalZ};
                 normal = normal/abs(normal);
                 if (this->numZ > 1)
-                    localField.at(x+local, y+local, z+local) = normal;
+                    localField.at(x+local, y, z+local) = normal;
                 else
-                    localField.at(x+local, y+local, 0) = normal;
+                    localField.at(x+local, y, 0) = normal;
             }
 
     // Calculate divergence of localField at cell, which by definition
     // is in the "middle" of localField
-    double dnx_dx = (localField.at(sidelength/2 + 1, sidelength/2, sidelengthZ/2)[0] - localField.at(sidelength/2 - 1, sidelength/2, sidelengthZ/2)[0]) / (2*dx);
+    double dnx_dx = (localField.at(local + 1, 0, sidelengthZ/2)[0] - localField.at(local - 1, 0, sidelengthZ/2)[0]) / (2*dx);
 
-    double dnx_dy = (-localField.at(sidelength/2, sidelength/2 + 2, sidelengthZ/2)[0]
-                          + 4.0*localField.at(sidelength/2, sidelength/2 + 1, sidelengthZ/2)[0]
-                          - 3.0*localField.at(sidelength/2, sidelength/2, sidelengthZ/2)[0] ) / (2*dx);
+    double dnx_dy = (-localField.at(local, 2, sidelengthZ/2)[0]
+                + 4.0*localField.at(local, 1, sidelengthZ/2)[0]
+                - 3.0*localField.at(local, 0, sidelengthZ/2)[0] ) / (2*dy);
 
 
-    double dny_dx = (localField.at(sidelength/2 + 1, sidelength/2, sidelengthZ/2)[1] - localField.at(sidelength/2 - 1, sidelength/2, sidelengthZ/2)[1]) / (2*dy);
+    double dny_dx = (localField.at(local + 1, 0, sidelengthZ/2)[1] - localField.at(local - 1, 0, sidelengthZ/2)[1]) / (2*dx);
 
-    double dny_dy = (-localField.at(sidelength/2, sidelength/2 + 2, sidelengthZ/2)[1]
-                          + 4.0*localField.at(sidelength/2, sidelength/2 + 1, sidelengthZ/2)[1]
-                          - 3.0*localField.at(sidelength/2, sidelength/2, sidelengthZ/2)[1] ) / (2*dy);
+    double dny_dy = (-localField.at(local, 2, sidelengthZ/2)[1]
+                + 4.0*localField.at(local, 1, sidelengthZ/2)[1]
+                - 3.0*localField.at(local, 0, sidelengthZ/2)[1] ) / (2*dy);
     //2D only
-    array<double, 3> normal = localField.at(sidelength/2, sidelength/2, sidelengthZ/2);
+    array<double, 3> normal = localField.at(local, 0, sidelengthZ/2);
     array<double, 3> tau = {normal[1], -normal[0], 0};
     array<double, 3> row1 = {dnx_dx, dnx_dy, 0};
     array<double, 3> row2 = {dny_dx, dny_dy, 0};
