@@ -192,8 +192,7 @@ int main() {
 			double reference_temp = Phi.getReferenceAngleExplicitEuler(dt, i, n_sigma_init, expcp)/M_PI*180;
 			angleFile << i*dt << ", " << angle[i]/(2*M_PI)*360 << ", " << reference_temp << "\n";
 			std::cout << "Reference: " << reference_temp << "\n";
-		} else { //TODO mafri
-                        // compute reference for the contact angle (from analytical solution)
+		} else {// compute reference for the contact angle (from analytical solution)
 		        double reference_temp = Phi.getReferenceAngleLinearField(i*dt, c1, c2, expAngle/180*M_PI)/M_PI*180.0;
 			angleFile << i*dt << ", " << angle[i]/(2*M_PI)*360 << ", " 	<< reference_temp << "\n";
 			std::cout << "Reference: " << reference_temp << "\n";

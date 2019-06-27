@@ -115,7 +115,7 @@ array<int, 3> LevelSet::getContactPointIndices(array<double, 3> point) {
             for (int y = 0; y < this->numY; y++)
                 for (int z = 0; z < this->numZ; z++) {
                     array<int, 3> other = {x, y, z};
-                    if (abs(point - cell*dx) > abs(point - other*dx)) // TODO: unclear implementation
+                    if (abs(point - cell*dx) > abs(point - other*dx))
                         cell = other;
                 }
         return cell;
