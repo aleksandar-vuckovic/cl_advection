@@ -7,6 +7,7 @@ src/*~
 # main executable and debug file
 src/cl_advection
 src/cl_advection.debug
+src/cl_advection.profile
 
 #output files
 src/data/*

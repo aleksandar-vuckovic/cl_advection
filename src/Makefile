@@ -30,3 +30,6 @@ clean:
 debug: $(sourceFiles)
 	g++ -g $(sourceFiles) -o cl_advection.debug
 
+profile: $(sourceFiles)
+	g++ -pg $(sourceFiles) -o cl_advection.profile
+
