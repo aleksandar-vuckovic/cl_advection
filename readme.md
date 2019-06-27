@@ -14,6 +14,8 @@ This problem emerges from the discretization of continuum models for dynamic wet
 
 The method is capable of solving the transport equation in both two and three dimensions, while the automatic evaluation of the contact angle over time is currently only implemented for the two-dimensional case.
 
+**Note**: A html version of this documentation is available, see [readme.html].
+
 ### Authors of the software
 * Mathis Fricke (fricke@mma.tu-darmstadt.de), Mathematical Modeling and Analysis, TU Darmstadt, Germany
 * Tomislav Marić (maric@mma.tu-darmstadt.de), Mathematical Modeling and Analysis, TU Darmstadt, Germany
