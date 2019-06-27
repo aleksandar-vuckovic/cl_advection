@@ -5,8 +5,8 @@
 src/*~
 
 # main executable and debug file
-src/finiteVolumes
-src/finiteVolumes.debug
+src/cl_advection
+src/cl_advection.debug
 
 #output files
 src/data/*
