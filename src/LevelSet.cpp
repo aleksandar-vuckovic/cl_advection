@@ -348,7 +348,7 @@ double LevelSet::getReferenceCurvatureLinearField(double t, double init_curvatur
  * @param cell The indices of the contact point
  * @return The curvature
  */
-double LevelSet::getCurvature(array<int, 3> cell) const {
+double LevelSet::getCurvatureDivergence(array<int, 3> cell) const {
     /* Define what number of cells in each direction(excluding the main cell) are considered local.
        The resulting normal vector field is defined on a cuboid with sidelength 2*local + 1 */
     int local = 2;
@@ -409,6 +409,57 @@ double LevelSet::getCurvature(array<int, 3> cell) const {
     double kappa = -1*(gradNormal*tau)*tau;
 
     return kappa;
+}
+
+/**
+ * Calculate the curvature of the droplet at the contact point.
+ *
+ * Represent the interface as a height function h over an arbitrary vertical axis y. Then, the curvature \f$\kappa \f$ is given by
+ * \f[ \kappa = \dfrac{h^{''}(y)}{(1 + (h^{'}(y))^{2})^{3/2}} |_{y = 0} \f]
+ *
+ * @param cell The indices of the contact point
+ * @return The curvature
+ */
+double LevelSet::getCurvatureHeight(array<int, 3> cell) const {
+    // x value of arbitrary axis
+    int axisPosition = 0;
+
+    if (trackedCP == "left") {
+        axisPosition = cell[0] + numX*0.1;
+    } else if (trackedCP == "right") {
+        axisPosition = cell[0] - numX*0.1;
+    }
+
+    // A cell width of 4 is needed to calculate the second derivative at the interface
+    array<double, 4> height;
+    array<double, 3> heightDeriv;
+    double heightDerivDeriv;
+
+    //Calculate height function for 4 layers of cells
+    for (int i = 0; i < 4; ++i) {
+        int h = 0;
+        while ( this->at(axisPosition - h, i, 0) < 0 )
+            ++h;
+
+        double alpha = this->at(axisPosition - h + 1, i, 0) - this->at(axisPosition - h, i, 0);
+        if(std::abs(alpha) < 1e-12){
+            throw std::runtime_error("Difference of LevelSet values at contact point too small for convex combination");
+        }
+        alpha = this->at(axisPosition - h + 1, i, 0) / alpha;
+        height[i] = (h - 1 + alpha)*dx;
+    }
+
+    //Calculate the derivative for 3 layers of cells
+    for (int i = 0; i < 3; ++i) {
+        if (i == 0)
+            heightDeriv[i] = (-height[i + 2] + 4*height[i + 1] - 3*height[i]) / (2*dy);
+        else
+            heightDeriv[i] = (height[i + 1] - height[i - 1]) / (2*dy);
+    }
+
+    heightDerivDeriv = (-heightDeriv[2] + 4*heightDeriv[1] - 3*heightDeriv[0]) / (2*dy);
+
+    return heightDerivDeriv/ pow( 1 + pow(heightDeriv[0], 2), 3/2);
 }
 
 void LevelSet::writeToFile(double dt, int timestep, int total_timesteps, int total_writesteps, std::ofstream *xmfFile) {

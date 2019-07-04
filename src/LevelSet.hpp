@@ -32,7 +32,8 @@ public:
     double getContactAngle(array<int, 3> cell);
     double getReferenceCurvatureExplicitEuler(double dt, int timestep, double initCurvature, array<double, 3> CP);
     double getReferenceCurvatureLinearField(double t, double init_curvature);
-    double getCurvature(array<int, 3> cell) const;
+    double getCurvatureDivergence(array<int, 3> cell) const;
+    double getCurvatureHeight(array<int, 3> cell) const;
     void writeToFile(double dt, int timestep, int total_timesteps, int total_writesteps, std::ofstream *xmfFile);
     double sumLevelSet();
     void initDroplet(array<double, 3> center, double radius);

@@ -145,7 +145,8 @@ int main() {
     array<double, 3> center = {centerX, centerY, centerZ};
     array<double, 3> expcp = {expcpX, expcpY, expcpZ};
     std::vector<double> angle(timesteps);
-    std::vector<double> curvatureActual(timesteps);
+    std::vector<double> curvatureActualDivergence(timesteps);
+    std::vector<double> curvatureActualHeight(timesteps);
     std::vector<double> curvatureTheoretical(timesteps);
 
     Phi.initDroplet(center, radius);
@@ -201,14 +202,15 @@ int main() {
 			angleFile << i*dt << ", " << angle[i]/(2*M_PI)*360 << ", " << reference_temp << "\n";
 			std::cout << "Reference: " << reference_temp << "\n";
 		} else { //TODO mafri
-                        // compute reference for the contact angle (from analytical solution)
-		        double reference_temp = Phi.getReferenceAngleLinearField(i*dt, c1, c2, expAngle/180*M_PI)/M_PI*180.0;
+                 // compute reference for the contact angle (from analytical solution)
+            double reference_temp = Phi.getReferenceAngleLinearField(i*dt, c1, c2, expAngle/180*M_PI)/M_PI*180.0;
 			angleFile << i*dt << ", " << angle[i]/(2*M_PI)*360 << ", " 	<< reference_temp << "\n";
 			std::cout << "Reference: " << reference_temp << "\n";
 		}
         
         if (calculateCurvature) {
-            curvatureActual[i] = Phi.getCurvature(newCPIndicesActual);
+            curvatureActualDivergence[i] = Phi.getCurvatureDivergence(newCPIndicesActual);
+            curvatureActualHeight[i] = Phi.getCurvatureHeight(newCPIndicesActual);
 
             if (field->getName() == "shearField")
                 curvatureTheoretical[i] = Phi.getReferenceCurvatureExplicitEuler(dt, i, initCurvature, initCP);
@@ -217,9 +219,13 @@ int main() {
             else
                 throw std::invalid_argument("Please choose shearField or navierField for curvature analysis.");
 
-            curvatureFile << std::to_string(i*dt) + "," + std::to_string(curvatureActual[i]) + "," + std::to_string(curvatureTheoretical[i]) + "\n";
+            curvatureFile << std::to_string(i*dt) + ", "
+                    + std::to_string(curvatureActualDivergence[i]) + ", "
+                    + std::to_string(curvatureActualHeight[i]) + ",     "
+                    + std::to_string(curvatureTheoretical[i]) + "\n";
 
-            std::cout << "Measured curvature: " + std::to_string(curvatureActual[i]) + "\n";
+            std::cout << "Measured curvature with divergence:     " + std::to_string(curvatureActualDivergence[i]) + "\n";
+            std::cout << "Measured curvature with height function:" + std::to_string(curvatureActualHeight[i]) + "\n";
             std::cout << "Reference curvature: " + std::to_string(curvatureTheoretical[i])  << std::endl;
         }
         
