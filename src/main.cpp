@@ -211,13 +211,7 @@ int main() {
         if (calculateCurvature) {
             curvatureActualDivergence[i] = Phi.getCurvatureDivergence(newCPIndicesActual);
             curvatureActualHeight[i] = Phi.getCurvatureHeight(newCPIndicesActual);
-
-            if (field->getName() == "shearField")
-                curvatureTheoretical[i] = Phi.getReferenceCurvatureExplicitEuler(dt, i, initCurvature, initCP);
-            else if (field->getName() == "navierField")
-                curvatureTheoretical[i] = Phi.getReferenceCurvatureLinearField(dt*i, initCurvature);
-            else
-                throw std::invalid_argument("Please choose shearField or navierField for curvature analysis.");
+            curvatureTheoretical[i] = Phi.getReferenceCurvatureExplicitEuler(dt, i, initCurvature, initCP);
 
             curvatureFile << std::to_string(i*dt) + ", "
                     + std::to_string(curvatureActualDivergence[i]) + ", "

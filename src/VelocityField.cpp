@@ -48,8 +48,8 @@ VelocityField::VelocityField(std::string name, double v0, double c1, double c2, 
 	double maxNormValue = 0, currentVal = 0, x, y, z;
 
 	for (int i = 0; i < (xmax - xmin)/dx; i++) {
-		for (int j = 0; j < (ymax - ymin)/dx; j++) {
-			for (int k = 0; k < (zmax - zmin)/dx; k++) {
+		for (int j = 0; j < (ymax - ymin)/dy; j++) {
+			for (int k = 0; k < (zmax - zmin)/dz; k++) {
 				x = i*dx - xmin;
 				y = j*dy - ymin;
 				z = k*dz - zmin;
