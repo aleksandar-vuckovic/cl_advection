@@ -34,7 +34,7 @@ LevelSet::LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz
  *
  */
 array<double, 3> LevelSet::getInitCP(array<double, 3> expcp, double epsilon) {
-array<double, 3> candidate = {0, 0, 0};
+    array<double, 3> candidate = {0, 0, 0};
     for (int x = 0; x < this->numX; x++)
         for (int y = 0; y < this->numY; y++)
             for (int z = 0; z < this->numZ; z++) {
@@ -43,7 +43,6 @@ array<double, 3> candidate = {0, 0, 0};
                     candidate = other;
 		}
 	}
-
     return candidate;
 }
 
@@ -268,19 +267,6 @@ double LevelSet::getReferenceAngleLinearField(double t, double c1, double c2, do
 }
 
 /**
- * Write the files necessary to visualize the field and its velocity field in Paraview.
- *
- * Write the XMF file to disk, as well as the grid of the Level set field. This is done only once.
- * At each point in time, write the Level set field to disk and call VelocityField::writeToFile to write its values as well.
- *
- * @param dt The width of a timestep
- * @param timestep The index of the timestep
- * @param total_timesteps The total number of timesteps
- * @param total_writesteps The total number of steps that will be written to disk
- * @param xmfFile A pointer to the XMF file.
- */
-
-/**
  * Calculate the reference curvature at the contact point with the explicit Euler method at a given time.
  *
  * @param dt The length of a timestep
@@ -293,7 +279,8 @@ double LevelSet::getReferenceAngleLinearField(double t, double c1, double c2, do
 double LevelSet::getReferenceCurvatureExplicitEuler(double dt, int timestep, double initCurvature, array<double, 3> CP_init) {
     // TODO update for dx, dy, dz
     double curvature = initCurvature;
-    for (int i = 0; i < timestep; i++){
+    dt = dt/10;
+    for (int i = 0; i < 10*timestep; i++) {
         array<double, 3> CP = getContactPointExplicitEuler(dt, i, CP_init);
         array<int, 3> cell = getContactPointIndices(CP);
         //Calculate angle at this cell with finite differences
@@ -315,6 +302,7 @@ double LevelSet::getReferenceCurvatureExplicitEuler(double dt, int timestep, dou
                    -field->getV0()*M_PI*M_PI*cos(M_PI*CP[0])*sin(M_PI*CP[1]),
                     0};
         } else if (field->getName() == "navierField") {
+            temp = {0, 0, 0};
         }
 
 
@@ -327,7 +315,7 @@ double LevelSet::getReferenceCurvatureExplicitEuler(double dt, int timestep, dou
 }
 
 /**
- * Calculate the reference curvature for a specific case of the navier field (c0 = 0 = c2)
+ * Calculate the reference curvature for a spec ific case of the navier field (c0 = 0 = c2)
  *
  * @param t The time
  * @param init_curvature The initial curvature
@@ -424,10 +412,11 @@ double LevelSet::getCurvatureHeight(array<int, 3> cell) const {
     // x value of arbitrary axis
     int axisPosition = 0;
 
+    // Set the axis to the right/left in the distance of one tenth of the available space
     if (trackedCP == "left") {
-        axisPosition = cell[0] + numX*0.1;
+        axisPosition = cell[0] + 0.1*(numX - cell[0]);
     } else if (trackedCP == "right") {
-        axisPosition = cell[0] - numX*0.1;
+        axisPosition = cell[0] - 0.1*cell[0];
     }
 
     // A cell width of 4 is needed to calculate the second derivative at the interface
@@ -442,8 +431,9 @@ double LevelSet::getCurvatureHeight(array<int, 3> cell) const {
             ++h;
 
         double alpha = this->at(axisPosition - h + 1, i, 0) - this->at(axisPosition - h, i, 0);
-        if(std::abs(alpha) < 1e-12){
-            throw std::runtime_error("Difference of LevelSet values at contact point too small for convex combination");
+        if(std::abs(alpha) < 1e-12) {
+            throw std::runtime_error("Curvature (Height): Difference of LevelSet values at contact point too small for convex combination.\n"
+                                                 "axisPosition = " + std::to_string(axisPosition) + " , alpha = " + std::to_string(alpha));
         }
         alpha = this->at(axisPosition - h + 1, i, 0) / alpha;
         height[i] = (h - 1 + alpha)*dx;
@@ -462,6 +452,18 @@ double LevelSet::getCurvatureHeight(array<int, 3> cell) const {
     return heightDerivDeriv/ pow( 1 + pow(heightDeriv[0], 2), 3/2);
 }
 
+/**
+ * Write the files necessary to visualize the field and its velocity field in Paraview.
+ *
+ * Write the XMF file to disk, as well as the grid of the Level set field. This is done only once.
+ * At each point in time, write the Level set field to disk and call VelocityField::writeToFile to write its values as well.
+ *
+ * @param dt The width of a timestep
+ * @param timestep The index of the timestep
+ * @param total_timesteps The total number of timesteps
+ * @param total_writesteps The total number of steps that will be written to disk
+ * @param xmfFile A pointer to the XMF file.
+ */
 void LevelSet::writeToFile(double dt, int timestep, int total_timesteps, int total_writesteps, std::ofstream *xmfFile) {
     int Npoints = numX*numY*numZ;
     double *pointCoordinates = new double[Npoints*3];

@@ -51,8 +51,8 @@ int main() {
     // Read data from Inputfile
     std::ifstream inFileStream("Inputfile");
     if(!inFileStream.good()){
-     std::cout << "Error: File 'Inputfile' not found in current folder.\n";
-     exit(-1);
+        std::cout << "Error: File 'Inputfile' not found in current folder.\n";
+        exit(-1);
     }
 
     std::string line, varName, value;
@@ -191,7 +191,7 @@ int main() {
         angle[i] = Phi.getContactAngle(newCPIndicesActual);
 
         // Output to command line and positionFile
-        std::cout << "Time: " << i*dt << "\n";
+        std::cout << "Time: " << std::to_string(i*dt) << "\n";
         positionFile << i*dt << ", " << newCPActual[0] << ", " << newCPReference[0] << std::endl;
 
 
@@ -199,12 +199,12 @@ int main() {
         if (field->getName() == "shearField") {
                         // compute reference for the contact angle (numerically)
 			double reference_temp = Phi.getReferenceAngleExplicitEuler(dt, i, n_sigma_init, initCP)/M_PI*180;
-			angleFile << i*dt << ", " << angle[i]/(2*M_PI)*360 << ", " << reference_temp << "\n";
+			angleFile << std::to_string(i*dt) << ", " << angle[i]/(2*M_PI)*360 << ", " << reference_temp << "\n";
 			std::cout << "Reference: " << reference_temp << "\n";
 		} else { //TODO mafri
                  // compute reference for the contact angle (from analytical solution)
             double reference_temp = Phi.getReferenceAngleLinearField(i*dt, c1, c2, expAngle/180*M_PI)/M_PI*180.0;
-			angleFile << i*dt << ", " << angle[i]/(2*M_PI)*360 << ", " 	<< reference_temp << "\n";
+			angleFile << std::to_string(i*dt) << ", " << angle[i]/(2*M_PI)*360 << ", " 	<< reference_temp << "\n";
 			std::cout << "Reference: " << reference_temp << "\n";
 		}
         
@@ -215,7 +215,7 @@ int main() {
 
             curvatureFile << std::to_string(i*dt) + ", "
                     + std::to_string(curvatureActualDivergence[i]) + ", "
-                    + std::to_string(curvatureActualHeight[i]) + ",     "
+                    + std::to_string(curvatureActualHeight[i]) + ", "
                     + std::to_string(curvatureTheoretical[i]) + "\n";
 
             std::cout << "Measured curvature with divergence:     " + std::to_string(curvatureActualDivergence[i]) + "\n";
@@ -224,7 +224,6 @@ int main() {
         }
         
         // Calculate numerical flux through all faces of each cell update Phi
-        
         Phi.calculateNextTimestep(dt, i);
 
         positionFile.flush();
