@@ -140,14 +140,17 @@ int main() {
     //This is used for the numerical reference solution. Currently this only applies in 2D.
     array<double, 3> n_sigma_init = {-sin(expAngle/180*M_PI), cos(expAngle/180*M_PI), 0};
 
-    LevelSet Phi(numX, numY, numZ, dx, dy, dz, field, trackedContactPoint);
 
     array<double, 3> center = {centerX, centerY, centerZ};
     array<double, 3> expcp = {expcpX, expcpY, expcpZ};
+    std::vector< array<double, 3> > positionTheoretical(timesteps);
     std::vector<double> angle(timesteps);
     std::vector<double> curvatureActualDivergence(timesteps);
     std::vector<double> curvatureActualHeight(timesteps);
     std::vector<double> curvatureTheoretical(timesteps);
+
+
+    LevelSet Phi(numX, numY, numZ, dx, dy, dz, field, trackedContactPoint, &positionTheoretical);
 
     Phi.initDroplet(center, radius);
     array<double, 3> initCP = Phi.getInitCP(expcp, 0.001);
@@ -167,9 +170,13 @@ int main() {
     // XMF file for Paraview
     std::ofstream xmfFile("data/Phi.xmf");
 
-    // main loop
+    // Loop to calculate reference data of position
+    for (int i = 0; i < timesteps; ++i) {
+        positionTheoretical[i] = Phi.getContactPointExplicitEuler(dt, i, initCP);
+    }
 
-    for (int i = 0; i < timesteps; i++) {
+    // main loop
+    for (int i = 0; i < timesteps; ++i) {
         std::cout << "Step " << i << std::endl;
         //Write field to file
         if (writeField && i % (int)ceil((double)timesteps/writesteps) == 0) {
@@ -179,7 +186,7 @@ int main() {
 	// Calculate the reference position of the contact point
         array<double, 3> newCPReference;
         if (field->getName() == "shearField")
-        	newCPReference = Phi.getContactPointExplicitEuler(dt, i, initCP);
+        	newCPReference = positionTheoretical[i];
         else
         	newCPReference = Phi.getContactPointLinearField(dt*i, c1, expcpX, v0);
 
@@ -192,7 +199,9 @@ int main() {
 
         // Output to command line and positionFile
         std::cout << "Time: " << std::to_string(i*dt) << "\n";
-        positionFile << i*dt << ", " << newCPActual[0] << ", " << newCPReference[0] << std::endl;
+        positionFile << std::to_string(i*dt) << ", "
+                     << std::to_string(newCPActual[0]) << ", "
+                     << std::to_string(newCPReference[0]) << std::endl;
 
 
         std::cout << "Actual: " << std::to_string(angle[i]/(2*M_PI)*360) + "\n";
@@ -211,7 +220,7 @@ int main() {
         if (calculateCurvature) {
             curvatureActualDivergence[i] = Phi.getCurvatureDivergence(newCPIndicesActual);
             curvatureActualHeight[i] = Phi.getCurvatureHeight(newCPIndicesActual);
-            curvatureTheoretical[i] = Phi.getReferenceCurvatureExplicitEuler(dt, i, initCurvature, initCP);
+            curvatureTheoretical[i] = Phi.getReferenceCurvatureExplicitEuler(dt, i, initCurvature,  expAngle/180*M_PI, initCP);
 
             curvatureFile << std::to_string(i*dt) + ", "
                     + std::to_string(curvatureActualDivergence[i]) + ", "

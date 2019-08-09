@@ -15,12 +15,14 @@
  * @param field Pointer to the velocity field object acting on the levelset field
  * @param trackedCP Which contact point to track. Only applicable in 2D.
  */
-LevelSet::LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz, VelocityField *field, std::string trackedCP) : Field<double>(numX, numY, numZ) {
+LevelSet::LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz, VelocityField *field,
+        std::string trackedCP, std::vector< array<double, 3> > *positionReference) : Field<double>(numX, numY, numZ) {
 		this->dx = dx;
 		this->dy = dy;
 		this->dz = dz;
 		this->field = field;
 		this->trackedCP = trackedCP;
+		this->positionReference = positionReference;
 }
 
 /**
@@ -222,14 +224,14 @@ double LevelSet::getContactAngle(array<int, 3> cell) {
  * @param timestep The index of the timestep
  * @param n_sigma_init The initial normal vector of the interface
  * @param CP The current position of the contact point
- * @return The reference contact angle in degrees
+ * @return The reference contact angle in radiants
  */
 double LevelSet::getReferenceAngleExplicitEuler(double dt, int timestep, array<double, 3> n_sigma_init, array<double, 3> CP_init) {
 	array<double, 3> &n_sigma = n_sigma_init;
 	array<double, 3> deriv = {0, 0, 0};
 	double t = dt*timestep;
 	for (int i = 0; i < timestep; i++) {
-	    array<double, 3> CP = getContactPointExplicitEuler(dt, i, CP_init);
+	    array<double, 3> CP = (*positionReference)[i];
 		deriv = -1*transpose(field->gradAt(t, CP[0], CP[1], CP[2]))*n_sigma + ((field->gradAt(t, CP[0], CP[1], CP[2])*n_sigma)*n_sigma)*n_sigma;
 		n_sigma = deriv*dt + n_sigma;
 		n_sigma = n_sigma/abs(n_sigma);
@@ -276,23 +278,26 @@ double LevelSet::getReferenceAngleLinearField(double t, double c1, double c2, do
  * @param cell The indices of the contact point
  * @return The curvature
  */
-double LevelSet::getReferenceCurvatureExplicitEuler(double dt, int timestep, double initCurvature, array<double, 3> CP_init) {
-    // TODO update for dx, dy, dz
+double LevelSet::getReferenceCurvatureExplicitEuler(double dt, int timestep, double initCurvature, double initAngle, array<double, 3> initCP) {
     double curvature = initCurvature;
-    dt = dt/10;
-    for (int i = 0; i < 10*timestep; i++) {
-        array<double, 3> CP = getContactPointExplicitEuler(dt, i, CP_init);
-        array<int, 3> cell = getContactPointIndices(CP);
-        //Calculate angle at this cell with finite differences
-        double normalX = (this->at(cell[0]+1, cell[1], cell[2]) - this->at(cell[0]-1, cell[1], cell[2])) / (2*dx);
-        double normalY = (-this->at(cell[0], cell[1] + 2, cell[2]) + 4.0*this->at(cell[0], cell[1] + 1, cell[2]) - 3.0*this->at(cell[0], cell[1], cell[2]))/(2*dy);
-        double normalZ;
-        if (this->numZ > 1)
-            normalZ = (this->at(cell[0], cell[1], cell[2]+1) - this->at(cell[0]-1, cell[1], cell[2]-1))/(2*dz);
-        else
-            normalZ = 0;
-        array<double, 3> normal = {normalX, normalY, normalZ};
-        normal = normal/abs(normal);
+    array<double, 3> initNormal;
+    if (trackedCP == "left") {
+        initNormal = { -sin(initAngle), cos(initAngle)};
+    } else {
+        initNormal = {sin(initAngle), cos(initAngle)};
+    }
+
+    for (int i = 0; i < timestep; i++) {
+        array<double, 3> CP = (*positionReference)[i];
+        double contactAngle = getReferenceAngleExplicitEuler(dt, i, initNormal, initCP);
+        array<double, 3> normal, tau;
+        if (trackedCP == "left") {
+            normal = { -sin(contactAngle), cos(contactAngle)};
+            tau = {cos(contactAngle), sin(contactAngle)};
+        } else {
+            normal = {sin(contactAngle), cos(contactAngle)};
+            tau = { -cos(contactAngle), sin(contactAngle)};
+        }
 
         // This is the second derivative of v in the tau direction (= y direction)
         array<double, 3> temp;
@@ -305,9 +310,6 @@ double LevelSet::getReferenceCurvatureExplicitEuler(double dt, int timestep, dou
             temp = {0, 0, 0};
         }
 
-
-        array<double,3> tau = {normal[1], -normal[0], 0};
-
         curvature = curvature + dt*(temp*normal - 3*curvature*(field->gradAt(i*dt, CP[0], CP[1], CP[2])*tau)*tau);
     }
 
@@ -315,7 +317,7 @@ double LevelSet::getReferenceCurvatureExplicitEuler(double dt, int timestep, dou
 }
 
 /**
- * Calculate the reference curvature for a spec ific case of the navier field (c0 = 0 = c2)
+ * Calculate the reference curvature for a specific case of the navier field (c0 = 0 = c2)
  *
  * @param t The time
  * @param init_curvature The initial curvature
@@ -427,16 +429,25 @@ double LevelSet::getCurvatureHeight(array<int, 3> cell) const {
     //Calculate height function for 4 layers of cells
     for (int i = 0; i < 4; ++i) {
         int h = 0;
-        while ( this->at(axisPosition - h, i, 0) < 0 )
-            ++h;
-
-        double alpha = this->at(axisPosition - h + 1, i, 0) - this->at(axisPosition - h, i, 0);
-        if(std::abs(alpha) < 1e-12) {
-            throw std::runtime_error("Curvature (Height): Difference of LevelSet values at contact point too small for convex combination.\n"
-                                                 "axisPosition = " + std::to_string(axisPosition) + " , alpha = " + std::to_string(alpha));
+        while ( this->at(axisPosition + h, i, 0) < 0 ) {
+            if (trackedCP == "left")
+                --h;
+            else
+                ++h;
         }
-        alpha = this->at(axisPosition - h + 1, i, 0) / alpha;
-        height[i] = (h - 1 + alpha)*dx;
+
+        double alpha;
+        if (trackedCP == "left") {
+            alpha = this->at(axisPosition + h, i, 0) - this->at(axisPosition + h + 1, i, 0);
+            if (alpha < 1e-12) {
+                throw std::runtime_error("Difference in levelset values too small for convex combination.");
+            }
+            alpha = this->at(axisPosition + h, i, 0) / alpha;
+            height[i] = (-h - 1 + alpha)*dx;
+        } else {
+            alpha = this->at(axisPosition + h, i, 0) / (this->at(axisPosition + h, i, 0) - this->at(axisPosition + h - 1, i, 0));
+            height[i] = (h - 1 + alpha)*dx;
+        }
     }
 
     //Calculate the derivative for 3 layers of cells
@@ -449,7 +460,14 @@ double LevelSet::getCurvatureHeight(array<int, 3> cell) const {
 
     heightDerivDeriv = (-heightDeriv[2] + 4*heightDeriv[1] - 3*heightDeriv[0]) / (2*dy);
 
-    return heightDerivDeriv/ pow( 1 + pow(heightDeriv[0], 2), 3/2);
+    double curvature;
+    if (trackedCP == "left")
+        curvature = -1*heightDerivDeriv/ pow( 1 + pow(heightDeriv[0], 2), 3/2);
+    else
+        curvature = heightDerivDeriv/ pow( 1 + pow(heightDeriv[0], 2), 3/2);
+
+    return curvature;
+
 }
 
 /**

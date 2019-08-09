@@ -19,8 +19,15 @@ private:
     // Decides which contact point to track. Only applicable in 2D.
     std::string trackedCP;
 
+    /**
+    *   A pointer to reference data calculated with the explicit euler algorithm.
+    *   This is needed, since many other reference solvers are coupled, and all of them require this data,
+    *   leading to a high number in nested loops.
+    **/
+    std::vector< array<double, 3> > *positionReference;
+
 public:
-    LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz, VelocityField *field, std::string trackedCP);
+    LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz, VelocityField *field, std::string trackedCP, std::vector< array<double, 3> > *positionReference);
 
     array<double, 3> getInitCP(array<double, 3> expcp, double epsilon);
     array<double, 3> getContactPointExplicitEuler(double dt, int timestep, array<double, 3> initCP);
@@ -30,7 +37,7 @@ public:
     double getReferenceAngleExplicitEuler(double dt, int timestep, array<double, 3> n_sigma_init, array<double, 3> CP_init);
     double getReferenceAngleLinearField(double t, double c1, double c2, double theta0);
     double getContactAngle(array<int, 3> cell);
-    double getReferenceCurvatureExplicitEuler(double dt, int timestep, double initCurvature, array<double, 3> CP);
+    double getReferenceCurvatureExplicitEuler(double dt, int timestep, double initCurvature, double initAngle, array<double, 3> CP);
     double getReferenceCurvatureLinearField(double t, double init_curvature);
     double getCurvatureDivergence(array<int, 3> cell) const;
     double getCurvatureHeight(array<int, 3> cell) const;
