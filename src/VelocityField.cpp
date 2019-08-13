@@ -28,11 +28,12 @@ using std::array;
  * @param xmin, xmax, ymin, ymax, zmin, zmax The space the velocity field is defined on
  * @param dx, dy, dz The width of a cell in each direction
  */
-VelocityField::VelocityField(std::string name, double v0, double c1, double c2, double tau,
+VelocityField::VelocityField(std::string name, double v0, double c1, double c2, double c3, double tau,
 		double xmin, double xmax, double ymin, double ymax, double zmin, double zmax, double dx, double dy, double dz) {
 	this->v0 = v0;
 	this->c1 = c1;
 	this->c2 = c2;
+	this->c3 = c3;
 	this->tau = tau;
 
 	this->xmin = xmin;
@@ -61,6 +62,9 @@ VelocityField::VelocityField(std::string name, double v0, double c1, double c2, 
 					// Since |cos(x)| <= 1 we assume the worst case and take the maximum absolute value for the norm value of the velocity field
 					currentVal = abs(navierField(x, y, z, v0, c1, c2));
 				}
+				else if (name == "quadraticField") {
+				    currentVal = abs(quadraticField(x, y, z, v0, c1, c2, c3));
+				}
 				if (currentVal > maxNormValue)
 					maxNormValue = currentVal;
 			}
@@ -69,12 +73,8 @@ VelocityField::VelocityField(std::string name, double v0, double c1, double c2, 
 
 	this->maxAbsoluteValue = maxNormValue;
 
-	if (name == "shearField") {
-		this->name = "shearField";
-	} else if (name == "navierField") {
-		this->name = "navierField";
-	} else if (name == "timeDependentNavierField") {
-		this->name = "timeDependentNavierField";
+	if (name == "shearField" || name == "navierField" || name == "timeDependentNavierField" || name == "quadraticField") {
+		this->name = name;
 	} else {
 		throw std::invalid_argument("No available field was chosen.");
 	}
@@ -94,6 +94,8 @@ array<double, 3> VelocityField::at(double t, double x, double y, double z) {
 		return navierField(x, y, z, v0, c1, c2);
 	} else if (name == "timeDependentNavierField") {
 		return cos(M_PI*t/tau)*navierField(x, y, z, v0, c1, c2);
+	} else if (name == "quadraticField") {
+	    return quadraticField(x, y, z, v0, c1, c2, c3);
 	}
 	return {0, 0, 0};
 }
@@ -112,6 +114,8 @@ array<array<double, 3>, 3> VelocityField::gradAt(double t, double x, double y, d
 		return gradNavierField(x, y, z, v0, c1, c2);
 	} else if (name == "timeDependentNavierField") {
 		return cos(M_PI*t/tau)*gradNavierField(x, y, z, v0, c1, c2);
+	} else if (name == "quadraticField") {
+	    return gradQuadraticField(x, y, z, v0, c1, c2, c3);
 	}
 	return {0, 0, 0};
 }
@@ -164,6 +168,14 @@ double VelocityField::getV0() {
 
 double VelocityField::getC1() {
 	return c1;
+}
+
+double VelocityField::getC2() {
+    return c2;
+}
+
+double VelocityField::getC3() {
+    return c3;
 }
 
 double VelocityField::getTau() {

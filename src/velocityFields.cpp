@@ -52,7 +52,7 @@ std::array<double, 3> navierField(double x, double y, double z, double v0, doubl
 }
 
 /**
- * The functional definition of the navier field
+ * The functional definition of the jacobian matrix of the navier field
  * It evalutes the navier field at the given coordinates with the given parameters.
  *
  * @param x, y, z The coordinates of the point
@@ -67,3 +67,35 @@ std::array<std::array<double, 3>, 3> gradNavierField(double x, double y, double 
 	tempReturn[2] = {0, 0, 0};
 	return tempReturn;
 }
+
+/**
+ * The functional definition of the quadratic field.
+ * It evaluates the quadratic field a tthe given coordinates with the given parameters.
+ *
+ * @param x, y, z The coordinates of the point
+ * @param c1 The value of the x-component at the origin
+ * @param c2, c3, c4 Parameters of the quadratic of the field
+ * @return The velocity vector at the given point
+ */
+std::array<double, 3> quadraticField(double x, double y, double z, double v0, double c1, double c2, double c3) {
+    return {v0 + c1*x + c2*y + c3*y*y, -c1*y};
+}
+
+/**
+ * The functional definition of the jacobian matrix of the quadratic field
+ * It evalutes the navier field at the given coordinates with the given parameters.
+ *
+ * @param x, y, z The coordinates of the point
+ * @param c1 The value of the x-component at the origin
+ * @param c2, c3, c4 Parameters of the quadratic field
+ * @return The jacobian matrix at the given point
+ */
+std::array<std::array<double, 3>, 3> gradQuadraticField(double x, double y, double z, double v0, double c1, double c2, double c3) {
+    std::array<std::array<double, 3>, 3> tempReturn;
+    tempReturn[0] = {c1, c2 + 2*c3*y, 0};
+    tempReturn[1] = {0, -c1, 0};
+    tempReturn[2] = {0, 0, 0};
+    return tempReturn;
+}
+
+

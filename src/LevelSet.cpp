@@ -292,11 +292,11 @@ double LevelSet::getReferenceCurvatureExplicitEuler(double dt, int timestep, dou
         double contactAngle = getReferenceAngleExplicitEuler(dt, i, initNormal, initCP);
         array<double, 3> normal, tau;
         if (trackedCP == "left") {
-            normal = { -sin(contactAngle), cos(contactAngle)};
-            tau = {cos(contactAngle), sin(contactAngle)};
+            normal = { -sin(contactAngle), cos(contactAngle), 0};
+            tau = {cos(contactAngle), sin(contactAngle), 0};
         } else {
-            normal = {sin(contactAngle), cos(contactAngle)};
-            tau = { -cos(contactAngle), sin(contactAngle)};
+            normal = {sin(contactAngle), cos(contactAngle), 0};
+            tau = { -cos(contactAngle), sin(contactAngle), 0};
         }
 
         // This is the second derivative of v in the tau direction (= y direction)
@@ -325,6 +325,18 @@ double LevelSet::getReferenceCurvatureExplicitEuler(double dt, int timestep, dou
 double LevelSet::getReferenceCurvatureLinearField(double t, double init_curvature) {
     //Testing 3 instead of 2!! Not identical to mathematical formula!
     return init_curvature * exp(3*field->getC1()*t);
+}
+
+/**
+ * Calculate the reference curvature for a specific case of the quadratic (c2 = 0)
+ *
+ * @param t The time
+ * @param init_curvature The initial curvature
+ */
+double LevelSet::getReferenceCurvatureQuadraticField(double t, double init_curvature) {
+    double c1 = field->getC1();
+    double c3 = field->getC3();
+    return init_curvature * exp(3*c1* t) + (2.0/3) * (c3/c1) * (1 - exp(3 *c1* t));
 }
 
 /**
@@ -438,14 +450,14 @@ double LevelSet::getCurvatureHeight(array<int, 3> cell) const {
 
         double alpha;
         if (trackedCP == "left") {
-            alpha = this->at(axisPosition + h, i, 0) - this->at(axisPosition + h + 1, i, 0);
-            if (alpha < 1e-12) {
-                throw std::runtime_error("Difference in levelset values too small for convex combination.");
-            }
-            alpha = this->at(axisPosition + h, i, 0) / alpha;
+            alpha = this->at(axisPosition + h + 1, i, 0) - this->at(axisPosition + h, i, 0);
+//            if (alpha < 1e-12) {
+//                throw std::runtime_error("Difference in levelset values too small for convex combination.");
+//            }
+            alpha = this->at(axisPosition + h + 1, i, 0) / alpha;
             height[i] = (-h - 1 + alpha)*dx;
         } else {
-            alpha = this->at(axisPosition + h, i, 0) / (this->at(axisPosition + h, i, 0) - this->at(axisPosition + h - 1, i, 0));
+            alpha = this->at(axisPosition + h -1 , i, 0) / (this->at(axisPosition + h - 1, i, 0) - this->at(axisPosition + h, i, 0));
             height[i] = (h - 1 + alpha)*dx;
         }
     }
@@ -544,6 +556,10 @@ void LevelSet::writeToFile(double dt, int timestep, int total_timesteps, int tot
 			 << "<DataItem Format=\"Binary\" NumberType=\"Float\" Precision=\"8\" Endian=\"Little\" Dimensions=\"&Npoints; 3\">\n"
 			 << "Vel_t=" + std::to_string(timestep*dt) +".bin\n"
 			 << "</DataItem></Attribute>\n"
+			 << "<Attribute Name =\"Tangential Vector\" AttributeType=\"Vector\" Center=\"Cell\">\n"
+             << "<DataItem Format=\"Binary\" NumberType=\"Float\" Precision=\"8\" Endian=\"Little\" Dimensions=\"&Npoints; 3\">\n"
+             << "Tau_t=" + std::to_string(timestep*dt) +".bin\n"
+             << "</DataItem></Attribute>\n"
 			 <<"</Grid>\n";
 
 
@@ -552,6 +568,55 @@ void LevelSet::writeToFile(double dt, int timestep, int total_timesteps, int tot
 
     //Write velocity field
 	field->writeToFile(timestep*dt);
+	//Write normal vector to file
+	writeNormalVectorToFile(timestep*dt);
+}
+
+/**
+ * Writes the field of the tangential vector at the contact point at a given time to disk
+ *
+ * Writes the tangental vector field for visualization in Paraview. Since no XMF file is written,
+ * simply calling this function is not enough for visualization. Thus, this function is called within
+ * LevelSet::writeToFile, which does write a XMF file.
+ *
+ * @param t The time
+ */
+void LevelSet::writeNormalVectorToFile(double t) {
+    double *fieldValues = new double[numX*numY*numZ*3];
+    int index = 0;
+
+    //Assume 2D
+    array<int, 3> cell = getContactPointIndices({0, 0, 0});
+    double contactAngle = getContactAngle(cell);
+
+    for (int k = 0; k < numZ; k++) {
+        for (int j = 0; j < numY; j++) {
+            for (int i = 0; i < numX; i++) {
+                array<double, 3> temp;
+                if (i == cell[0] && j == cell[1] && k == cell[2]) {
+                    if (trackedCP == "left") {
+                        temp = {cos(contactAngle), sin(contactAngle), 0};
+                    } else {
+                        temp = { -cos(contactAngle), sin(contactAngle), 0};
+                    }
+                } else {
+                    temp = {0, 0, 0};
+                }
+                fieldValues[index] = temp[0];
+                fieldValues[index + 1] = temp[1];
+                fieldValues[index + 2] = temp[2];
+                index += 3;
+            }
+        }
+    }
+
+    std::string filename = "data/Tau_t=" + std::to_string(t) + ".bin";
+    FILE *tauFile;
+    tauFile = fopen(filename.data(), "wb");
+    fwrite(fieldValues, sizeof(double), numX*numY*numZ*3, tauFile);
+    fclose(tauFile);
+
+    delete[] fieldValues;
 }
 
 /**

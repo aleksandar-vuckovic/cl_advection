@@ -41,9 +41,9 @@ using std::array;
 int main() {
 
     int numX, numY, numZ;
-    double lenX, lenY, lenZ, time, centerX, centerY, centerZ, radius, expcpX, expcpY, expcpZ, expAngle, v0, c1, c2, tau, CFL, writestepsFraction;
+    double lenX, lenY, lenZ, time, centerX, centerY, centerZ, radius, expcpX, expcpY, expcpZ, expAngle, v0, c1, c2, c3, tau, CFL, writestepsFraction;
     numX = numY = numZ = 0;
-    lenX = lenY = lenZ = time = centerX = centerY = centerZ = radius = expcpX = expcpY = expcpZ = expAngle = v0 = c1 = c2 = tau = CFL = writestepsFraction = 0;
+    lenX = lenY = lenZ = time = centerX = centerY = centerZ = radius = expcpX = expcpY = expcpZ = expAngle = v0 = c1 = c2 = c3 = tau = CFL = writestepsFraction = 0;
     bool writeField = false, calculateCurvature = false;
     std::string trackedContactPoint = "left", fieldName = "";
     VelocityField *field = nullptr;
@@ -87,6 +87,8 @@ int main() {
 			c1 = std::stod(value);
 		else if (varName == "c2")
 			c2 = std::stod(value);
+		else if (varName == "c3")
+		    c3 = std::stod(value);
 		else if (varName == "tau")
 			tau = std::stod(value);
 		else if (varName == "field") {
@@ -116,7 +118,7 @@ int main() {
 	   }
     }
 
-	field = new VelocityField(fieldName, v0, c1, c2, tau, 0, lenX, 0, lenY, 0, lenZ, lenX/numX,lenY/numY,lenZ/numZ);
+    field = new VelocityField(fieldName, v0, c1, c2, c3, tau, 0, lenX, 0, lenY, 0, lenZ, lenX/numX,lenY/numY,lenZ/numZ);
 
     double dx = lenX/numX;
     double dy = lenY/numY;
@@ -185,10 +187,10 @@ int main() {
 
 	// Calculate the reference position of the contact point
         array<double, 3> newCPReference;
-        if (field->getName() == "shearField")
-        	newCPReference = positionTheoretical[i];
-        else
+        if (field->getName() == "navierField" || field->getName() == "timeDependentNavierField")
         	newCPReference = Phi.getContactPointLinearField(dt*i, c1, expcpX, v0);
+        else
+            newCPReference = positionTheoretical[i];
 
         // Get the indices of the new contact point
         array<int, 3> newCPIndicesActual = Phi.getContactPointIndices(newCPReference);
@@ -205,22 +207,26 @@ int main() {
 
 
         std::cout << "Actual: " << std::to_string(angle[i]/(2*M_PI)*360) + "\n";
-        if (field->getName() == "shearField") {
-                        // compute reference for the contact angle (numerically)
-			double reference_temp = Phi.getReferenceAngleExplicitEuler(dt, i, n_sigma_init, initCP)/M_PI*180;
-			angleFile << std::to_string(i*dt) << ", " << angle[i]/(2*M_PI)*360 << ", " << reference_temp << "\n";
-			std::cout << "Reference: " << reference_temp << "\n";
-		} else { //TODO mafri
-                 // compute reference for the contact angle (from analytical solution)
-            double reference_temp = Phi.getReferenceAngleLinearField(i*dt, c1, c2, expAngle/180*M_PI)/M_PI*180.0;
+        if (field->getName() == "navierField" || field->getName() == "timeDependentLinearField") {
+            double reference_temp = Phi.getReferenceAngleLinearField(i*dt, c1, c2, expAngle/180*M_PI)/M_PI*180;
 			angleFile << std::to_string(i*dt) << ", " << angle[i]/(2*M_PI)*360 << ", " 	<< reference_temp << "\n";
 			std::cout << "Reference: " << reference_temp << "\n";
+		} else {
+            // compute reference for the contact angle (numerically)
+            double reference_temp = Phi.getReferenceAngleExplicitEuler(dt, i, n_sigma_init, initCP)/M_PI*180;
+            angleFile << std::to_string(i*dt) << ", " << angle[i]/(2*M_PI)*360 << ", " << reference_temp << "\n";
+            std::cout << "Reference: " << reference_temp << "\n";
 		}
         
         if (calculateCurvature) {
             curvatureActualDivergence[i] = Phi.getCurvatureDivergence(newCPIndicesActual);
             curvatureActualHeight[i] = Phi.getCurvatureHeight(newCPIndicesActual);
-            curvatureTheoretical[i] = Phi.getReferenceCurvatureExplicitEuler(dt, i, initCurvature,  expAngle/180*M_PI, initCP);
+
+            if (field->getName() == "quadraticField") {
+                curvatureTheoretical[i] = Phi.getReferenceCurvatureQuadraticField(dt*i, initCurvature);
+            } else {
+                curvatureTheoretical[i] = Phi.getReferenceCurvatureExplicitEuler(dt, i, initCurvature,  expAngle/180*M_PI, initCP);
+            }
 
             curvatureFile << std::to_string(i*dt) + ", "
                     + std::to_string(curvatureActualDivergence[i]) + ", "
