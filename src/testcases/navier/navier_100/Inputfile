@@ -3,7 +3,7 @@ numY=100
 numZ=1
 lenX=1.0
 lenY=0.1
-lenZ=1
+lenZ=0.001
 
 time=3.0
 CFL=0.5

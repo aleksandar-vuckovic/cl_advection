@@ -30,7 +30,8 @@ public:
 			double xmin, double xmax, double ymin, double ymax, double zmin, double zmax, double dx, double dy, double dz);
 	array<double, 3> at(double t, double x, double y, double z);
 	array<array<double, 3>, 3> gradAt(double t, double x, double y, double z);
-	void writeToFile(double t);
+	void writeToFile3D(double t);
+	void writeToFile2D(double t);
 	double getV0();
 	double getC1();
 	double getC2();

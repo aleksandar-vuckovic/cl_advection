@@ -472,13 +472,7 @@ double LevelSet::getCurvatureHeight(array<int, 3> cell) const {
 
     heightDerivDeriv = (-heightDeriv[2] + 4*heightDeriv[1] - 3*heightDeriv[0]) / (2*dy);
 
-    double curvature;
-    if (trackedCP == "left")
-        curvature = -1*heightDerivDeriv/ pow( 1 + pow(heightDeriv[0], 2), 3/2);
-    else
-        curvature = heightDerivDeriv/ pow( 1 + pow(heightDeriv[0], 2), 3/2);
-
-    return curvature;
+    return heightDerivDeriv/pow((1 + pow(heightDeriv[0], 2)), 3/2);
 
 }
 
@@ -494,7 +488,7 @@ double LevelSet::getCurvatureHeight(array<int, 3> cell) const {
  * @param total_writesteps The total number of steps that will be written to disk
  * @param xmfFile A pointer to the XMF file.
  */
-void LevelSet::writeToFile(double dt, int timestep, int total_timesteps, int total_writesteps, std::ofstream *xmfFile) {
+void LevelSet::writeToFile3D(double dt, int timestep, int total_timesteps, int total_writesteps, std::ofstream *xmfFile) {
     int Npoints = numX*numY*numZ;
     double *pointCoordinates = new double[Npoints*3];
     double *pointPhiValues = new double [Npoints];
@@ -567,9 +561,95 @@ void LevelSet::writeToFile(double dt, int timestep, int total_timesteps, int tot
     delete[] pointPhiValues;
 
     //Write velocity field
-	field->writeToFile(timestep*dt);
-	//Write normal vector to file
-	writeNormalVectorToFile(timestep*dt);
+	field->writeToFile3D(timestep*dt);
+}
+
+/**
+ * Write the files necessary to visualize the field and its velocity field in Paraview.
+ *
+ * Write the XMF file to disk, as well as the grid of the Level set field. This is done only once.
+ * At each point in time, write the Level set field to disk and call VelocityField::writeToFile to write its values as well.
+ *
+ * @param dt The width of a timestep
+ * @param timestep The index of the timestep
+ * @param total_timesteps The total number of timesteps
+ * @param total_writesteps The total number of steps that will be written to disk
+ * @param xmfFile A pointer to the XMF file.
+ */
+void LevelSet::writeToFile2D(double dt, int timestep, int total_timesteps, int total_writesteps, std::ofstream *xmfFile) {
+    int Npoints = numX*numY;
+    double *pointCoordinates = new double[Npoints*2];
+    double *pointPhiValues = new double [Npoints];
+
+    int index = 0;
+    for (int j = 0; j < numY; j++)
+        for (int i = 0; i < numX; i++) {
+            if (timestep == 0) {
+                pointCoordinates[index] = i*dx;
+                pointCoordinates[index +1] = j*dy;
+                index += 2;
+            }
+            pointPhiValues[i + j*numX] = this->at(i, j, 0);
+    }
+
+    // If it is the first iteration, create coordinate file
+    if (timestep == 0) {
+        *xmfFile << "<?xml version=\"1.0\" ?>\n"
+                 << "<!DOCTYPE Xdmf SYSTEM \"Xdmf.dtd\" [\n"
+                 << "<!ENTITY Npoints \"" + std::to_string(Npoints) + "\">\n"
+                 << "]>\n"
+                 << "<Xdmf xmlns:xi=\"http://www.w3.org/2001/XInclude\" Version=\"2.0\">\n"
+                 << "<Domain>\n"
+                 << "<Grid Name=\"TimeSeries\" GridType=\"Collection\" CollectionType=\"Temporal\">\n"
+                 << "<Time TimeType=\"List\">\n"
+                 << "<DataItem Format=\"XML\" NumberType=\"Float\" Dimensions=\""+ std::to_string(total_writesteps)+"\">\n";
+        for (int i = 0; i < total_writesteps; i++) {
+            *xmfFile << std::to_string(i*((double)total_timesteps/total_writesteps)*dt) << " ";
+        }
+        *xmfFile <<"</DataItem>\n" << "</Time>\n";
+
+        //Write field coordinates into binary file
+        FILE *fieldFile;
+        fieldFile = fopen("data/field.bin", "wb");
+        fwrite(pointCoordinates, sizeof(double), Npoints*2, fieldFile);
+        fclose(fieldFile);
+    }
+    FILE *PhiFile;
+    std::string filename = "data/Phi_t="+ std::to_string(timestep*dt)+".bin";
+    PhiFile = fopen(filename.data(), "wb");
+    fwrite(pointPhiValues, sizeof(double), Npoints, PhiFile);
+    fclose(PhiFile);
+
+
+
+    *xmfFile << "<Grid>\n"
+             << "<Topology TopologyType=\"Polyvertex\" NumberOfElements=\""+std::to_string(Npoints) +"\"/>\n"
+             << "<Geometry GeometryType=\"XY\"> \n"
+             << "<DataItem Name=\"points\" Format=\"Binary\" NumberType=\"Float\" Precision=\"8\" Endian=\"Little\" Dimensions=\"&Npoints; 2\">\n"
+             << "field.bin\n"
+             << "</DataItem>\n</Geometry>\n"
+             << "<Attribute Name =\"lvlset\" AttributeType=\"Scalar\" Center=\"Cell\">\n"
+             << "<DataItem Format=\"Binary\" NumberType=\"Float\" Precision=\"8\"  Endian=\"Little\" Dimensions=\"&Npoints;\">\n"
+             << "Phi_t=" + std::to_string(timestep*dt) +".bin\n"
+             << "</DataItem></Attribute>\n"
+             << "<Attribute Name =\"VelocityField\" AttributeType=\"Vector\" Center=\"Cell\">\n"
+             << "<DataItem Format=\"Binary\" NumberType=\"Float\" Precision=\"8\" Endian=\"Little\" Dimensions=\"&Npoints; 2\">\n"
+             << "Vel_t=" + std::to_string(timestep*dt) +".bin\n"
+             << "</DataItem></Attribute>\n"
+             << "<Attribute Name =\"Tangential Vector\" AttributeType=\"Vector\" Center=\"Cell\">\n"
+             << "<DataItem Format=\"Binary\" NumberType=\"Float\" Precision=\"8\" Endian=\"Little\" Dimensions=\"&Npoints; 2\">\n"
+             << "Tau_t=" + std::to_string(timestep*dt) +".bin\n"
+             << "</DataItem></Attribute>\n"
+             <<"</Grid>\n";
+
+
+    delete[] pointCoordinates;
+    delete[] pointPhiValues;
+
+    //Write velocity field
+    field->writeToFile3D(timestep*dt);
+    //Write normal vector to file
+    writeTangentialVectorToFile2D(timestep*dt);
 }
 
 /**
@@ -581,39 +661,35 @@ void LevelSet::writeToFile(double dt, int timestep, int total_timesteps, int tot
  *
  * @param t The time
  */
-void LevelSet::writeNormalVectorToFile(double t) {
-    double *fieldValues = new double[numX*numY*numZ*3];
+void LevelSet::writeTangentialVectorToFile2D(double t) {
+    double *fieldValues = new double[numX*numY*2];
     int index = 0;
 
-    //Assume 2D
     array<int, 3> cell = getContactPointIndices({0, 0, 0});
     double contactAngle = getContactAngle(cell);
 
-    for (int k = 0; k < numZ; k++) {
-        for (int j = 0; j < numY; j++) {
-            for (int i = 0; i < numX; i++) {
-                array<double, 3> temp;
-                if (i == cell[0] && j == cell[1] && k == cell[2]) {
-                    if (trackedCP == "left") {
-                        temp = {cos(contactAngle), sin(contactAngle), 0};
-                    } else {
-                        temp = { -cos(contactAngle), sin(contactAngle), 0};
-                    }
+    for (int j = 0; j < numY; j++) {
+        for (int i = 0; i < numX; i++) {
+            array<double, 3> temp;
+            if (i == cell[0] && j == cell[1]) {
+                if (trackedCP == "left") {
+                    temp = {cos(contactAngle), sin(contactAngle), 0};
                 } else {
-                    temp = {0, 0, 0};
+                    temp = { -cos(contactAngle), sin(contactAngle), 0};
                 }
-                fieldValues[index] = temp[0];
-                fieldValues[index + 1] = temp[1];
-                fieldValues[index + 2] = temp[2];
-                index += 3;
+            } else {
+                temp = {0, 0, 0};
             }
+            fieldValues[index] = temp[0];
+            fieldValues[index + 1] = temp[1];
+            index += 2;
         }
     }
 
     std::string filename = "data/Tau_t=" + std::to_string(t) + ".bin";
     FILE *tauFile;
     tauFile = fopen(filename.data(), "wb");
-    fwrite(fieldValues, sizeof(double), numX*numY*numZ*3, tauFile);
+    fwrite(fieldValues, sizeof(double), numX*numY*2, tauFile);
     fclose(tauFile);
 
     delete[] fieldValues;
