@@ -32,6 +32,10 @@ public:
 	array<array<double, 3>, 3> gradAt(double t, double x, double y, double z);
 	void writeToFile3D(double t);
 	void writeToFile2D(double t);
+	double getXMax();
+	double getYMax();
+	double getDx();
+	double getDy();
 	double getV0();
 	double getC1();
 	double getC2();

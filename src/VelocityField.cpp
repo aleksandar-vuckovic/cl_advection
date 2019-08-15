@@ -199,6 +199,20 @@ void VelocityField::writeToFile2D(double t) {
     delete[] fieldValues;
 }
 
+double VelocityField::getXMax() {
+	return xmax;
+}
+double VelocityField::getYMax() {
+	return ymax;
+}
+
+double VelocityField::getDx() {
+	return dx;
+}
+
+double VelocityField::getDy() {
+	return dy;
+}
 double VelocityField::getV0() {
     return v0;
 }
