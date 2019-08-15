@@ -116,7 +116,7 @@ array<int, 3> LevelSet::getContactPointIndices(array<double, 3> point) {
             for (int y = 0; y < this->numY; y++)
                 for (int z = 0; z < this->numZ; z++) {
                     array<int, 3> other = {x, y, z};
-                    if (abs(point - cell*dx) > abs(point - other*dx)) // TODO: unclear implementation
+                    if (abs(point - cell*dx) > abs(point - other*dx))
                         cell = other;
                 }
         return cell;
@@ -554,6 +554,10 @@ void LevelSet::writeToFile3D(double dt, int timestep, int total_timesteps, int t
              << "<DataItem Format=\"Binary\" NumberType=\"Float\" Precision=\"8\" Endian=\"Little\" Dimensions=\"&Npoints; 3\">\n"
              << "Tau_t=" + std::to_string(timestep*dt) +".bin\n"
              << "</DataItem></Attribute>\n"
+			 << "<Attribute Name =\"Streamlines\" AttributeType=\"Scalar\" Center=\"Cell\">\n"
+			 << "<DataItem Format=\"Binary\" NumberType=\"Int\" Precision=\"4\" Endian=\"Little\" Dimensions=\"&Npoints;\">\n"
+			 << "stream.bin\n"
+			 << "</DataItem></Attribute>\n"
 			 <<"</Grid>\n";
 
 
@@ -562,6 +566,9 @@ void LevelSet::writeToFile3D(double dt, int timestep, int total_timesteps, int t
 
     //Write velocity field
 	field->writeToFile3D(timestep*dt);
+
+    //Write tangential vector to file
+    writeTangentialVectorToFile(timestep*dt);
 }
 
 /**
@@ -652,8 +659,8 @@ void LevelSet::writeToFile2D(double dt, int timestep, int total_timesteps, int t
 
     //Write velocity field
     field->writeToFile3D(timestep*dt);
-    //Write normal vector to file
-    writeTangentialVectorToFile2D(timestep*dt);
+    //Write tangential vector to file
+    writeTangentialVectorToFile(timestep*dt);
 }
 
 /**
@@ -665,8 +672,8 @@ void LevelSet::writeToFile2D(double dt, int timestep, int total_timesteps, int t
  *
  * @param t The time
  */
-void LevelSet::writeTangentialVectorToFile2D(double t) {
-    double *fieldValues = new double[numX*numY*2];
+void LevelSet::writeTangentialVectorToFile(double t) {
+    double *fieldValues = new double[numX*numY*3];
     int index = 0;
 
     array<int, 3> cell = getContactPointIndices({0, 0, 0});
@@ -686,14 +693,15 @@ void LevelSet::writeTangentialVectorToFile2D(double t) {
             }
             fieldValues[index] = temp[0];
             fieldValues[index + 1] = temp[1];
-            index += 2;
+            fieldValues[index + 2] = 0;
+            index += 3;
         }
     }
 
     std::string filename = "data/Tau_t=" + std::to_string(t) + ".bin";
     FILE *tauFile;
     tauFile = fopen(filename.data(), "wb");
-    fwrite(fieldValues, sizeof(double), numX*numY*2, tauFile);
+    fwrite(fieldValues, sizeof(double), numX*numY*3, tauFile);
     fclose(tauFile);
 
     delete[] fieldValues;

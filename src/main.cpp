@@ -185,7 +185,7 @@ int main() {
         //Write field to file
         if (writeField && i % (int)ceil((double)timesteps/writesteps) == 0) {
             if (numZ == 1) {
-                Phi.writeToFile2D(dt, i, timesteps, writesteps, &xmfFile);
+                Phi.writeToFile3D(dt, i, timesteps, writesteps, &xmfFile);
                 streamlines.writeToFile();
             }
             else
