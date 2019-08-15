@@ -1,7 +1,7 @@
 default: cl_advection
 
-sourceFiles = main.cpp Field.cpp LevelSet.cpp VelocityField.cpp velocityFields.cpp vecMath3D.cpp
-objects = main.o Field.o LevelSet.o VelocityField.o velocityFields.o vecMath3D.o
+sourceFiles = main.cpp Field.cpp LevelSet.cpp VelocityField.cpp velocityFields.cpp vecMath.cpp Streamlines.cpp
+objects = main.o Field.o LevelSet.o VelocityField.o velocityFields.o vecMath.o Streamlines.o
 
 main.o : main.cpp
 	g++ -c -O3 -Wall main.cpp -o main.o
@@ -18,8 +18,11 @@ VelocityField.o : VelocityField.cpp
 velocityFields.o : velocityFields.cpp
 	g++ -c -O3 -Wall velocityFields.cpp -o velocityFields.o
 
-vecMath3D.o : vecMath3D.cpp
-	g++ -c -O3 -Wall vecMath3D.cpp -o vecMath3D.o
+vecMath.o : vecMath.cpp
+	g++ -c -O3 -Wall vecMath.cpp -o vecMath.o
+	
+Streamlines.o : Streamlines.cpp
+	g++ -c -O3 -Wall Streamlines.cpp -o Streamlines.o
 
 cl_advection: $(objects)
 	g++ $(objects) -O3 -Wall -o cl_advection

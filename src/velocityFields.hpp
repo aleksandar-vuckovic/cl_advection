@@ -1,6 +1,6 @@
 #ifndef FIELDS_HPP_
 #define FIELDS_HPP_
-#include "vecMath3D.hpp"
+#include "vecMath.hpp"
 
 std::array<double, 3> shearField(double x, double y, double z, double v0);
 std::array<std::array<double, 3>, 3> gradShearField(double x, double y, double z, double v0);

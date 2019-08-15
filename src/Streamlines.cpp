@@ -6,9 +6,6 @@
  */
 
 #include "Streamlines.hpp"
-#include <vector>
-#include <array>
-#include <cmath>
 
 using std::array;
 using std::vector;
@@ -20,9 +17,9 @@ using std::vector;
  * @param vel The velocity field to generate the streamlines on.
  * @param dt Timestep width to use for streamline calculation.
  */
-Streamlines::Streamlines(Field<double>& field, VelocityField& vel, double dt) : Field<int>(field.numX, field.numY, field.numZ) {
+Streamlines::Streamlines(int numX, int numY, int numZ, VelocityField& vel, double dt) : Field<int>(numX, numY, numZ) {
 	// Array to store streamline points for 10 streamlines
-	array<vector<array<double, 2>>, 10> streamlines;
+	array<vector< array<double, 2>> , 10> streamlines;
 
 	//Initialize first streamline points
 	for (int i = 0; i < 10; ++i) {
@@ -51,7 +48,7 @@ Streamlines::Streamlines(Field<double>& field, VelocityField& vel, double dt) : 
 	this->streamlines = streamlines;
 
 	for (int j = 0; j < numY; ++j)
-		for (int i = 0; i < numX; ++i) {
+		for (int i = 0; i < numX; ++i)
 			for (auto line : streamlines)
 				for (auto p : line)
 					if (sqrt(pow(i*vel.getDx() - p[0], 2) + pow(j*vel.getDx(), 2) - p[1]) < 1e-5)
@@ -60,8 +57,14 @@ Streamlines::Streamlines(Field<double>& field, VelocityField& vel, double dt) : 
 						this->at(i, j, 0) = 0;
 
 
+}
 
-
+void Streamlines::writeToFile() {
+	int Npoints = numX*numY;
+	FILE *streamfile;
+	streamfile = fopen("data/stream.bin", "wb");
+	fwrite(getData().data(), sizeof(double), Npoints*2, streamfile);
+	fclose(streamfile);
 }
 
 Streamlines::~Streamlines() {

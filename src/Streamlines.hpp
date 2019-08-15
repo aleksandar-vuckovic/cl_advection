@@ -1,16 +1,21 @@
 #ifndef SRC_STREAMLINES_HPP_
 #define SRC_STREAMLINES_HPP_
 
-#include<array>
-#include "Field.hpp"
+#include <vector>
+#include <array>
+#include <cmath>
+#include <string>
+#include "LevelSet.hpp"
 #include "VelocityField.hpp"
+#include "vecMath.hpp"
 
 
-class Streamlines : Field<double> {
+class Streamlines : Field<int> {
 private:
-	array<vector<array<double, 2>>, 10> streamlines;
+	std::array<std::vector<std::array<double, 2>>, 10> streamlines;
 public:
-	Streamlines(Field<double>& field, VelocityField& vel, double dt);
+	Streamlines(int numX, int numY, int numZ, VelocityField& vel, double dt);
+	void writeToFile();
 	virtual ~Streamlines();
 };
 

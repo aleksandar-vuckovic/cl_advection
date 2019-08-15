@@ -42,4 +42,9 @@ const T& Field<T>::at(int x, int y, int z) const {
     return data[x + y*numX + z*numX*numY];
 }
 
+template<class T>
+const std::vector<T>& Field<T>::getData() const {
+	return data;
+}
+
 #endif /* FIELD_CPP */

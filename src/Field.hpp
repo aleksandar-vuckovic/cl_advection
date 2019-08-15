@@ -23,6 +23,7 @@ public:
     Field(int numX, int numY, int numZ);
     T& at(int x, int y, int z);
     const T& at(int x, int y, int z) const;
+    const std::vector<T>& getData() const;
 
 };
 #include "Field.cpp"

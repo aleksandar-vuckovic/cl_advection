@@ -16,6 +16,7 @@
 #include <vector>
 #include "LevelSet.hpp"
 #include "VelocityField.hpp"
+#include "Streamlines.hpp"
 
 #define _USE_MATH_DEFINES
 #include <cmath>
@@ -153,6 +154,7 @@ int main() {
 
 
     LevelSet Phi(numX, numY, numZ, dx, dy, dz, field, trackedContactPoint, &positionTheoretical);
+    Streamlines streamlines(numX, numY, numZ, *field, dt);
 
     Phi.initDroplet(center, radius);
     array<double, 3> initCP = Phi.getInitCP(expcp, 0.001);
@@ -182,8 +184,10 @@ int main() {
         std::cout << "Step " << i << std::endl;
         //Write field to file
         if (writeField && i % (int)ceil((double)timesteps/writesteps) == 0) {
-            if (numZ == 1)
+            if (numZ == 1) {
                 Phi.writeToFile2D(dt, i, timesteps, writesteps, &xmfFile);
+                streamlines.writeToFile();
+            }
             else
                 Phi.writeToFile3D(dt, i, timesteps, writesteps, &xmfFile);
         }

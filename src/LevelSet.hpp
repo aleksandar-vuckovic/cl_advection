@@ -5,8 +5,8 @@
 #include <fstream>    // Filestream
 
 #include "Field.hpp"
+#include "vecMath.hpp"
 #include "VelocityField.hpp"
-#include "vecMath3D.hpp"
 
 class LevelSet : Field<double> {
 private:

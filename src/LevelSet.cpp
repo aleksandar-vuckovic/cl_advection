@@ -640,6 +640,10 @@ void LevelSet::writeToFile2D(double dt, int timestep, int total_timesteps, int t
              << "<DataItem Format=\"Binary\" NumberType=\"Float\" Precision=\"8\" Endian=\"Little\" Dimensions=\"&Npoints; 2\">\n"
              << "Tau_t=" + std::to_string(timestep*dt) +".bin\n"
              << "</DataItem></Attribute>\n"
+			 << "<Attribute Name =\"Streamlines\" AttributeType=\"Scalar\" Center=\"Cell\">\n"
+		     << "<DataItem Format=\"Binary\" NumberType=\"Float\" Precision=\"8\" Endian=\"Little\" Dimensions=\"&Npoints;\">\n"
+			 << "stream.bin\n"
+			 << "</DataItem></Attribute>\n"
              <<"</Grid>\n";
 
 
