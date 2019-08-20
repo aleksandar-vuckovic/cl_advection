@@ -7,23 +7,23 @@ lenZ=1
 
 time=3.0
 CFL=0.5
-writestepsFraction=0.1
+writestepsFraction=0.004
 writeField=true
 
-v0=-0.2
+v0=0.0
 c1=0.1
-c2=-2
-field=shearField
+c2=0.0
+field=navierField
 
-centerX=0.4
-centerY=-0.34641
+centerX=1.0
+centerY=0.0
 centerZ=0.0
 radius=0.4
 
 expcpX=0.6
 expcpY=0.0
 expcpZ=0.0
-expAngle=30.0
+expAngle=90
 
-trackedContactPoint=right
-
+trackedContactPoint=left
+calculateCurvature=true

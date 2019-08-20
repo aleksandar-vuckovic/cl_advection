@@ -1,5 +1,5 @@
-numX=2000
-numY=200
+numX=1000
+numY=100
 numZ=1
 lenX=1.0
 lenY=0.1
@@ -7,7 +7,7 @@ lenZ=1
 
 time=3.0
 CFL=0.5
-writestepsFraction=0.1
+writestepsFraction=0.01
 writeField=true
 
 v0=-0.2
@@ -16,14 +16,15 @@ c2=-2
 field=shearField
 
 centerX=0.4
-centerY=-0.34641
+centerY=0.0
 centerZ=0.0
-radius=0.4
+radius=0.3
 
-expcpX=0.6
+expcpX=0.7
 expcpY=0.0
 expcpZ=0.0
-expAngle=30.0
+expAngle=90.0
 
 trackedContactPoint=right
+calculateCurvature=true
 
