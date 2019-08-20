@@ -301,7 +301,6 @@ double LevelSet::getReferenceCurvatureExplicitEuler(double dt, int timestep, dou
 
         // This is the second derivative of v in the tau direction (= y direction)
         array<double, 3> temp;
-
         if (field->getName() == "shearField") {
             temp = {field->getV0()*M_PI*M_PI*sin(M_PI*CP[0])*cos(M_PI*CP[1]),
                    -field->getV0()*M_PI*M_PI*cos(M_PI*CP[0])*sin(M_PI*CP[1]),
@@ -309,6 +308,14 @@ double LevelSet::getReferenceCurvatureExplicitEuler(double dt, int timestep, dou
         } else if (field->getName() == "navierField") {
             temp = {0, 0, 0};
         }
+
+        // This matrix transforms the basis of the vector field
+        array<double, 3> row1 = {cos(contactAngle), sin(contactAngle), 0};
+        array<double, 3> row2 = {-sin(contactAngle), cos(contactAngle), 0};
+        array<double, 3> row3 = {0, 0, 0};
+        array<array<double, 3>, 3> M = {row1, row2, row3};
+        temp = M*temp;
+
 
         curvature = curvature + dt*(temp*normal - 3*curvature*(field->gradAt(i*dt, CP[0], CP[1], CP[2])*tau)*tau);
     }
