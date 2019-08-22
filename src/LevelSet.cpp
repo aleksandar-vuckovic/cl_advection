@@ -299,23 +299,21 @@ double LevelSet::getReferenceCurvatureExplicitEuler(double dt, int timestep, dou
             tau = { -cos(contactAngle), sin(contactAngle), 0};
         }
 
-        // This is the second derivative of v in the tau direction (= y direction)
+        // temp is the second derivative of v in the tau direction (= y direction)
         array<double, 3> temp;
         if (field->getName() == "shearField") {
-            temp = {field->getV0()*M_PI*M_PI*sin(M_PI*CP[0])*cos(M_PI*CP[1]),
-                   -field->getV0()*M_PI*M_PI*cos(M_PI*CP[0])*sin(M_PI*CP[1]),
-                    0};
+            double v0 = field->getV0();
+            array<double, 3> row1 = {v0*M_PI*M_PI*sin(M_PI*CP[0])*cos(M_PI*CP[1])*tau[0] + v0*M_PI*M_PI*cos(M_PI*CP[0])*sin(M_PI*CP[1])*tau[1],
+                                    v0*M_PI*M_PI*cos(M_PI*CP[0])*sin(M_PI*CP[1])*tau[0] + v0*M_PI*M_PI*sin(M_PI*CP[0])*cos(M_PI*CP[1])*tau[1],
+                                    0};
+            array<double, 3> row2 = {-v0*M_PI*M_PI*cos(M_PI*CP[0])*sin(M_PI*CP[1])*tau[0] - v0*M_PI*M_PI*sin(M_PI*CP[0])*cos(M_PI*CP[1])*tau[1],
+                                     -v0*M_PI*M_PI*sin(M_PI*CP[0])*cos(M_PI*CP[1])*tau[0] -v0*M_PI*M_PI*cos(M_PI*CP[0])*sin(M_PI*CP[1])*tau[1]};
+            array<double, 3> row3 = {0, 0, 0};
+            array<array<double, 3>, 3> M = {row1, row2, row3};
+            temp = M*tau;
         } else if (field->getName() == "navierField") {
             temp = {0, 0, 0};
         }
-
-        // This matrix transforms the basis of the vector field
-        array<double, 3> row1 = {cos(contactAngle), sin(contactAngle), 0};
-        array<double, 3> row2 = {-sin(contactAngle), cos(contactAngle), 0};
-        array<double, 3> row3 = {0, 0, 0};
-        array<array<double, 3>, 3> M = {row1, row2, row3};
-        temp = M*temp;
-
 
         curvature = curvature + dt*(temp*normal - 3*curvature*(field->gradAt(i*dt, CP[0], CP[1], CP[2])*tau)*tau);
     }
