@@ -41,12 +41,12 @@ using std::array;
  * trackedContactPoint | Whether to track the left or right contact point. Only applicable in 2D.
  */
 int main() {
-
 	auto start = std::chrono::system_clock::now();
 
-    int numX, numY, numZ;
+    int numX, numY, numZ, threads;
     double lenX, lenY, lenZ, time, centerX, centerY, centerZ, radius, expcpX, expcpY, expcpZ, expAngle, v0, c1, c2, c3, tau, CFL, writestepsFraction;
     numX = numY = numZ = 0;
+    threads = 1;
     lenX = lenY = lenZ = time = centerX = centerY = centerZ = radius = expcpX = expcpY = expcpZ = expAngle = v0 = c1 = c2 = c3 = tau = CFL = writestepsFraction = 0;
     bool writeField = false, calculateCurvature = false;
     std::string trackedContactPoint = "left", fieldName = "";
@@ -118,9 +118,14 @@ int main() {
 		    trackedContactPoint = value;
 		else if (varName == "calculateCurvature")
 		    std::stringstream(value) >> std::boolalpha >> calculateCurvature;
+		else if (varName == "threads")
+			threads = std::stoi(value);
 	    }
 	   }
     }
+
+  	//Parallel computing
+  	omp_set_num_threads(threads);
 
     field = new VelocityField(fieldName, v0, c1, c2, c3, tau, 0, lenX, 0, lenY, 0, lenZ, lenX/numX,lenY/numY,lenZ/numZ);
 

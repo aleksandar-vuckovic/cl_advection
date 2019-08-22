@@ -8,6 +8,8 @@
 #include "vecMath.hpp"
 #include "VelocityField.hpp"
 
+#include <omp.h>
+
 class LevelSet : Field<double> {
 private:
     //The width of a cell in each direction

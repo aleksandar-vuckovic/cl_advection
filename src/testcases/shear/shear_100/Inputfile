@@ -27,3 +27,5 @@ expAngle=30.0
 
 trackedContactPoint=right
 
+threads=4
+

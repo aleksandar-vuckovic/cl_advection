@@ -672,6 +672,9 @@ void LevelSet::calculateNextTimestep(double dt, int timestep) {
     const array<double, 3> backNormal = {0, 0, -1};
 
     // loop over all cells
+#pragma omp parallel shared(tempPhi)
+    {
+#pragma omp for collapse(3)
     for (int x = 0; x < numX; x++) {
         for (int y = 0; y < numY; y++) {
             for (int z = 0; z < numZ; z++) {
@@ -751,5 +754,7 @@ void LevelSet::calculateNextTimestep(double dt, int timestep) {
                 this->at(x, y, z) = this->at(x, y, z) - dt/(dx*dy*dz)*flux;
             }
         }
+    }
+
     }
 }
