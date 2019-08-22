@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <string>
 #include <vector>
+#include <chrono>
 #include "LevelSet.hpp"
 #include "VelocityField.hpp"
 #include "Streamlines.hpp"
@@ -40,6 +41,8 @@ using std::array;
  * trackedContactPoint | Whether to track the left or right contact point. Only applicable in 2D.
  */
 int main() {
+
+	auto start = std::chrono::system_clock::now();
 
     int numX, numY, numZ;
     double lenX, lenY, lenZ, time, centerX, centerY, centerZ, radius, expcpX, expcpY, expcpZ, expAngle, v0, c1, c2, c3, tau, CFL, writestepsFraction;
@@ -256,6 +259,11 @@ int main() {
     std::cout << std::endl;
     std::cout << "Sum of Phi at start: " << sumAtStart << std::endl;
     std::cout << "Sum of Phi at end: " << Phi.sumLevelSet() << std::endl;
+
+    auto end = std::chrono::system_clock::now();
+    std::chrono::duration<double> duration = end - start;
+    std::cout << "Total runtime: " << duration.count() << "s" << std::endl;
+
 
     return 0;
 }
