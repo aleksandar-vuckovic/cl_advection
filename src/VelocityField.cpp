@@ -129,7 +129,7 @@ array<array<double, 3>, 3> VelocityField::gradAt(double t, double x, double y, d
  *
  * @param t The time
  */
-void VelocityField::writeToFile3D(double t) {
+void VelocityField::writeToFile(double t) {
 	int numX = (xmax - xmin)/dx;
 	int numY = (ymax - ymin)/dy;
 	int numZ = (zmax - zmin)/dz;
@@ -160,43 +160,6 @@ void VelocityField::writeToFile3D(double t) {
 	fclose(velFile);
 
 	delete[] fieldValues;
-}
-
-/**
- * Writes the velocity field at a given time to disk
- *
- * Writes the velocity field for visualization in Paraview. Since no XMF file is written,
- * simply calling this function is not enough for visualization. Thus, this function is called within
- * LevelSet::writeToFile, which does write a XMF file.
- *
- * @param t The time
- */
-void VelocityField::writeToFile2D(double t) {
-    int numX = (xmax - xmin)/dx;
-    int numY = (ymax - ymin)/dy;
-
-    double *fieldValues = new double[numX*numY*2];
-    double x, y;
-    int index = 0;
-
-    for (int j = 0; j < numY; j++) {
-        for (int i = 0; i < numX; i++) {
-            x = i*dx - xmin;
-            y = j*dy - ymin;
-            array<double, 3> temp = this->at(t, x, y, 0);
-            fieldValues[index] = temp[0];
-            fieldValues[index + 1] = temp[1];
-            index += 2;
-        }
-    }
-
-    std::string filename = "data/Vel_t=" + std::to_string(t) + ".bin";
-    FILE *velFile;
-    velFile = fopen(filename.data(), "wb");
-    fwrite(fieldValues, sizeof(double), numX*numY*2, velFile);
-    fclose(velFile);
-
-    delete[] fieldValues;
 }
 
 double VelocityField::getXMax() {

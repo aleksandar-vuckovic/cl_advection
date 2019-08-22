@@ -1,4 +1,4 @@
-/*
+/**
  * @class Streamlines
  * The Streamlines class.
  *
@@ -31,10 +31,10 @@ Streamlines::Streamlines(int numX, int numY, int numZ, VelocityField& vel, doubl
 		terminated = false;
 		while (!terminated) {
 			array<double, 3> p = streamlines[i].back();
-			array<double, 3> k1 = {dt * vel.at(0, p[0], p[1], 0)};
-			array<double, 3> k2 = {dt * vel.at(0, p[0] + k1[0]/2, p[1] + k1[1]/2, 0)};
-			array<double, 3> k3 = {dt * vel.at(0, p[0] + k2[0]/2, p[1] + k2[1]/2, 0)};
-			array<double, 3> k4 = {dt * vel.at(0, p[0] + k3[0], p[1] + k3[1], 0)};
+			array<double, 3> k1 = dt * vel.at(0, p[0], p[1], 0);
+			array<double, 3> k2 = dt * vel.at(0, p[0] + k1[0]/2, p[1] + k1[1]/2, 0);
+			array<double, 3> k3 = dt * vel.at(0, p[0] + k2[0]/2, p[1] + k2[1]/2, 0);
+			array<double, 3> k4 = dt * vel.at(0, p[0] + k3[0], p[1] + k3[1], 0);
 
 			array<double, 3> p_next = p + 1.0/6 * (k1 + 2*k2 + 2*k3 + k4);
 			streamlines[i].push_back(p_next);
@@ -55,6 +55,15 @@ Streamlines::Streamlines(int numX, int numY, int numZ, VelocityField& vel, doubl
 		}
 }
 
+/**
+ * Writes the stream line field to disk.
+ *
+ * Writes the stream line field for visualization in Paraview. Since no XMF file is written,
+ * simply calling this function is not enough for visualization. Thus, this function is called within
+ * LevelSet::writeToFile, which does write a XMF file.
+ *
+ * @param t The time
+ */
 void Streamlines::writeToFile() {
 	int Npoints = numX*numY;
 	FILE *streamfile;

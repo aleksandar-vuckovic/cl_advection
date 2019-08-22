@@ -184,12 +184,9 @@ int main() {
         std::cout << "Step " << i << std::endl;
         //Write field to file
         if (writeField && i % (int)ceil((double)timesteps/writesteps) == 0) {
-            if (numZ == 1) {
-                Phi.writeToFile3D(dt, i, timesteps, writesteps, &xmfFile);
+            if (i == 0)
                 streamlines.writeToFile();
-            }
-            else
-                Phi.writeToFile3D(dt, i, timesteps, writesteps, &xmfFile);
+            Phi.writeToFile(dt, i, timesteps, writesteps, &xmfFile);
         }
 
 	// Calculate the reference position of the contact point

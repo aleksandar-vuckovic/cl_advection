@@ -42,8 +42,7 @@ public:
     double getReferenceCurvatureQuadraticField(double t, double init_curvature);
     double getCurvatureDivergence(array<int, 3> cell) const;
     double getCurvatureHeight(array<int, 3> cell) const;
-    void writeToFile3D(double dt, int timestep, int total_timesteps, int total_writesteps, std::ofstream *xmfFile);
-    void writeToFile2D(double dt, int timestep, int total_timesteps, int total_writesteps, std::ofstream *xmfFile);
+    void writeToFile(double dt, int timestep, int total_timesteps, int total_writesteps, std::ofstream *xmfFile);
     void writeTangentialVectorToFile(double t);
     double sumLevelSet();
     void initDroplet(array<double, 3> center, double radius);

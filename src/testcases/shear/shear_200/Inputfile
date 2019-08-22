@@ -1,13 +1,13 @@
-numX=2000
-numY=200
+numX=4000
+numY=800
 numZ=1
 lenX=1.0
-lenY=0.1
+lenY=0.2
 lenZ=1
 
 time=3.0
 CFL=0.5
-writestepsFraction=0.1
+writestepsFraction=0.05
 writeField=true
 
 v0=-0.2

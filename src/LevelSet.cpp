@@ -307,7 +307,7 @@ double LevelSet::getReferenceCurvatureExplicitEuler(double dt, int timestep, dou
                                     v0*M_PI*M_PI*cos(M_PI*CP[0])*sin(M_PI*CP[1])*tau[0] + v0*M_PI*M_PI*sin(M_PI*CP[0])*cos(M_PI*CP[1])*tau[1],
                                     0};
             array<double, 3> row2 = {-v0*M_PI*M_PI*cos(M_PI*CP[0])*sin(M_PI*CP[1])*tau[0] - v0*M_PI*M_PI*sin(M_PI*CP[0])*cos(M_PI*CP[1])*tau[1],
-                                     -v0*M_PI*M_PI*sin(M_PI*CP[0])*cos(M_PI*CP[1])*tau[0] -v0*M_PI*M_PI*cos(M_PI*CP[0])*sin(M_PI*CP[1])*tau[1]};
+                                     -v0*M_PI*M_PI*sin(M_PI*CP[0])*cos(M_PI*CP[1])*tau[0]   -v0*M_PI*M_PI*cos(M_PI*CP[0])*sin(M_PI*CP[1])*tau[1]};
             array<double, 3> row3 = {0, 0, 0};
             array<array<double, 3>, 3> M = {row1, row2, row3};
             temp = M*tau;
@@ -493,7 +493,7 @@ double LevelSet::getCurvatureHeight(array<int, 3> cell) const {
  * @param total_writesteps The total number of steps that will be written to disk
  * @param xmfFile A pointer to the XMF file.
  */
-void LevelSet::writeToFile3D(double dt, int timestep, int total_timesteps, int total_writesteps, std::ofstream *xmfFile) {
+void LevelSet::writeToFile(double dt, int timestep, int total_timesteps, int total_writesteps, std::ofstream *xmfFile) {
     int Npoints = numX*numY*numZ;
     double *pointCoordinates = new double[Npoints*3];
     double *pointPhiValues = new double [Npoints];
@@ -570,100 +570,8 @@ void LevelSet::writeToFile3D(double dt, int timestep, int total_timesteps, int t
     delete[] pointPhiValues;
 
     //Write velocity field
-	field->writeToFile3D(timestep*dt);
+	field->writeToFile(timestep*dt);
 
-    //Write tangential vector to file
-    writeTangentialVectorToFile(timestep*dt);
-}
-
-/**
- * Write the files necessary to visualize the field and its velocity field in Paraview.
- *
- * Write the XMF file to disk, as well as the grid of the Level set field. This is done only once.
- * At each point in time, write the Level set field to disk and call VelocityField::writeToFile to write its values as well.
- *
- * @param dt The width of a timestep
- * @param timestep The index of the timestep
- * @param total_timesteps The total number of timesteps
- * @param total_writesteps The total number of steps that will be written to disk
- * @param xmfFile A pointer to the XMF file.
- */
-void LevelSet::writeToFile2D(double dt, int timestep, int total_timesteps, int total_writesteps, std::ofstream *xmfFile) {
-    int Npoints = numX*numY;
-    double *pointCoordinates = new double[Npoints*2];
-    double *pointPhiValues = new double [Npoints];
-
-    int index = 0;
-    for (int j = 0; j < numY; j++)
-        for (int i = 0; i < numX; i++) {
-            if (timestep == 0) {
-                pointCoordinates[index] = i*dx;
-                pointCoordinates[index +1] = j*dy;
-                index += 2;
-            }
-            pointPhiValues[i + j*numX] = this->at(i, j, 0);
-    }
-
-    // If it is the first iteration, create coordinate file
-    if (timestep == 0) {
-        *xmfFile << "<?xml version=\"1.0\" ?>\n"
-                 << "<!DOCTYPE Xdmf SYSTEM \"Xdmf.dtd\" [\n"
-                 << "<!ENTITY Npoints \"" + std::to_string(Npoints) + "\">\n"
-                 << "]>\n"
-                 << "<Xdmf xmlns:xi=\"http://www.w3.org/2001/XInclude\" Version=\"2.0\">\n"
-                 << "<Domain>\n"
-                 << "<Grid Name=\"TimeSeries\" GridType=\"Collection\" CollectionType=\"Temporal\">\n"
-                 << "<Time TimeType=\"List\">\n"
-                 << "<DataItem Format=\"XML\" NumberType=\"Float\" Dimensions=\""+ std::to_string(total_writesteps)+"\">\n";
-        for (int i = 0; i < total_writesteps; i++) {
-            *xmfFile << std::to_string(i*((double)total_timesteps/total_writesteps)*dt) << " ";
-        }
-        *xmfFile <<"</DataItem>\n" << "</Time>\n";
-
-        //Write field coordinates into binary file
-        FILE *fieldFile;
-        fieldFile = fopen("data/field.bin", "wb");
-        fwrite(pointCoordinates, sizeof(double), Npoints*2, fieldFile);
-        fclose(fieldFile);
-    }
-    FILE *PhiFile;
-    std::string filename = "data/Phi_t="+ std::to_string(timestep*dt)+".bin";
-    PhiFile = fopen(filename.data(), "wb");
-    fwrite(pointPhiValues, sizeof(double), Npoints, PhiFile);
-    fclose(PhiFile);
-
-
-
-    *xmfFile << "<Grid>\n"
-             << "<Topology TopologyType=\"Polyvertex\" NumberOfElements=\""+std::to_string(Npoints) +"\"/>\n"
-             << "<Geometry GeometryType=\"XY\"> \n"
-             << "<DataItem Name=\"points\" Format=\"Binary\" NumberType=\"Float\" Precision=\"8\" Endian=\"Little\" Dimensions=\"&Npoints; 2\">\n"
-             << "field.bin\n"
-             << "</DataItem>\n</Geometry>\n"
-             << "<Attribute Name =\"lvlset\" AttributeType=\"Scalar\" Center=\"Cell\">\n"
-             << "<DataItem Format=\"Binary\" NumberType=\"Float\" Precision=\"8\"  Endian=\"Little\" Dimensions=\"&Npoints;\">\n"
-             << "Phi_t=" + std::to_string(timestep*dt) +".bin\n"
-             << "</DataItem></Attribute>\n"
-             << "<Attribute Name =\"VelocityField\" AttributeType=\"Vector\" Center=\"Cell\">\n"
-             << "<DataItem Format=\"Binary\" NumberType=\"Float\" Precision=\"8\" Endian=\"Little\" Dimensions=\"&Npoints; 2\">\n"
-             << "Vel_t=" + std::to_string(timestep*dt) +".bin\n"
-             << "</DataItem></Attribute>\n"
-             << "<Attribute Name =\"Tangential Vector\" AttributeType=\"Vector\" Center=\"Cell\">\n"
-             << "<DataItem Format=\"Binary\" NumberType=\"Float\" Precision=\"8\" Endian=\"Little\" Dimensions=\"&Npoints; 2\">\n"
-             << "Tau_t=" + std::to_string(timestep*dt) +".bin\n"
-             << "</DataItem></Attribute>\n"
-			 << "<Attribute Name =\"Streamlines\" AttributeType=\"Scalar\" Center=\"Cell\">\n"
-		     << "<DataItem Format=\"Binary\" NumberType=\"Float\" Precision=\"8\" Endian=\"Little\" Dimensions=\"&Npoints;\">\n"
-			 << "stream.bin\n"
-			 << "</DataItem></Attribute>\n"
-             <<"</Grid>\n";
-
-
-    delete[] pointCoordinates;
-    delete[] pointPhiValues;
-
-    //Write velocity field
-    field->writeToFile3D(timestep*dt);
     //Write tangential vector to file
     writeTangentialVectorToFile(timestep*dt);
 }
