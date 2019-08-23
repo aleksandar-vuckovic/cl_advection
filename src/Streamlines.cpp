@@ -26,10 +26,8 @@ Streamlines::Streamlines(int numX, int numY, int numZ, VelocityField& vel, doubl
 		streamlines[i].push_back({vel.getXMax()/2, i*0.1*vel.getYMax()});
 	}
 
-	bool terminated;
 	for (int i = 0; i < 10; ++i) {
-		terminated = false;
-		while (!terminated) {
+		while (true) {
 			array<double, 3> p = streamlines[i].back();
 			array<double, 3> k1 = dt * vel.at(0, p[0], p[1], 0);
 			array<double, 3> k2 = dt * vel.at(0, p[0] + k1[0]/2, p[1] + k1[1]/2, 0);
@@ -37,15 +35,15 @@ Streamlines::Streamlines(int numX, int numY, int numZ, VelocityField& vel, doubl
 			array<double, 3> k4 = dt * vel.at(0, p[0] + k3[0], p[1] + k3[1], 0);
 
 			array<double, 3> p_next = p + 1.0/6 * (k1 + 2*k2 + 2*k3 + k4);
+			if (p_next[0] < 0 || p_next[0] >= vel.getXMax() || p_next[1] < 0 || p_next[1] >= vel.getYMax()
+				|| streamlines[i].size() > numX*numY/10.0) {
+				break;
+			}
+
 			streamlines[i].push_back(p_next);
 
-			if (p_next[0] < 0 || p_next[0] > vel.getXMax() || p_next[1] < 0 || p_next[1] > vel.getYMax()
-				|| streamlines[i].size() > numX*numY/10.0) {
-				terminated = true;
-			}
 		}
 	}
-	this->streamlines = streamlines;
 
 	for (auto line : streamlines)
 		for (auto p : line) {
@@ -71,8 +69,3 @@ void Streamlines::writeToFile() {
 	fwrite(getData().data(), sizeof(int), Npoints, streamfile);
 	fclose(streamfile);
 }
-
-Streamlines::~Streamlines() {
-	// TODO Auto-generated destructor stub
-}
-
