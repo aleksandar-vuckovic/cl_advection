@@ -28,3 +28,4 @@ expAngle=90.0
 trackedContactPoint=right
 calculateCurvature=true
 
+threads=4
