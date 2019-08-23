@@ -16,13 +16,14 @@
  * @param trackedCP Which contact point to track. Only applicable in 2D.
  */
 LevelSet::LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz, VelocityField *field,
-        std::string trackedCP, std::vector< array<double, 3> > *positionReference) : Field<double>(numX, numY, numZ) {
+        std::string trackedCP, std::vector< array<double, 3> > *positionReference, std::vector<double>* angleReference) : Field<double>(numX, numY, numZ) {
 		this->dx = dx;
 		this->dy = dy;
 		this->dz = dz;
 		this->field = field;
 		this->trackedCP = trackedCP;
 		this->positionReference = positionReference;
+		this->angleReference = angleReference;
 }
 
 /**
@@ -289,7 +290,7 @@ double LevelSet::getReferenceCurvatureExplicitEuler(double dt, int timestep, dou
 
     for (int i = 0; i < timestep; i++) {
         array<double, 3> CP = (*positionReference)[i];
-        double contactAngle = getReferenceAngleExplicitEuler(dt, i, initNormal, initCP);
+        double contactAngle = (*angleReference)[i]/180*M_PI;
         array<double, 3> normal, tau;
         if (trackedCP == "left") {
             normal = { -sin(contactAngle), cos(contactAngle), 0};

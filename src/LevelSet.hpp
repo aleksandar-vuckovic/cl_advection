@@ -22,14 +22,16 @@ private:
     std::string trackedCP;
 
     /**
-    *   A pointer to reference data calculated with the explicit euler algorithm.
+    *   A pointer to reference data .
     *   This is needed, since many other reference solvers are coupled, and all of them require this data,
     *   leading to a high number in nested loops.
     **/
     std::vector< array<double, 3> > *positionReference;
+    std::vector<double> *angleReference;
 
 public:
-    LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz, VelocityField *field, std::string trackedCP, std::vector< array<double, 3> > *positionReference);
+    LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz, VelocityField *field, std::string trackedCP,
+    		std::vector< array<double, 3> > *positionReference, std::vector<double> *angleReference);
 
     array<double, 3> getInitCP(array<double, 3> expcp, double epsilon);
     array<double, 3> getContactPointExplicitEuler(double dt, int timestep, array<double, 3> initCP);

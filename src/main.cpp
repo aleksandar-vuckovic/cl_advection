@@ -155,13 +155,14 @@ int main() {
     array<double, 3> center = {centerX, centerY, centerZ};
     array<double, 3> expcp = {expcpX, expcpY, expcpZ};
     std::vector< array<double, 3> > positionTheoretical(timesteps);
-    std::vector<double> angle(timesteps);
+    std::vector<double> angleActual(timesteps);
+    std::vector<double> angleTheoretical(timesteps);
     std::vector<double> curvatureActualDivergence(timesteps);
     std::vector<double> curvatureActualHeight(timesteps);
     std::vector<double> curvatureTheoretical(timesteps);
 
 
-    LevelSet Phi(numX, numY, numZ, dx, dy, dz, field, trackedContactPoint, &positionTheoretical);
+    LevelSet Phi(numX, numY, numZ, dx, dy, dz, field, trackedContactPoint, &positionTheoretical, &angleTheoretical);
     Streamlines streamlines(numX, numY, numZ, *field, dt);
 
     Phi.initDroplet(center, radius);
@@ -185,7 +186,14 @@ int main() {
     // Loop to calculate reference data of position
     for (int i = 0; i < timesteps; ++i) {
         positionTheoretical[i] = Phi.getContactPointExplicitEuler(dt, i, initCP);
+        if (field->getName() == "navierField" || field->getName() == "timeDependentLinearField") {
+        	angleTheoretical[i] = Phi.getReferenceAngleLinearField(i*dt, c1, c2, expAngle/180*M_PI)/M_PI*180;
+        } else {
+        	angleTheoretical[i] = Phi.getReferenceAngleExplicitEuler(dt, i, n_sigma_init, initCP)/M_PI*180;
+        }
+
     }
+
 
     // main loop
     for (int i = 0; i < timesteps; ++i) {
@@ -209,7 +217,7 @@ int main() {
         array<double, 3> newCPActual = Phi.getContactPoint(newCPIndicesActual);
 
         // Evaluate te Contact Angle numerically based on Phi
-        angle[i] = Phi.getContactAngle(newCPIndicesActual);
+        angleActual[i] = Phi.getContactAngle(newCPIndicesActual);
 
         // Output to command line and positionFile
         std::cout << "Time: " << std::to_string(i*dt) << "\n";
@@ -218,17 +226,11 @@ int main() {
                      << std::to_string(newCPReference[0]) << std::endl;
 
 
-        std::cout << "Actual: " << std::to_string(angle[i]/(2*M_PI)*360) + "\n";
-        if (field->getName() == "navierField" || field->getName() == "timeDependentLinearField") {
-            double reference_temp = Phi.getReferenceAngleLinearField(i*dt, c1, c2, expAngle/180*M_PI)/M_PI*180;
-			angleFile << std::to_string(i*dt) << ", " << angle[i]/(2*M_PI)*360 << ", " 	<< reference_temp << "\n";
-			std::cout << "Reference: " << reference_temp << "\n";
-		} else {
-            // compute reference for the contact angle (numerically)
-            double reference_temp = Phi.getReferenceAngleExplicitEuler(dt, i, n_sigma_init, initCP)/M_PI*180;
-            angleFile << std::to_string(i*dt) << ", " << angle[i]/(2*M_PI)*360 << ", " << reference_temp << "\n";
-            std::cout << "Reference: " << reference_temp << "\n";
-		}
+        std::cout << "Actual: " << std::to_string(angleActual[i]/(2*M_PI)*360) + "\n";
+		angleFile << std::to_string(i*dt) << ", "
+				  << angleActual[i]/(2*M_PI)*360 << ", "
+				  << angleTheoretical[i] << "\n";
+		std::cout << "Reference: " << angleTheoretical[i] << "\n";
         
         if (calculateCurvature) {
             curvatureActualDivergence[i] = Phi.getCurvatureDivergence(newCPIndicesActual);
