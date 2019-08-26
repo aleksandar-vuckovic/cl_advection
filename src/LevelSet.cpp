@@ -553,9 +553,14 @@ void LevelSet::writeToFile(double dt, int timestep, int total_timesteps, int tot
 			 << "Phi_t=" + std::to_string(timestep*dt) +".bin\n"
 			 << "</DataItem></Attribute>\n"
 			 << "<Attribute Name =\"VelocityField\" AttributeType=\"Vector\" Center=\"Cell\">\n"
-			 << "<DataItem Format=\"Binary\" NumberType=\"Float\" Precision=\"8\" Endian=\"Little\" Dimensions=\"&Npoints; 3\">\n"
-			 << "Vel_t=" + std::to_string(timestep*dt) +".bin\n"
-			 << "</DataItem></Attribute>\n"
+			 << "<DataItem Format=\"Binary\" NumberType=\"Float\" Precision=\"8\" Endian=\"Little\" Dimensions=\"&Npoints; 3\">\n";
+
+	if (field->getName() == "timeDependentNavierField")
+		*xmfFile << "Vel_t=" + std::to_string(timestep*dt) +".bin\n";
+	else
+		*xmfFile << "Vel_t=" + std::to_string(0*dt) +".bin\n";
+
+	*xmfFile << "</DataItem></Attribute>\n"
 			 << "<Attribute Name =\"Tangential Vector\" AttributeType=\"Vector\" Center=\"Cell\">\n"
              << "<DataItem Format=\"Binary\" NumberType=\"Float\" Precision=\"8\" Endian=\"Little\" Dimensions=\"&Npoints; 3\">\n"
              << "Tau_t=" + std::to_string(timestep*dt) +".bin\n"
@@ -564,14 +569,17 @@ void LevelSet::writeToFile(double dt, int timestep, int total_timesteps, int tot
 			 << "<DataItem Format=\"Binary\" NumberType=\"Int\" Precision=\"4\" Endian=\"Little\" Dimensions=\"&Npoints;\">\n"
 			 << "stream.bin\n"
 			 << "</DataItem></Attribute>\n"
-			 <<"</Grid>\n";
+			 << "</Grid>\n";
 
 
     delete[] pointCoordinates;
     delete[] pointPhiValues;
 
     //Write velocity field
-	field->writeToFile(timestep*dt);
+    if (field->getName() == "timeDependentNavierField")
+    	field->writeToFile(timestep*dt);
+    else if (timestep == 0)
+    	field->writeToFile(0*dt);
 
     //Write tangential vector to file
     writeTangentialVectorToFile(timestep*dt);
