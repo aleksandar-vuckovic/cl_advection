@@ -16,14 +16,30 @@
  * @param trackedCP Which contact point to track. Only applicable in 2D.
  */
 LevelSet::LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz, VelocityField *field,
-        std::string trackedCP, std::vector< array<double, 3> > *positionReference, std::vector<double>* angleReference) : Field<double>(numX, numY, numZ) {
+        std::string trackedCP, double dt, int timesteps, array<double, 3> expCP, double expAngle, double initCurvature)
+        : Field<double>(numX, numY, numZ), positionReference(timesteps), angleReference(timesteps), curvatureReference(timesteps){
 		this->dx = dx;
 		this->dy = dy;
 		this->dz = dz;
 		this->field = field;
 		this->trackedCP = trackedCP;
-		this->positionReference = positionReference;
-		this->angleReference = angleReference;
+
+
+	    array<double, 3> initCP = getInitCP(expCP, 0.001);
+	    array<double, 3> n_sigma_init = normalVector2D(expAngle/180*M_PI);
+		// Calculate reference data
+        contactPointExplicitEuler(dt, timesteps, initCP);
+        if (field->getName() == "navierField" || field->getName() == "timeDependentNavierField") {
+            referenceAngleLinearField(dt, timesteps, expAngle/180*M_PI);
+        } else {
+            referenceAngleExplicitEuler(dt, timesteps, n_sigma_init, initCP);
+        }
+
+        if (field->getName() == "quadraticField") {
+            referenceCurvatureQuadraticField(dt, timesteps, initCurvature);
+        } else {
+            referenceCurvatureExplicitEuler(dt, timesteps, initCurvature,  expAngle/180*M_PI, initCP);
+        }
 }
 
 /**
@@ -51,19 +67,19 @@ array<double, 3> LevelSet::getInitCP(array<double, 3> expcp, double epsilon) {
 
 /**
  * Calculate the new position of the contact point at a given time.
- * Using the explicit euler method, calculate the position of the contact point initCP at time timestep*dt.
+ * Using the explicit euler method, calculate the position of the contact point initCP at all times and writes them to
+ * the reference array.
  *
  * @param dt The length of a single timestep
  * @param timestep The index of the timestep
  * @param initCP The position of the contact point at timestep 0
- * @return The theoretical position of the contact point after a given time
  */
-array<double, 3> LevelSet::getContactPointExplicitEuler(double dt, int timestep, array<double, 3> initCP) {
+void LevelSet::contactPointExplicitEuler(double dt, int last_timestep, array<double, 3> initCP) {
     array<double, 3> &temp = initCP;
-    for (int i = 0; i < timestep; i++)
-    	temp = temp + dt*field->at(timestep*dt, temp[0], temp[1], temp[2]);
-
-    return temp;
+    for (int i = 0; i < last_timestep; i++) {
+    	temp = temp + dt*field->at(i*dt, temp[0], temp[1], temp[2]);
+    	positionReference[i] = temp;
+    }
 }
 
 /**
@@ -225,20 +241,17 @@ double LevelSet::getContactAngle(array<int, 3> cell) {
  * @param timestep The index of the timestep
  * @param n_sigma_init The initial normal vector of the interface
  * @param CP The current position of the contact point
- * @return The reference contact angle in radiants
  */
-double LevelSet::getReferenceAngleExplicitEuler(double dt, int timestep, array<double, 3> n_sigma_init, array<double, 3> CP_init) {
+void LevelSet::referenceAngleExplicitEuler(double dt, int last_timestep, array<double, 3> n_sigma_init, array<double, 3> CP_init) {
 	array<double, 3> &n_sigma = n_sigma_init;
 	array<double, 3> deriv = {0, 0, 0};
-	double t = dt*timestep;
-	for (int i = 0; i < timestep; i++) {
-	    array<double, 3> CP = (*positionReference)[i];
-		deriv = -1*transpose(field->gradAt(t, CP[0], CP[1], CP[2]))*n_sigma + ((field->gradAt(t, CP[0], CP[1], CP[2])*n_sigma)*n_sigma)*n_sigma;
+	for (int i = 0; i < last_timestep; i++) {
+	    angleReference[i] = acos(n_sigma[1])/M_PI*180;
+	    array<double, 3> CP = positionReference[i];
+		deriv = -1*transpose(field->gradAt(i*dt, CP[0], CP[1], CP[2]))*n_sigma + ((field->gradAt(i*dt, CP[0], CP[1], CP[2])*n_sigma)*n_sigma)*n_sigma;
 		n_sigma = deriv*dt + n_sigma;
 		n_sigma = n_sigma/abs(n_sigma);
 	}
-	// Normalize n_sigma. In theory this should not be necessary since the vector should stay normalized, although it may reduce numerical inaccuracies
-	return acos(n_sigma[1]);
 }
 
 /**
@@ -250,23 +263,31 @@ double LevelSet::getReferenceAngleExplicitEuler(double dt, int timestep, array<d
  * @param theta0 The contact angle at time t == 0
  * @return The reference contact angle in degrees
  */
-double LevelSet::getReferenceAngleLinearField(double t, double c1, double c2, double theta0) {
-	if (field->getName() == "navierField")
-	    if (trackedCP == "left") {
-	        return M_PI/2 + atan(-1/tan(theta0) * exp(2*c1*t) - c2 * (exp(2*c1*t) - 1)/(2*c1));
-	    } else {
-	        return M_PI/2 + atan(-1/tan(theta0) * exp(2*c1*t) + c2 * (exp(2*c1*t) - 1)/(2*c1));
-	    }
-	else if (field->getName() == "timeDependentNavierField") {
-		double tau = field->getTau();
-		if (trackedCP == "left") {
-		    return M_PI/2 + atan(-1/tan(theta0) * exp(2*c1*tau/M_PI*sin(M_PI*t/tau)) - c2 * (exp(2*c1*tau/M_PI*sin(M_PI*t/tau)) - 1)/(2*c1));
-		} else {
-		    return M_PI/2 + atan(-1/tan(theta0) * exp(2*c1*tau/M_PI*sin(M_PI*t/tau)) + c2 * (exp(2*c1*tau/M_PI*sin(M_PI*t/tau)) - 1)/(2*c1));
-		}
-	}
-	else
-		throw std::invalid_argument("Please choose either navierField or timeDependentNavierField if analyzing linear fields.");
+void LevelSet::referenceAngleLinearField(double dt, int last_timestep, double theta0) {
+    double c1 = field->getC1();
+    double c2 = field->getC2();
+    for (int i = 0; i < last_timestep; ++i) {
+        double t = i*dt;
+        double temp;
+        if (field->getName() == "navierField")
+            if (trackedCP == "left") {
+                temp = M_PI/2 + atan(-1/tan(theta0) * exp(2*c1*t) - c2 * (exp(2*c1*t) - 1)/(2*c1));
+            } else {
+                temp =  M_PI/2 + atan(-1/tan(theta0) * exp(2*c1*t) + c2 * (exp(2*c1*t) - 1)/(2*c1));
+            }
+        else if (field->getName() == "timeDependentNavierField") {
+            double tau = field->getTau();
+            if (trackedCP == "left") {
+                temp = M_PI/2 + atan(-1/tan(theta0) * exp(2*c1*tau/M_PI*sin(M_PI*t/tau)) - c2 * (exp(2*c1*tau/M_PI*sin(M_PI*t/tau)) - 1)/(2*c1));
+            } else {
+                temp = M_PI/2 + atan(-1/tan(theta0) * exp(2*c1*tau/M_PI*sin(M_PI*t/tau)) + c2 * (exp(2*c1*tau/M_PI*sin(M_PI*t/tau)) - 1)/(2*c1));
+            }
+        }
+        else
+            throw std::invalid_argument("Please choose either navierField or timeDependentNavierField if analyzing linear fields.");
+
+        angleReference[i] = temp/M_PI*180;
+    }
 }
 
 /**
@@ -277,9 +298,8 @@ double LevelSet::getReferenceAngleLinearField(double t, double c1, double c2, do
  * @param initCurvature The initial curvature at time t == 0
  * @param CP The coordinates of the contact point
  * @param cell The indices of the contact point
- * @return The curvature
  */
-double LevelSet::getReferenceCurvatureExplicitEuler(double dt, int timestep, double initCurvature, double initAngle, array<double, 3> initCP) {
+void LevelSet::referenceCurvatureExplicitEuler(double dt, int last_timestep, double initCurvature, double initAngle, array<double, 3> initCP) {
     double curvature = initCurvature;
     array<double, 3> initNormal;
     if (trackedCP == "left") {
@@ -288,9 +308,10 @@ double LevelSet::getReferenceCurvatureExplicitEuler(double dt, int timestep, dou
         initNormal = {sin(initAngle), cos(initAngle)};
     }
 
-    for (int i = 0; i < timestep; i++) {
-        array<double, 3> CP = (*positionReference)[i];
-        double contactAngle = (*angleReference)[i]/180*M_PI;
+    for (int i = 0; i < last_timestep; i++) {
+        curvatureReference[i] = curvature;
+        array<double, 3> CP = positionReference[i];
+        double contactAngle = angleReference[i]/180*M_PI;
         array<double, 3> normal, tau;
         if (trackedCP == "left") {
             normal = { -sin(contactAngle), cos(contactAngle), 0};
@@ -318,8 +339,6 @@ double LevelSet::getReferenceCurvatureExplicitEuler(double dt, int timestep, dou
 
         curvature = curvature + dt*(temp*normal - 3*curvature*(field->gradAt(i*dt, CP[0], CP[1], CP[2])*tau)*tau);
     }
-
-    return curvature;
 }
 
 /**
@@ -328,9 +347,14 @@ double LevelSet::getReferenceCurvatureExplicitEuler(double dt, int timestep, dou
  * @param t The time
  * @param init_curvature The initial curvature
  */
-double LevelSet::getReferenceCurvatureLinearField(double t, double init_curvature) {
-    //Testing 3 instead of 2!! Not identical to mathematical formula!
-    return init_curvature * exp(3*field->getC1()*t);
+void LevelSet::referenceCurvatureLinearField(double dt, int timesteps, double initCurvature) {
+    double curvature = initCurvature;
+    double c1 = field->getC1();
+    for (int i = 0; i < timesteps; ++i) {
+        double t = dt*i;
+        curvature = initCurvature * exp(3*c1*t);
+        curvatureReference[i] = curvature;
+    }
 }
 
 /**
@@ -339,10 +363,15 @@ double LevelSet::getReferenceCurvatureLinearField(double t, double init_curvatur
  * @param t The time
  * @param init_curvature The initial curvature
  */
-double LevelSet::getReferenceCurvatureQuadraticField(double t, double init_curvature) {
-    double c1 = field->getC1();
-    double c3 = field->getC3();
-    return init_curvature * exp(3*c1* t) + (2.0/3) * (c3/c1) * (1 - exp(3 *c1* t));
+void LevelSet::referenceCurvatureQuadraticField(double dt, int timesteps, double initCurvature) {
+    double curvature = initCurvature;
+    for (int i = 0; i < timesteps; ++i) {
+        double c1 = field->getC1();
+        double c3 = field->getC3();
+        double t = dt*i;
+        curvature = initCurvature * exp(3*c1* t) + (2.0/3) * (c3/c1) * (1 - exp(3 *c1* t));
+        curvatureReference[i] = curvature;
+    }
 }
 
 /**
@@ -412,7 +441,7 @@ double LevelSet::getCurvatureDivergence(array<int, 3> cell) const {
     array<double, 3> row2 = {dny_dx, dny_dy, 0};
     array<double, 3> row3 = {0,      0,      0};
     //For this line, eclipse is complaining even though it compiles just fine
-    array< array<double, 3>, 3> gradNormal = {row1, row2, row3}; // @suppress("Invalid arguments")
+    array< array<double, 3>, 3> gradNormal = {row1, row2, row3};
 
     double kappa = -1*(gradNormal*tau)*tau;
 
@@ -662,6 +691,22 @@ void LevelSet::initDroplet(array<double, 3> center, double radius) {
 }
 
 /**
+ * Given the contact angle, calculate the normal vector.
+ *
+ * This function is only applicable in 2D.
+ * @param initAngle The angle in radiants.
+ */
+array<double, 3> LevelSet::normalVector2D(double initAngle) {
+    array<double, 3> initNormal;
+    if (trackedCP == "left") {
+        initNormal = { -sin(initAngle), cos(initAngle), 0};
+    } else {
+        initNormal = {sin(initAngle), cos(initAngle), 0};
+    }
+    return initNormal;
+}
+
+/**
  * Calculate the next timestep at a given time and evolves the field.
  *
  * For the flux calculation, the upwind method is used to ensure stability. Furthermore we impose
@@ -766,4 +811,16 @@ void LevelSet::calculateNextTimestep(double dt, int timestep) {
     }
 
     }
+}
+
+std::vector<array<double, 3>> LevelSet::getPositionReference() {
+    return positionReference;
+}
+
+std::vector<double> LevelSet::getAngleReference() {
+    return angleReference;
+}
+
+std::vector<double> LevelSet::getCurvatureReference() {
+    return curvatureReference;
 }

@@ -11,8 +11,7 @@
  * @param numX, numY, numZ The number of cells in each direction
  */
 template<class T>
-Field<T>::Field(int numX, int numY, int numZ) {
-    data = std::vector<T>(numX*numY*numZ);
+Field<T>::Field(int numX, int numY, int numZ) : data(numX*numY*numZ){
     this->numX = numX;
     this->numY = numY;
     this->numZ = numZ;
