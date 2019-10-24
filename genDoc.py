@@ -6,7 +6,7 @@ indexFile = open("html/index.html", "r")
 outFile = open("temp.html", "w")
 
 for line in indexFile:
-    if (line == "<p>123VIDEO123</p>\n"):
+    if (line == "<p>FOR_VIDEO_SEE_README.HTML</p>\n"):
         outFile.write("<center><video src=\"images/animation.ogv\" controls></video></center>")
     else:
         outFile.write(line)
