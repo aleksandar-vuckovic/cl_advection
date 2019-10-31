@@ -91,7 +91,7 @@ void LevelSet::contactPointExplicitEuler(double dt, int last_timestep, array<dou
  * @param v0 A parameter of the navier field
  * @return The position of the contact point in arbitrary units
  */
-array<double, 3> LevelSet::getContactPointLinearField(double t, double c1, double x0, double v0) {
+array<double, 3> LevelSet::contactPointLinearField(double t, double c1, double x0, double v0) {
 	if (field->getName() == "navierField") {
 		return {x0 * exp(c1 * t) + v0/c1 * (exp(c1 * t) - 1), 0, 0};
 	} else if (field->getName() == "timeDependentNavierField") {
@@ -105,75 +105,64 @@ array<double, 3> LevelSet::getContactPointLinearField(double t, double c1, doubl
 /**
  * Return the indices of the contact point in 2D or the coordinates most closely matching the given parameter.
  * This function works differently for 2D and 3D. If the simulation is 2D, it ignores the input parameter and returns
- * indices of the contact point by checking where the sign of the LevelSet field changes.
- * In 3D, it returns the coordinates of the point on the grid which is closest to the parameter.
+ * the contact point by checking where the sign of the LevelSet field changes.  It uses a convex combination of 
+ * neighboring LevelSet values depending on whether the right or the left contact point is being tracked.
+ *
+ * In 3D, it returns the coordinates of the point according to the reference ODE. In other words, it is assumed that in 3D,
+ * the solution exactly matches the actual contact point.
  *
  * @param point A point in the space of the Level set field.
- * @return 2D: Indices of the contact point. 3D: Indices of the point closest to point.
+ * @param indexOnly Whether to return only the indices of the point or its actual coordinates.
+ * @return The contact point
  */
-array<int, 3> LevelSet::getContactPointIndices(array<double, 3> point) {
-    if (this->numZ == 1){
+array<double, 3> LevelSet::getContactPoint(int timestep, bool indexOnly = false) {
+    if (numZ == 1){
         if (trackedCP == "left") {
             double initSign = this->at(0, 0, 0)/std::abs(this->at(0, 0, 0));
             for (int i = 0; i < numX; i++)
                 if (this->at(i, 0, 0)*initSign < 0) {
-                	return {i, 0, 0};
+                    
+                    if (indexOnly)
+                        return {double(i), 0, 0};
+                    double alpha = this->at(i,0,0)-this->at(i -1,0,0);
+                    if(std::abs(alpha) < 1E-12){
+                        throw std::runtime_error("LevelSet::getContactPoint: \nDifference of LevelSet values at contact point too small for convex combination");
+                    }
+
+                    alpha = this->at(i,0,0)/(alpha);
+                    return {(1 - alpha)*i*dx + alpha*(i - 1)*dx, 0, 0};
                 }
-        } else {
+        } else if (trackedCP == "right") {
             double initSign = this->at(numX - 1, 0, 0)/std::abs(this->at(numX - 1, 0, 0));
             for (int i = numX - 1; i >= 0; i--)
                 if (this->at(i, 0, 0)*initSign < 0) {
-                	return {i, 0, 0};
-				}
-		}
+
+                    if (indexOnly)
+                        return {double(i), 0, 0};
+                    double alpha = this->at(i + 1, 0, 0) - this->at(i, 0, 0);
+                    if(std::abs(alpha) < 1E-12) {
+                        throw std::runtime_error("LevelSet::getContactPoint: \nDifference of LevelSet values at contact point too small for convex combination");
+                    }
+
+                alpha = this->at(i + 1, 0, 0) / alpha;
+                return {alpha*i*dx + (1 - alpha)*(i+1)*dx, 0, 0};
+            }
+        }
+    
     } else {
-        //Find cell corresponding to this point
-        array<int, 3> cell = {0, 0, 0};
-        for (int x = 0; x < this->numX; x++)
-            for (int y = 0; y < this->numY; y++)
-                for (int z = 0; z < this->numZ; z++) {
-                    array<int, 3> other = {x, y, z};
-                    if (abs(point - cell*dx) > abs(point - other*dx))
-                        cell = other;
+        if (indexOnly) {
+            array<double, 3> cell = {0, 0, 0};
+            for (int i = 0; i < numX; ++i)
+                for (int k = 0; k < numZ; ++k) {
+                    array<double, 3> temp = {i*dx, 0, k*dz};
+                    if ( abs(temp - positionReference[timestep]) < abs(cell - positionReference[timestep]))
+                        cell = temp;
                 }
-        return cell;
+            return cell;
+        } else {
+            return positionReference[timestep];
+        }
     }
-    return array<int, 3> {0,0,0};
-}
-
-/**
- * Get contact point coordinates from contact point indices.
- *
- * Uses a convex combination of neighboring LevelSet values depending on whether the right or the
- * left contact point is being tracked.
- *
- * @param indices The indices of the cell where the first change of sign occured during iteration
- * inside LevelSet::getContactPointIndices
- */
-array<double, 3> LevelSet::getContactPoint(array<int, 3> indices) {
-	int i = indices[0];
-	if (trackedCP == "left") {
-		double alpha = this->at(i,0,0)-this->at(i -1,0,0);
-
-		if(std::abs(alpha) < 1E-12){
-			throw std::runtime_error("Difference of LevelSet values at contact point too small for convex combination");
-		}
-
-		alpha = this->at(i,0,0)/(alpha);
-		return {(1 - alpha)*i*dx + alpha*(i - 1)*dx, 0, 0};
-
-	} else if (trackedCP == "right") {
-		double alpha = this->at(i + 1, 0, 0) - this->at(i, 0, 0);
-		if(std::abs(alpha) < 1E-12) {
-		   throw std::runtime_error("Difference of LevelSet values at contact point too small for convex combination");
-		}
-
-		alpha = this->at(i + 1, 0, 0) / alpha;
-		return {alpha*i*dx + (1 - alpha)*(i+1)*dx, 0, 0};
-
-	} else {
-		throw std::runtime_error("Variable \"trackedContactPoint\" is not set to left or right");
-	}
 }
 
 /**
@@ -193,7 +182,7 @@ double LevelSet::getContactAngle(array<int, 3> cell) {
 		 double alpha = this->at(cell[0],0,0)-this->at(cell[0]-1,0,0);
 
 		 if(std::abs(alpha) < 1E-12){
-		   throw std::runtime_error("Difference of LevelSet values at contact point too small for convex combination");
+		   throw std::runtime_error("LevelSet::getContactAngle: \nDifference of LevelSet values at contact point too small for convex combination");
 		 }
 
 		 alpha = this->at(cell[0],0,0)/(alpha);
@@ -211,7 +200,7 @@ double LevelSet::getContactAngle(array<int, 3> cell) {
 	} else if (trackedCP == "right") {
 		double alpha = this->at(cell[0] + 1, 0, 0) - this->at(cell[0], 0, 0);
         if(std::abs(alpha) < 1E-12) {
-		   throw std::runtime_error("Difference of LevelSet values at contact point too small for convex combination");
+		   throw std::runtime_error("LevelSet::getContactAngle: \nDifference of LevelSet values at contact point too small for convex combination");
         }
 
         alpha = this->at(cell[0] + 1, 0, 0) / alpha;
@@ -390,7 +379,7 @@ double LevelSet::getCurvatureDivergence(array<int, 3> cell) const {
        The resulting normal vector field is defined on a cuboid with sidelength 2*local + 1 */
     int local = 2;
     int sidelengthZ;
-    if (this->numZ > 1)
+    if (numZ > 1)
         sidelengthZ = 2*local + 1;
     else
         sidelengthZ = 1;
@@ -590,10 +579,10 @@ void LevelSet::writeToFile(double dt, int timestep, int total_timesteps, int tot
 		*xmfFile << "Vel_t=" + std::to_string(0*dt) +".bin\n";
 
 	*xmfFile << "</DataItem></Attribute>\n"
-			 << "<Attribute Name =\"Tangential Vector\" AttributeType=\"Vector\" Center=\"Cell\">\n"
+			 /*<< "<Attribute Name =\"Tangential Vector\" AttributeType=\"Vector\" Center=\"Cell\">\n"
              << "<DataItem Format=\"Binary\" NumberType=\"Float\" Precision=\"8\" Endian=\"Little\" Dimensions=\"&Npoints; 3\">\n"
              << "Tau_t=" + std::to_string(timestep*dt) +".bin\n"
-             << "</DataItem></Attribute>\n"
+             << "</DataItem></Attribute>\n" */
 			 << "<Attribute Name =\"Streamlines\" AttributeType=\"Scalar\" Center=\"Cell\">\n"
 			 << "<DataItem Format=\"Binary\" NumberType=\"Int\" Precision=\"4\" Endian=\"Little\" Dimensions=\"&Npoints;\">\n"
 			 << "stream.bin\n"
@@ -611,7 +600,7 @@ void LevelSet::writeToFile(double dt, int timestep, int total_timesteps, int tot
     	field->writeToFile(0*dt);
 
     //Write tangential vector to file
-    writeTangentialVectorToFile(timestep*dt);
+    //writeTangentialVectorToFile(timestep*dt);
 }
 
 /**
@@ -673,7 +662,7 @@ double LevelSet::sumLevelSet() {
 }
 
 /**
- * Initialize the droplet.
+ * Initialize a droplet.
  * The droplet is initialized on the Level set field by setting the space occupied by the fluid to be negative,
  * the space occupied by the gas to be positive and the zero set to be the interface. More specifically, each
  * point on the grid is set to the value
@@ -688,6 +677,21 @@ void LevelSet::initDroplet(array<double, 3> center, double radius) {
         for (int y = 0; y < this->numY; y++)
             for (int z = 0; z < this->numZ; z++)
                 this->at(x, y, z) = pow(x*dx - center[0], 2) + pow(y*dy - center[1], 2) + pow(z*dz - center[2], 2) - pow(radius, 2);
+}
+
+/** Initialize a plane perpendicular to the x-y plane.
+ * 
+ *  @param refPoint The reference point of the plane
+ *  @param planeAngle The angle between the initialized plane and the x-z-plane.
+ */
+void LevelSet::initPlane(array<double, 3> refPoint, double planeAngle) {
+    array<double, 3> normal = {sin(planeAngle), cos(planeAngle), 0};
+    
+    for (int x = 0; x < numX; x++)
+        for (int y = 0; y < numY; y++)
+            for (int z = 0; z < numZ; z++) {
+                this->at(x, y, z) = normal * (array<double, 3>({x*dx, y*dy, z*dz}) - refPoint);
+            }
 }
 
 /**

@@ -44,12 +44,15 @@ int main() {
 	auto start = std::chrono::system_clock::now();
 
     int numX, numY, numZ, threads;
-    double lenX, lenY, lenZ, time, centerX, centerY, centerZ, radius, expcpX, expcpY, expcpZ, expAngle, v0, c1, c2, c3, tau, CFL, writestepsFraction;
     numX = numY = numZ = 0;
     threads = 1;
-    lenX = lenY = lenZ = time = centerX = centerY = centerZ = radius = expcpX = expcpY = expcpZ = expAngle = v0 = c1 = c2 = c3 = tau = CFL = writestepsFraction = 0;
+    
+    double lenX, lenY, lenZ, time, centerX, centerY, centerZ, radius, expcpX, expcpY, expcpZ, expAngle, v0, c1, c2, c3, tau, CFL, writestepsFraction, planeAngle;
+    lenX = lenY = lenZ = time = centerX = centerY = centerZ = radius = expcpX = expcpY = expcpZ = 0;
+    expAngle = v0 = c1 = c2 = c3 = tau = CFL = writestepsFraction = planeAngle = 0;
+    
     bool writeField = false, calculateCurvature = false;
-    std::string trackedContactPoint = "left", fieldName = "";
+    std::string trackedContactPoint = "left", fieldName = "", geometryType = "sphere";
     VelocityField *field = nullptr;
 
     // Read data from Inputfile
@@ -61,68 +64,79 @@ int main() {
 
     std::string line, varName, value;
 
-  while(std::getline(inFileStream, line)) {
-	std::istringstream linestream(line);
-	if(std::getline(linestream, varName, '=')) {
-	    if (std::getline(linestream, value)) {
-	        if (varName == "numX")
-		    numX = std::stoi(value);
-		else if (varName == "numY")
-		    numY = std::stoi(value);
-		else if (varName == "numZ")
-		    numZ = std::stoi(value);
-		else if (varName == "lenX")
-		    lenX = std::stod(value);
-		else if (varName == "lenY")
-		    lenY = std::stod(value);
-		else if (varName == "lenZ")
-		    lenZ = std::stod(value);
-		else if (varName == "time")
-		    time = std::stod(value);
-		else if (varName == "CFL")
-		   CFL = std::stod(value);
-		else if (varName == "writestepsFraction")
-		    writestepsFraction =std::stod(value);
-		else if (varName == "writeField")
-			std::stringstream(value) >> std::boolalpha >> writeField;
-		else if (varName == "v0")
-			v0 = std::stod(value);
-		else if (varName == "c1")
-			c1 = std::stod(value);
-		else if (varName == "c2")
-			c2 = std::stod(value);
-		else if (varName == "c3")
-		    c3 = std::stod(value);
-		else if (varName == "tau")
-			tau = std::stod(value);
-		else if (varName == "field") {
-			fieldName = value;
-		}
-		else if (varName == "centerX")
-		    centerX = std::stod(value);
-		else if (varName == "centerY")
-		    centerY = std::stod(value);
-		else if (varName == "centerZ")
-		    centerZ = std::stod(value);
-		else if (varName == "radius")
-		    radius = std::stod(value);
-		else if (varName == "expcpX")
-		    expcpX = std::stod(value);
-		else if (varName == "expcpY")
-		    expcpY = std::stod(value);
-		else if (varName == "expcpZ")
-		    expcpZ = std::stod(value);
-		else if (varName == "expAngle")
-		    expAngle = std::stod(value);
-		else if (varName == "trackedContactPoint")
-		    trackedContactPoint = value;
-		else if (varName == "calculateCurvature")
-		    std::stringstream(value) >> std::boolalpha >> calculateCurvature;
-		else if (varName == "threads")
-			threads = std::stoi(value);
-	    }
-	   }
-    }
+    while(std::getline(inFileStream, line)) {
+        std::istringstream linestream(line);
+        if(std::getline(linestream, varName, '=')) {
+            if (std::getline(linestream, value)) {
+                if (varName == "numX")
+                    numX = std::stoi(value);
+                else if (varName == "numY")
+                    numY = std::stoi(value);
+                else if (varName == "numZ")
+                    numZ = std::stoi(value);
+                else if (varName == "lenX")
+                    lenX =  std::stod(value);
+                else if (varName == "lenY")
+                    lenY = std::stod(value);
+                else if (varName == "lenZ")
+                    lenZ = std::stod(value);
+                else if (varName == "time")
+                    time = std::stod(value);
+                else if (varName == "CFL")
+                    CFL = std::stod(value);
+                else if (varName == "writestepsFraction")
+                    writestepsFraction =std::stod(value);
+                else if (varName == "writeField")
+                    std::stringstream(value) >> std::boolalpha >> writeField;
+                else if (varName == "v0")
+                    v0 = std::stod(value);
+                else if (varName == "c1")
+                    c1 = std::stod(value);
+                else if (varName == "c2")
+                    c2 = std::stod(value);
+                else if (varName == "c3")
+                    c3 = std::stod(value);
+                else if (varName == "tau")
+                    tau = std::stod(value);
+                else if (varName == "field")
+                    fieldName = value;
+                else if (varName == "geometryType")
+                    geometryType = value;
+                else if (varName == "centerX")
+                    centerX = std::stod(value);
+                else if (varName == "centerY")
+                    centerY = std::stod(value);
+                else if (varName == "centerZ")
+                    centerZ = std::stod(value);
+                else if (varName == "radius") {
+                    if (geometryType == "sphere")
+                        radius = std::stod(value);
+                    else
+                        throw std::invalid_argument("Given radius while initializing plane.");
+                }
+                else if (varName == "planeAngle") {
+                    if (geometryType == "plane")
+                        planeAngle = std::stod(value);
+                    else
+                        throw std::invalid_argument("Given plane angle while initializing sphere.");
+                }
+                else if (varName == "expcpX")
+                    expcpX = std::stod(value);
+                else if (varName == "expcpY")
+                    expcpY = std::stod(value);
+                else if (varName == "expcpZ")
+                    expcpZ = std::stod(value);
+                else if (varName == "expAngle")
+                    expAngle = std::stod(value);
+                else if (varName == "trackedContactPoint")
+                    trackedContactPoint = value;
+                else if (varName == "calculateCurvature")
+                    std::stringstream(value) >> std::boolalpha >> calculateCurvature;
+                else if (varName == "threads")
+                    threads = std::stoi(value);
+                }
+            }
+        }
 
   	//Parallel computing
   	omp_set_num_threads(threads);
@@ -145,8 +159,7 @@ int main() {
     }
 
     int timesteps = time/dt;
-    int writesteps = floor(writestepsFraction*timesteps);
-    writesteps = timesteps/(ceil((double)timesteps/writesteps));
+    int writesteps = ceil(writestepsFraction*timesteps);
 
     array<double, 3> center = {centerX, centerY, centerZ};
     array<double, 3> expCP = {expcpX, expcpY, expcpZ};
@@ -161,15 +174,20 @@ int main() {
     std::vector<double> curvatureActualDivergence(timesteps);
     std::vector<double> curvatureActualHeight(timesteps);
 
-
-    Phi.initDroplet(center, radius);
+    if (geometryType == "sphere")
+        Phi.initDroplet(center, radius);
+    else if (geometryType == "plane") 
+        Phi.initPlane(center, planeAngle);
 
     int sysRet = system("mkdir data");
 
     if (sysRet == 256) {
     	std::cout << "Overwriting folder \"data\".\n";
     }
-    std::ofstream positionFile("position.csv");
+    
+    std::ofstream positionFile;
+    if (numZ == 1)
+        std::ofstream positionFile("position.csv");
     std::ofstream angleFile("contactAngle.csv");
     std::ofstream curvatureFile;
     if (calculateCurvature)
@@ -195,16 +213,15 @@ int main() {
 	// Calculate the reference position of the contact point
         array<double, 3> newCPReference;
         if (field->getName() == "navierField" || field->getName() == "timeDependentNavierField")
-        	newCPReference = Phi.getContactPointLinearField(dt*i, c1, expcpX, v0);
+        	newCPReference = Phi.contactPointLinearField(dt*i, c1, expcpX, v0);
         else
             newCPReference = positionTheoretical[i];
 
         // Get the indices of the new contact point
-        array<int, 3> newCPIndicesActual = Phi.getContactPointIndices(newCPReference);
-        array<double, 3> newCPActual = Phi.getContactPoint(newCPIndicesActual);
+        array<double, 3> newCPActual = Phi.getContactPoint(i);
 
         // Evaluate te Contact Angle numerically based on Phi
-        angleActual[i] = Phi.getContactAngle(newCPIndicesActual);
+        //angleActual[i] = Phi.getContactAngle(newCPIndicesActual);
 
         // Output to command line and positionFile
         std::cout << "Time: " << std::to_string(i*dt) << "\n";
@@ -214,14 +231,14 @@ int main() {
 
 
         std::cout << "Actual: " << std::to_string(angleActual[i]/(2*M_PI)*360) + "\n";
-		angleFile << std::to_string(i*dt) << ", "
+		/*angleFile << std::to_string(i*dt) << ", "
 				  << angleActual[i]/(2*M_PI)*360 << ", "
 				  << angleTheoretical[i] << "\n";
-		std::cout << "Reference: " << angleTheoretical[i] << "\n";
+		std::cout << "Reference: " << angleTheoretical[i] << "\n"; 
+                  */
         
         if (calculateCurvature) {
-            curvatureActualDivergence[i] = Phi.getCurvatureDivergence(newCPIndicesActual);
-            curvatureActualHeight[i] = Phi.getCurvatureHeight(newCPIndicesActual);
+            curvatureActualDivergence[i] = Phi.getCurvatureDivergence({newCPActual[0], newCPActual[1], newCPActual[2]});
 
             curvatureFile << std::to_string(i*dt) + ", "
                     + std::to_string(curvatureActualDivergence[i]) + ", "
@@ -229,7 +246,6 @@ int main() {
                     + std::to_string(curvatureTheoretical[i]) + "\n";
 
             std::cout << "Measured curvature with divergence:     " + std::to_string(curvatureActualDivergence[i]) + "\n";
-            std::cout << "Measured curvature with height function:" + std::to_string(curvatureActualHeight[i]) + "\n";
             std::cout << "Reference curvature: " + std::to_string(curvatureTheoretical[i])  << std::endl;
         }
         

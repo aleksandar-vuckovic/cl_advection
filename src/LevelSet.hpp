@@ -24,7 +24,7 @@ private:
     /**
     *   Reference data..
     *   This is needed, since many other reference solvers are coupled, and all of them require this data,
-    *   leading to a high number in nested loops.
+    *   leading to a high number in nested loops. 
     **/
     std::vector< array<double, 3>> positionReference;
     std::vector<double> angleReference;
@@ -36,9 +36,8 @@ public:
 
     array<double, 3> getInitCP(array<double, 3> expcp, double epsilon);
     void contactPointExplicitEuler(double dt, int timestep, array<double, 3> initCP);
-    array<double, 3> getContactPointLinearField(double t, double c1, double x0, double v0);
-    array<int, 3> getContactPointIndices(array<double, 3> point);
-    array<double, 3> getContactPoint(array<int, 3> indices);
+    array<double, 3> contactPointLinearField(double t, double c1, double x0, double v0);
+    array<double, 3> getContactPoint(int timestep, bool indexOnly);
     void referenceAngleExplicitEuler(double dt, int timestep, array<double, 3> n_sigma_init, array<double, 3> CP_init);
     void referenceAngleLinearField(double dt, int last_timestep, double theta0);
     double getContactAngle(array<int, 3> cell);
@@ -51,6 +50,7 @@ public:
     void writeTangentialVectorToFile(double t);
     double sumLevelSet();
     void initDroplet(array<double, 3> center, double radius);
+    void initPlane(array<double, 3> refPoint, double planeAngle);
     array<double, 3> normalVector2D(double initAngle);
     void calculateNextTimestep(double dt, int timestep);
 
