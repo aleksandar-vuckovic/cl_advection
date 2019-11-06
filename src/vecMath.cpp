@@ -48,7 +48,7 @@ array<array<double, 3>, 3> operator* (double a, const array<array<double,3>, 3>&
 }
 
 double operator* (const array<double, 3>& vecA, const array<double, 3>& vecB) {
-  return { vecA[0]*vecB[0] + vecA[1]*vecB[1] + vecA[2]*vecB[2] };
+  return vecA[0]*vecB[0] + vecA[1]*vecB[1] + vecA[2]*vecB[2];
 }
 
 array<double, 3> operator* (const array<array<double,3>, 3>& matrix, const array<double, 3> vec) {

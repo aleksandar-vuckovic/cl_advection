@@ -83,7 +83,7 @@ void LevelSet::contactPointExplicitEuler(double dt, int last_timestep, array<dou
 }
 
 /**
- * Calculate the contact point position for the navier field using the analytic solution.
+ * Calculate the contact point position for the 15navier field using the analytic solution.
  *
  * @param t The time at which to calculate the contact point position
  * @param c1 A parameter of the navier field
@@ -105,17 +105,17 @@ array<double, 3> LevelSet::contactPointLinearField(double t, double c1, double x
 /**
  * Return the indices of the contact point in 2D or the coordinates most closely matching the given parameter.
  * This function works differently for 2D and 3D. If the simulation is 2D, it ignores the input parameter and returns
- * the contact point by checking where the sign of the LevelSet field changes.  It uses a convex combination of 
- * neighboring LevelSet values depending on whether the right or the left contact point is being tracked.
+ * the contact point by checking where the sign of the LevelSet field changes.
  *
  * In 3D, it returns the coordinates of the point according to the reference ODE. In other words, it is assumed that in 3D,
- * the solution exactly matches the actual contact point.
+ * the solution exactly matches the actual contact point. It uses a convex combination of 
+ * neighboring LevelSet values depending on whether the right or the left contact point is being tracked.
  *
  * @param point A point in the space of the Level set field.
- * @param indexOnly Whether to return only the indices of the point or its actual coordinates.
+ * @param indexOnly Whether to return only the indices of the point or its actual coordinates. Default is false.
  * @return The contact point
  */
-array<double, 3> LevelSet::getContactPoint(int timestep, bool indexOnly = false) {
+array<double, 3> LevelSet::getContactPoint(int timestep, bool indexOnly /* = false */) {
     if (numZ == 1){
         if (trackedCP == "left") {
             double initSign = this->at(0, 0, 0)/std::abs(this->at(0, 0, 0));
@@ -125,14 +125,14 @@ array<double, 3> LevelSet::getContactPoint(int timestep, bool indexOnly = false)
                     if (indexOnly)
                         return {double(i), 0, 0};
                     double alpha = this->at(i,0,0)-this->at(i -1,0,0);
-                    if(std::abs(alpha) < 1E-12){
+                    if(std::abs(alpha) < 1E-12) {
                         throw std::runtime_error("LevelSet::getContactPoint: \nDifference of LevelSet values at contact point too small for convex combination");
                     }
 
                     alpha = this->at(i,0,0)/(alpha);
                     return {(1 - alpha)*i*dx + alpha*(i - 1)*dx, 0, 0};
                 }
-        } else if (trackedCP == "right") {
+        } else {
             double initSign = this->at(numX - 1, 0, 0)/std::abs(this->at(numX - 1, 0, 0));
             for (int i = numX - 1; i >= 0; i--)
                 if (this->at(i, 0, 0)*initSign < 0) {
@@ -163,19 +163,30 @@ array<double, 3> LevelSet::getContactPoint(int timestep, bool indexOnly = false)
             return positionReference[timestep];
         }
     }
+    throw std::runtime_error("LevelSet::getContactPoint: \nReached end of function without returning a value");
 }
 
 /**
- * Calculate the contact angle.
- * This function uses finite differences to calculate the normal vector of the Level set field at cell and
- * thus calculate the contact angle.
- *
- * @param cell The indices of the contact point.
- * @return The contact angle in degrees
+ * Get the current indices of the contact point.
+ * 
+ * This is a wrapper function for LevelSet::getContactPoint.
+ * @param timestep The timestep
+ * @return The indices of the contact point.
  */
-double LevelSet::getContactAngle(array<int, 3> cell) {
+array<int, 3> LevelSet::getContactPointIndices(int timestep) {
+    array<double, 3> vec = getContactPoint(timestep, true);
+    return { int(vec[0]), int(vec[1]), int(vec[2]) };
+}
 
-	double normalX = 0, normalY = 0, normalZ = 0;
+/**
+ * Calculate the normal vector.
+ * 
+ * This function uses finite differences to calculate the normal vector of the Level set field at cell
+ * @param cell The indices of the contact point.
+ * @return The normal vector.
+ */
+array<double, 3> LevelSet::getNormalVector(array<int, 3> cell) {
+    double normalX = 0, normalY = 0, normalZ = 0;
 
 	if (trackedCP == "left") {
 		 // find root of phi, alpha: coefficient for convex combination
@@ -220,6 +231,20 @@ double LevelSet::getContactAngle(array<int, 3> cell) {
     	normalZ = 0;
     array<double ,3> normal = {normalX, normalY, normalZ};
     normal = normal/abs(normal);
+    
+    return normal;
+}
+
+/**
+ * Calculate the contact angle.
+ * This function uses finite differences to calculate the normal vector of the Level set field at cell and
+ * thus calculate the contact angle. This is a wrapper function for LevelSet::getNormalVector. 
+ *
+ * @param cell The indices of the contact point.
+ * @return The contact angle in degrees
+ */
+double LevelSet::getContactAngle(array<int, 3> cell) {
+    array<double, 3> normal = getNormalVector(cell);
     return acos(normal[1]);
 }
 
@@ -608,7 +633,7 @@ void LevelSet::writeToFile(double dt, int timestep, int total_timesteps, int tot
  *
  * Writes the tangental vector field for visualization in Paraview. Since no XMF file is written,
  * simply calling this function is not enough for visualization. Thus, this function is called within
- * LevelSet::writeToFile, which does write a XMF file.
+ * LevelSet::writeToFile, which does write an XMF file.
  *
  * @param t The time
  */
@@ -616,18 +641,13 @@ void LevelSet::writeTangentialVectorToFile(double t) {
     double *fieldValues = new double[numX*numY*3];
     int index = 0;
 
-    array<int, 3> cell = getContactPointIndices({0, 0, 0});
-    double contactAngle = getContactAngle(cell);
+    array<int, 3> cell = getContactPointIndices(0);
 
     for (int j = 0; j < numY; j++) {
         for (int i = 0; i < numX; i++) {
             array<double, 3> temp;
             if (i == cell[0] && j == cell[1]) {
-                if (trackedCP == "left") {
-                    temp = {cos(contactAngle), sin(contactAngle), 0};
-                } else {
-                    temp = { -cos(contactAngle), sin(contactAngle), 0};
-                }
+                temp = getNormalVector(cell);
             } else {
                 temp = {0, 0, 0};
             }
@@ -638,6 +658,7 @@ void LevelSet::writeTangentialVectorToFile(double t) {
         }
     }
 
+    
     std::string filename = "data/Tau_t=" + std::to_string(t) + ".bin";
     FILE *tauFile;
     tauFile = fopen(filename.data(), "wb");
@@ -679,13 +700,16 @@ void LevelSet::initDroplet(array<double, 3> center, double radius) {
                 this->at(x, y, z) = pow(x*dx - center[0], 2) + pow(y*dy - center[1], 2) + pow(z*dz - center[2], 2) - pow(radius, 2);
 }
 
-/** Initialize a plane perpendicular to the x-y plane.
+/** Initialize a plane.
  * 
- *  @param refPoint The reference point of the plane
- *  @param planeAngle The angle between the initialized plane and the x-z-plane.
+ *  @param refPoint The reference point of the plane in degrees.
+ *  @param angleA The angle between the initialized plane and the x-z-plane (= polar angle of normal vector).
+ *  @param angleB The angle of rotation around the y-axis (= azimuthal angle).
  */
-void LevelSet::initPlane(array<double, 3> refPoint, double planeAngle) {
-    array<double, 3> normal = {sin(planeAngle), cos(planeAngle), 0};
+void LevelSet::initPlane(array<double, 3> refPoint, double polarAngle, double azimuthalAngle) {
+    polarAngle = polarAngle/180*M_PI;
+    azimuthalAngle = azimuthalAngle/180*M_PI;
+    array<double, 3> normal = {sin(polarAngle) * cos(azimuthalAngle), cos(polarAngle), sin(polarAngle)* sin(azimuthalAngle)};
     
     for (int x = 0; x < numX; x++)
         for (int y = 0; y < numY; y++)

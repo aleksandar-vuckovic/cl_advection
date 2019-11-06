@@ -47,9 +47,10 @@ int main() {
     numX = numY = numZ = 0;
     threads = 1;
     
-    double lenX, lenY, lenZ, time, centerX, centerY, centerZ, radius, expcpX, expcpY, expcpZ, expAngle, v0, c1, c2, c3, tau, CFL, writestepsFraction, planeAngle;
+    double lenX, lenY, lenZ, time, centerX, centerY, centerZ, radius, expcpX, expcpY, expcpZ, expAngle;
+    double v0, c1, c2, c3, tau, CFL, writestepsFraction, polarAngle, azimuthalAngle;
     lenX = lenY = lenZ = time = centerX = centerY = centerZ = radius = expcpX = expcpY = expcpZ = 0;
-    expAngle = v0 = c1 = c2 = c3 = tau = CFL = writestepsFraction = planeAngle = 0;
+    expAngle = v0 = c1 = c2 = c3 = tau = CFL = writestepsFraction = polarAngle = azimuthalAngle = 0;
     
     bool writeField = false, calculateCurvature = false;
     std::string trackedContactPoint = "left", fieldName = "", geometryType = "sphere";
@@ -114,9 +115,15 @@ int main() {
                     else
                         throw std::invalid_argument("Given radius while initializing plane.");
                 }
-                else if (varName == "planeAngle") {
+                else if (varName == "polarAngle") {
                     if (geometryType == "plane")
-                        planeAngle = std::stod(value);
+                        polarAngle = std::stod(value);
+                    else
+                        throw std::invalid_argument("Given plane angle while initializing sphere.");
+                }
+                else if (varName == "azimuthalAngle") {
+                    if (geometryType == "plane")
+                        azimuthalAngle = std::stod(value);
                     else
                         throw std::invalid_argument("Given plane angle while initializing sphere.");
                 }
@@ -134,6 +141,8 @@ int main() {
                     std::stringstream(value) >> std::boolalpha >> calculateCurvature;
                 else if (varName == "threads")
                     threads = std::stoi(value);
+                else
+                    throw std::invalid_argument("Input parameter \"" + varName + "\" not recognized");
                 }
             }
         }
@@ -177,7 +186,7 @@ int main() {
     if (geometryType == "sphere")
         Phi.initDroplet(center, radius);
     else if (geometryType == "plane") 
-        Phi.initPlane(center, planeAngle);
+        Phi.initPlane(center, polarAngle, azimuthalAngle);
 
     int sysRet = system("mkdir data");
 
@@ -217,8 +226,11 @@ int main() {
         else
             newCPReference = positionTheoretical[i];
 
-        // Get the indices of the new contact point
+        // Get the the new contact point
         array<double, 3> newCPActual = Phi.getContactPoint(i);
+        
+        // Get the indices of the new contact point
+        array<int, 3> cell = Phi.getContactPointIndices(i);
 
         // Evaluate te Contact Angle numerically based on Phi
         //angleActual[i] = Phi.getContactAngle(newCPIndicesActual);
@@ -238,7 +250,7 @@ int main() {
                   */
         
         if (calculateCurvature) {
-            curvatureActualDivergence[i] = Phi.getCurvatureDivergence({newCPActual[0], newCPActual[1], newCPActual[2]});
+            curvatureActualDivergence[i] = Phi.getCurvatureDivergence(cell);
 
             curvatureFile << std::to_string(i*dt) + ", "
                     + std::to_string(curvatureActualDivergence[i]) + ", "

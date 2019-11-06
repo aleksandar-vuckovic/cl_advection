@@ -37,9 +37,11 @@ public:
     array<double, 3> getInitCP(array<double, 3> expcp, double epsilon);
     void contactPointExplicitEuler(double dt, int timestep, array<double, 3> initCP);
     array<double, 3> contactPointLinearField(double t, double c1, double x0, double v0);
-    array<double, 3> getContactPoint(int timestep, bool indexOnly);
+    array<double, 3> getContactPoint(int timestep, bool indexOnly = false);
+    array<int, 3> getContactPointIndices(int timestep);
     void referenceAngleExplicitEuler(double dt, int timestep, array<double, 3> n_sigma_init, array<double, 3> CP_init);
     void referenceAngleLinearField(double dt, int last_timestep, double theta0);
+    array<double, 3> getNormalVector(array<int, 3> cell);
     double getContactAngle(array<int, 3> cell);
     void referenceCurvatureExplicitEuler(double dt, int timestep, double initCurvature, double initAngle, array<double, 3> CP);
     void referenceCurvatureLinearField(double dt, int timesteps, double init_curvature);
@@ -50,7 +52,7 @@ public:
     void writeTangentialVectorToFile(double t);
     double sumLevelSet();
     void initDroplet(array<double, 3> center, double radius);
-    void initPlane(array<double, 3> refPoint, double planeAngle);
+    void initPlane(array<double, 3> refPoint, double angleA, double angleB);
     array<double, 3> normalVector2D(double initAngle);
     void calculateNextTimestep(double dt, int timestep);
 
