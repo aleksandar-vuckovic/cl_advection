@@ -155,7 +155,11 @@ int main() {
     double dx = lenX/numX;
     double dy = lenY/numY;
     double dz = lenZ/numZ;
-    double initCurvature = -1/radius;
+    double initCurvature = 0;
+    if (geometryType == "sphere")
+        initCurvature = -1/radius;
+    else if (geometryType == "plane")
+        initCurvature = 0;
 
     double dt = 0.0;
     if(lenZ == 1){
@@ -230,10 +234,10 @@ int main() {
         array<double, 3> newCPActual = Phi.getContactPoint(i);
         
         // Get the indices of the new contact point
-        array<int, 3> cell = Phi.getContactPointIndices(i);
+        array<int, 3> CP_indices = Phi.getContactPointIndices(i);
 
         // Evaluate te Contact Angle numerically based on Phi
-        //angleActual[i] = Phi.getContactAngle(newCPIndicesActual);
+        angleActual[i] = Phi.getContactAngle(CP_indices);
 
         // Output to command line and positionFile
         std::cout << "Time: " << std::to_string(i*dt) << "\n";
@@ -250,7 +254,7 @@ int main() {
                   */
         
         if (calculateCurvature) {
-            curvatureActualDivergence[i] = Phi.getCurvatureDivergence(cell);
+            curvatureActualDivergence[i] = Phi.getCurvatureDivergence(CP_indices);
 
             curvatureFile << std::to_string(i*dt) + ", "
                     + std::to_string(curvatureActualDivergence[i]) + ", "

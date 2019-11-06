@@ -116,14 +116,14 @@ array<double, 3> LevelSet::contactPointLinearField(double t, double c1, double x
  * @return The contact point
  */
 array<double, 3> LevelSet::getContactPoint(int timestep, bool indexOnly /* = false */) {
-    if (numZ == 1){
+    if (numZ == 1) {
         if (trackedCP == "left") {
             double initSign = this->at(0, 0, 0)/std::abs(this->at(0, 0, 0));
             for (int i = 0; i < numX; i++)
                 if (this->at(i, 0, 0)*initSign < 0) {
                     
                     if (indexOnly)
-                        return {double(i), 0, 0};
+                        return {double(i) + 0.5, 0, 0}; //Add 0.5 to compensate floating-point errors
                     double alpha = this->at(i,0,0)-this->at(i -1,0,0);
                     if(std::abs(alpha) < 1E-12) {
                         throw std::runtime_error("LevelSet::getContactPoint: \nDifference of LevelSet values at contact point too small for convex combination");
@@ -134,11 +134,11 @@ array<double, 3> LevelSet::getContactPoint(int timestep, bool indexOnly /* = fal
                 }
         } else {
             double initSign = this->at(numX - 1, 0, 0)/std::abs(this->at(numX - 1, 0, 0));
-            for (int i = numX - 1; i >= 0; i--)
+            for (int i = numX - 1; i >= 0; i--) {
                 if (this->at(i, 0, 0)*initSign < 0) {
 
                     if (indexOnly)
-                        return {double(i), 0, 0};
+                        return {double(i) + 0.5, 0, 0};
                     double alpha = this->at(i + 1, 0, 0) - this->at(i, 0, 0);
                     if(std::abs(alpha) < 1E-12) {
                         throw std::runtime_error("LevelSet::getContactPoint: \nDifference of LevelSet values at contact point too small for convex combination");
@@ -146,17 +146,19 @@ array<double, 3> LevelSet::getContactPoint(int timestep, bool indexOnly /* = fal
 
                 alpha = this->at(i + 1, 0, 0) / alpha;
                 return {alpha*i*dx + (1 - alpha)*(i+1)*dx, 0, 0};
+                }
             }
         }
-    
     } else {
         if (indexOnly) {
             array<double, 3> cell = {0, 0, 0};
+            const array<double, 3> ref = positionReference[timestep];
             for (int i = 0; i < numX; ++i)
                 for (int k = 0; k < numZ; ++k) {
-                    array<double, 3> temp = {i*dx, 0, k*dz};
-                    if ( abs(temp - positionReference[timestep]) < abs(cell - positionReference[timestep]))
-                        cell = temp;
+                    array<double, 3> current = {i*dx, 0, k*dz};
+                    array<double, 3> temp = {int(cell[0]) * dx, 0, int(cell[2]) * dz};
+                    if ( abs(current - ref) < abs(temp - ref))
+                        cell = {double(i) + 0.5, 0, double(k) + 0.5};
                 }
             return cell;
         } else {
@@ -226,7 +228,7 @@ array<double, 3> LevelSet::getNormalVector(array<int, 3> cell) {
 						  - 3.0*this->at(cell[0] + 1, cell[1], cell[2]))/(2*dy);
 	}
     if (this->numZ > 1)
-    	normalZ = (this->at(cell[0], cell[1], cell[2]+1) - this->at(cell[0]-1, cell[1], cell[2]-1))/(2*dz);
+    	normalZ = (this->at(cell[0], cell[1], cell[2]+1) - this->at(cell[0], cell[1], cell[2]-1))/(2*dz);
     else
     	normalZ = 0;
     array<double ,3> normal = {normalX, normalY, normalZ};
@@ -448,7 +450,8 @@ double LevelSet::getCurvatureDivergence(array<int, 3> cell) const {
     double dny_dy = (-localField.at(local, 2, sidelengthZ/2)[1]
                 + 4.0*localField.at(local, 1, sidelengthZ/2)[1]
                 - 3.0*localField.at(local, 0, sidelengthZ/2)[1] ) / (2*dy);
-    //2D only
+    
+    
     array<double, 3> normal = localField.at(local, 0, sidelengthZ/2);
     array<double, 3> tau = {normal[1], -normal[0], 0};
     array<double, 3> row1 = {dnx_dx, dnx_dy, 0};
@@ -607,7 +610,7 @@ void LevelSet::writeToFile(double dt, int timestep, int total_timesteps, int tot
 			 /*<< "<Attribute Name =\"Tangential Vector\" AttributeType=\"Vector\" Center=\"Cell\">\n"
              << "<DataItem Format=\"Binary\" NumberType=\"Float\" Precision=\"8\" Endian=\"Little\" Dimensions=\"&Npoints; 3\">\n"
              << "Tau_t=" + std::to_string(timestep*dt) +".bin\n"
-             << "</DataItem></Attribute>\n" */
+             << "</DataItem></Attribute>\n"  */
 			 << "<Attribute Name =\"Streamlines\" AttributeType=\"Scalar\" Center=\"Cell\">\n"
 			 << "<DataItem Format=\"Binary\" NumberType=\"Int\" Precision=\"4\" Endian=\"Little\" Dimensions=\"&Npoints;\">\n"
 			 << "stream.bin\n"
@@ -625,7 +628,7 @@ void LevelSet::writeToFile(double dt, int timestep, int total_timesteps, int tot
     	field->writeToFile(0*dt);
 
     //Write tangential vector to file
-    //writeTangentialVectorToFile(timestep*dt);
+   //writeTangentialVectorToFile(dt, timestep);
 }
 
 /**
@@ -637,32 +640,35 @@ void LevelSet::writeToFile(double dt, int timestep, int total_timesteps, int tot
  *
  * @param t The time
  */
-void LevelSet::writeTangentialVectorToFile(double t) {
-    double *fieldValues = new double[numX*numY*3];
+void LevelSet::writeTangentialVectorToFile(double dt, int timestep) {
+    double *fieldValues = new double[numX*numY*numZ*3];
     int index = 0;
 
-    array<int, 3> cell = getContactPointIndices(0);
-
-    for (int j = 0; j < numY; j++) {
-        for (int i = 0; i < numX; i++) {
-            array<double, 3> temp;
-            if (i == cell[0] && j == cell[1]) {
-                temp = getNormalVector(cell);
-            } else {
-                temp = {0, 0, 0};
+    array<int, 3> cell = getContactPointIndices(timestep);
+    
+    
+    for (int k = 0; k < numZ; k++) {
+        for (int j = 0; j < numY; j++) {
+            for (int i = 0; i < numX; i++) {
+                array<double, 3> temp;
+                if (i == cell[0] && j == cell[1] && k == cell[2]) {
+                    temp = getNormalVector(cell);
+                } else {
+                    temp = {0, 0, 0};
+                }
+                fieldValues[index] = temp[0];
+                fieldValues[index + 1] = temp[1];
+                fieldValues[index + 2] = temp[2];
+                index += 3;
             }
-            fieldValues[index] = temp[0];
-            fieldValues[index + 1] = temp[1];
-            fieldValues[index + 2] = 0;
-            index += 3;
         }
     }
-
     
-    std::string filename = "data/Tau_t=" + std::to_string(t) + ".bin";
+    
+    std::string filename = "data/Tau_t=" + std::to_string(dt*timestep) + ".bin";
     FILE *tauFile;
     tauFile = fopen(filename.data(), "wb");
-    fwrite(fieldValues, sizeof(double), numX*numY*3, tauFile);
+    fwrite(fieldValues, sizeof(double), numX*numY*numZ*3, tauFile);
     fclose(tauFile);
 
     delete[] fieldValues;
@@ -674,9 +680,9 @@ void LevelSet::writeTangentialVectorToFile(double t) {
  */
 double LevelSet::sumLevelSet() {
     double temp = 0;
-    for (int x = 0; x < this->numX; x++)
-        for (int y = 0; y < this->numY; y++)
-            for (int z = 0; z < this->numZ; z++)
+    for (int x = 0; x < numX; x++)
+        for (int y = 0; y < numY; y++)
+            for (int z = 0; z < numZ; z++)
                 temp = temp + this->at(x, y, z);
 
     return temp;
@@ -713,9 +719,9 @@ void LevelSet::initPlane(array<double, 3> refPoint, double polarAngle, double az
     
     for (int x = 0; x < numX; x++)
         for (int y = 0; y < numY; y++)
-            for (int z = 0; z < numZ; z++) {
+            for (int z = 0; z < numZ; z++) 
                 this->at(x, y, z) = normal * (array<double, 3>({x*dx, y*dy, z*dz}) - refPoint);
-            }
+            
 }
 
 /**

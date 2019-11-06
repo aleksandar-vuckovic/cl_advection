@@ -49,7 +49,7 @@ public:
     double getCurvatureDivergence(array<int, 3> cell) const;
     double getCurvatureHeight(array<int, 3> cell) const;
     void writeToFile(double dt, int timestep, int total_timesteps, int total_writesteps, std::ofstream *xmfFile);
-    void writeTangentialVectorToFile(double t);
+    void writeTangentialVectorToFile(double dt, int timestep);
     double sumLevelSet();
     void initDroplet(array<double, 3> center, double radius);
     void initPlane(array<double, 3> refPoint, double angleA, double angleB);

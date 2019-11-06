@@ -63,7 +63,7 @@ Streamlines::Streamlines(int numX, int numY, int numZ, VelocityField& vel, doubl
  * @param t The time
  */
 void Streamlines::writeToFile() {
-	int Npoints = numX*numY;
+	int Npoints = numX*numY*numZ;
 	FILE *streamfile;
 	streamfile = fopen("data/stream.bin", "wb");
 	fwrite(getData().data(), sizeof(int), Npoints, streamfile);
