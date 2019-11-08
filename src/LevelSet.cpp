@@ -822,7 +822,7 @@ void LevelSet::calculateNextTimestep(double dt, int timestep) {
                             flux += sp*tempPhi.at(x, y, z)*dx*dy;
                         }
                         else{
-                            flux += (fmax(sp,0.0)*tempPhi.at(x, y, z+1) + fmin(sp,0.0)*tempPhi.at(x, y, z))*dx*dy;
+                            flux += (fmax(sp,0.0)*tempPhi.at(x, y, z) + fmin(sp,0.0)*tempPhi.at(x, y, z+1))*dx*dy;
                         }
                         break;
 
@@ -834,7 +834,7 @@ void LevelSet::calculateNextTimestep(double dt, int timestep) {
                             flux += sp*tempPhi.at(x, y, z)*dx*dy;
                         }
                         else{
-                            flux += (fmax(sp,0.0)*tempPhi.at(x, y, z-1) + fmin(sp,0.0)*tempPhi.at(x, y, z))*dx*dy;
+                            flux += (fmax(sp,0.0)*tempPhi.at(x, y, z) + fmin(sp,0.0)*tempPhi.at(x, y, z-1))*dx*dy;
                         }
                         break;
                     }

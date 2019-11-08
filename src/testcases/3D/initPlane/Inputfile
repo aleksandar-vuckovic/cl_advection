@@ -27,7 +27,7 @@ planeAzimuthalAngle=30
 expcpX=0.2
 expcpY=0.0
 expcpZ=0.2
-expAngle=90
+expAngle=45
 
 trackedContactPoint=left
 threads=5

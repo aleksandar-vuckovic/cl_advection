@@ -249,11 +249,11 @@ int main() {
 
 
         std::cout << "Actual: " << std::to_string(angleActual[i]/(2*M_PI)*360) + "\n";
-		/*angleFile << std::to_string(i*dt) << ", "
+		angleFile << std::to_string(i*dt) << ", "
 				  << angleActual[i]/(2*M_PI)*360 << ", "
 				  << angleTheoretical[i] << "\n";
 		std::cout << "Reference: " << angleTheoretical[i] << "\n"; 
-                  */
+                
         
         if (calculateCurvature) {
             curvatureActualDivergence[i] = Phi.getCurvatureDivergence(CP_indices);
