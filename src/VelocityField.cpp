@@ -29,7 +29,7 @@ using std::array;
  * @param dx, dy, dz The width of a cell in each direction
  */
 VelocityField::VelocityField(std::string name, double v0, double c1, double c2, double c3, double tau,
-		double xmin, double xmax, double ymin, double ymax, double zmin, double zmax, double dx, double dy, double dz) {
+		double xmin, double xmax, double ymin, double ymax, double zmin, double zmax, double dx, double dy, double dz, double azimuthalAngle) {
 	this->v0 = v0;
 	this->c1 = c1;
 	this->c2 = c2;
@@ -45,6 +45,7 @@ VelocityField::VelocityField(std::string name, double v0, double c1, double c2, 
 	this->dx = dx;
 	this->dy = dy;
 	this->dz = dz;
+    this->azimuthalAngle = azimuthalAngle/180 * M_PI;
 
 	double maxNormValue = 0, currentVal = 0, x, y, z;
 
@@ -88,14 +89,22 @@ VelocityField::VelocityField(std::string name, double v0, double c1, double c2, 
  * @return The velocity field at the given coordinates
  */
 array<double, 3> VelocityField::at(double t, double x, double y, double z) {
+    
+    // Matrix for rotation around y-axis
+    array<double, 3> row1 = { cos(azimuthalAngle), 0, -sin(azimuthalAngle)};
+    array<double, 3> row2 = {0, 0, 0};
+    array<double, 3> row3 = {sin(azimuthalAngle), 0, cos(azimuthalAngle)};
+    
+    array<array<double, 3>, 3> rotMatrix = {row1, row2, row3};
+    
 	if (name == "shearField") {
-		return shearField(x, y, z, v0);
+		return rotMatrix *  shearField(x, y, z, v0);
 	} else if (name == "navierField") {
-		return navierField(x, y, z, v0, c1, c2);
+		return rotMatrix * navierField(x, y, z, v0, c1, c2);
 	} else if (name == "timeDependentNavierField") {
-		return cos(M_PI*t/tau)*navierField(x, y, z, v0, c1, c2);
+		return cos(M_PI*t/tau) * rotMatrix * navierField(x, y, z, v0, c1, c2);
 	} else if (name == "quadraticField") {
-	    return quadraticField(x, y, z, v0, c1, c2, c3);
+	    return rotMatrix * quadraticField(x, y, z, v0, c1, c2, c3);
 	}
 	return {0, 0, 0};
 }

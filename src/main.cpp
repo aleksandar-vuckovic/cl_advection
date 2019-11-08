@@ -48,9 +48,9 @@ int main() {
     threads = 1;
     
     double lenX, lenY, lenZ, time, centerX, centerY, centerZ, radius, expcpX, expcpY, expcpZ, expAngle;
-    double v0, c1, c2, c3, tau, CFL, writestepsFraction, polarAngle, azimuthalAngle;
+    double v0, c1, c2, c3, tau, CFL, writestepsFraction, polarAngle, planeAzimuthalAngle, fieldAzimuthalAngle;
     lenX = lenY = lenZ = time = centerX = centerY = centerZ = radius = expcpX = expcpY = expcpZ = 0;
-    expAngle = v0 = c1 = c2 = c3 = tau = CFL = writestepsFraction = polarAngle = azimuthalAngle = 0;
+    expAngle = v0 = c1 = c2 = c3 = tau = CFL = writestepsFraction = polarAngle = planeAzimuthalAngle =  fieldAzimuthalAngle = 0;
     
     bool writeField = false, calculateCurvature = false;
     std::string trackedContactPoint = "left", fieldName = "", geometryType = "sphere";
@@ -101,6 +101,8 @@ int main() {
                     tau = std::stod(value);
                 else if (varName == "field")
                     fieldName = value;
+                else if (varName == "fieldAzimuthalAngle")
+                    fieldAzimuthalAngle = std::stod(value);
                 else if (varName == "geometryType")
                     geometryType = value;
                 else if (varName == "centerX")
@@ -121,9 +123,9 @@ int main() {
                     else
                         throw std::invalid_argument("Given plane angle while initializing sphere.");
                 }
-                else if (varName == "azimuthalAngle") {
+                else if (varName == "planeAzimuthalAngle") {
                     if (geometryType == "plane")
-                        azimuthalAngle = std::stod(value);
+                        planeAzimuthalAngle = std::stod(value);
                     else
                         throw std::invalid_argument("Given plane angle while initializing sphere.");
                 }
@@ -150,7 +152,7 @@ int main() {
   	//Parallel computing
   	omp_set_num_threads(threads);
 
-    field = new VelocityField(fieldName, v0, c1, c2, c3, tau, 0, lenX, 0, lenY, 0, lenZ, lenX/numX,lenY/numY,lenZ/numZ);
+    field = new VelocityField(fieldName, v0, c1, c2, c3, tau, 0, lenX, 0, lenY, 0, lenZ, lenX/numX,lenY/numY,lenZ/numZ, fieldAzimuthalAngle);
 
     double dx = lenX/numX;
     double dy = lenY/numY;
@@ -190,7 +192,7 @@ int main() {
     if (geometryType == "sphere")
         Phi.initDroplet(center, radius);
     else if (geometryType == "plane") 
-        Phi.initPlane(center, polarAngle, azimuthalAngle);
+        Phi.initPlane(center, polarAngle, planeAzimuthalAngle);
 
     int sysRet = system("mkdir data");
 
