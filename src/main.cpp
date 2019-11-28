@@ -47,9 +47,9 @@ int main() {
     numX = numY = numZ = 0;
     threads = 1;
     
-    double lenX, lenY, lenZ, time, centerX, centerY, centerZ, radius, expcpX, expcpY, expcpZ, expAngle;
+    double lenX, lenY, lenZ, time, centerX, centerY, centerZ, radius, expcpX, expcpY, expcpZ, expAngle, expNormalX, expNormalY, expNormalZ;
     double v0, c1, c2, c3, tau, CFL, writestepsFraction, polarAngle, planeAzimuthalAngle, fieldAzimuthalAngle;
-    lenX = lenY = lenZ = time = centerX = centerY = centerZ = radius = expcpX = expcpY = expcpZ = 0;
+    lenX = lenY = lenZ = time = centerX = centerY = centerZ = radius = expcpX = expcpY = expcpZ = expNormalX = expNormalY = expNormalZ = 0;
     expAngle = v0 = c1 = c2 = c3 = tau = CFL = writestepsFraction = polarAngle = planeAzimuthalAngle =  fieldAzimuthalAngle = 0;
     
     bool writeField = false, calculateCurvature = false;
@@ -135,8 +135,18 @@ int main() {
                     expcpY = std::stod(value);
                 else if (varName == "expcpZ")
                     expcpZ = std::stod(value);
-                else if (varName == "expAngle")
-                    expAngle = std::stod(value);
+                else if (varName == "expAngle") {
+                    if (numZ == 1)
+                        expAngle = std::stod(value);
+                    else
+                        throw std::invalid_argument("Input parameter expAngle is not applicable in 3D. Instead define the expected normal vector by setting the parameters expNormalX, expNormalY and expNormalZ.");
+                }
+                else if (varName == "expNormalX")
+                    expNormalX = std::stod(value);
+                else if (varName == "expNormalY")
+                    expNormalY = std::stod(value);
+                else if (varName == "expNormalZ")
+                    expNormalZ = std::stod(value);
                 else if (varName == "trackedContactPoint")
                     trackedContactPoint = value;
                 else if (varName == "calculateCurvature")
@@ -162,15 +172,20 @@ int main() {
         initCurvature = -1/radius;
     else if (geometryType == "plane")
         initCurvature = 0;
+    
+    array<double, 3> expNormalVec;
 
     double dt = 0.0;
-    if(lenZ == 1){
+    if(numZ == 1){
       // 2D case
       dt = CFL*std::min(dx,dy)/field->getMaxNormValue();
+      expNormalVec = normalVector2D(expAngle, trackedContactPoint);
     }
     else{
       // 3D case
       dt = CFL*std::min(std::min(dx,dy),dz)/field->getMaxNormValue();
+      expNormalVec = {expNormalX, expNormalY, expNormalZ};
+      expNormalVec = expNormalVec/abs(expNormalVec);
     }
 
     int timesteps = time/dt;
@@ -179,7 +194,7 @@ int main() {
     array<double, 3> center = {centerX, centerY, centerZ};
     array<double, 3> expCP = {expcpX, expcpY, expcpZ};
 
-    LevelSet Phi(numX, numY, numZ, dx, dy, dz, field, trackedContactPoint, dt, timesteps, expCP, expAngle, initCurvature);
+    LevelSet Phi(numX, numY, numZ, dx, dy, dz, field, trackedContactPoint, dt, timesteps, expCP, expNormalVec, initCurvature);
     Streamlines streamlines(numX, numY, numZ, *field, dt);
 
     std::vector< array<double, 3>> positionTheoretical = Phi.getPositionReference();

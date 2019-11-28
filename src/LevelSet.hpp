@@ -32,7 +32,7 @@ private:
 
 public:
     LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz, VelocityField *field, std::string trackedCP, double dt, int timesteps,
-            array<double, 3> expcp, double expAngle, double initCurvature);
+            array<double, 3> expcp, array<double, 3> expNormalVec, double initCurvature);
 
     array<double, 3> getInitCP(array<double, 3> expcp, double epsilon);
     void contactPointExplicitEuler(double dt, int timestep, array<double, 3> initCP);
@@ -54,11 +54,14 @@ public:
     void initDroplet(array<double, 3> center, double radius);
     void initPlane(array<double, 3> refPoint, double angleA, double angleB);
     array<double, 3> normalVector2D(double initAngle);
+    static array<double, 3> normalVector2D(double initAngle, std::string trackedCP);
     void calculateNextTimestep(double dt, int timestep);
 
     std::vector<array<double, 3>> getPositionReference();
     std::vector<double> getAngleReference();
     std::vector<double> getCurvatureReference();
 };
+
+array<double, 3> normalVector2D(double initAngle, std::string trackedCP);
 
 #endif

@@ -16,7 +16,7 @@
  * @param trackedCP Which contact point to track. Only applicable in 2D.
  */
 LevelSet::LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz, VelocityField *field,
-        std::string trackedCP, double dt, int timesteps, array<double, 3> expCP, double expAngle, double initCurvature)
+        std::string trackedCP, double dt, int timesteps, array<double, 3> expCP, array<double, 3> expNormalVec, double initCurvature)
         : Field<double>(numX, numY, numZ), positionReference(timesteps), angleReference(timesteps), curvatureReference(timesteps){
 		this->dx = dx;
 		this->dy = dy;
@@ -26,19 +26,19 @@ LevelSet::LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz
 
 
 	    array<double, 3> initCP = getInitCP(expCP, 0.001);
-	    array<double, 3> n_sigma_init = normalVector2D(expAngle/180*M_PI);
+        double expAngle = acos(expNormalVec[1]);
 		// Calculate reference data
         contactPointExplicitEuler(dt, timesteps, initCP);
-        if (field->getName() == "navierField" || field->getName() == "timeDependentNavierField") {
-            referenceAngleLinearField(dt, timesteps, expAngle/180*M_PI);
+        if (numZ == 1 && (field->getName() == "navierField" || field->getName() == "timeDependentNavierField")) {
+            referenceAngleLinearField(dt, timesteps, expAngle);
         } else {
-            referenceAngleExplicitEuler(dt, timesteps, n_sigma_init, initCP);
+            referenceAngleExplicitEuler(dt, timesteps, expNormalVec, initCP);
         }
 
         if (field->getName() == "quadraticField") {
             referenceCurvatureQuadraticField(dt, timesteps, initCurvature);
         } else {
-            referenceCurvatureExplicitEuler(dt, timesteps, initCurvature,  expAngle/180*M_PI, initCP);
+            referenceCurvatureExplicitEuler(dt, timesteps, initCurvature,  expAngle, initCP);
         }
 }
 
@@ -731,6 +731,22 @@ void LevelSet::initPlane(array<double, 3> refPoint, double polarAngle, double az
  * @param initAngle The angle in radiants.
  */
 array<double, 3> LevelSet::normalVector2D(double initAngle) {
+    array<double, 3> initNormal;
+    if (trackedCP == "left") {
+        initNormal = { -sin(initAngle), cos(initAngle), 0};
+    } else {
+        initNormal = {sin(initAngle), cos(initAngle), 0};
+    }
+    return initNormal;
+}
+
+/**
+ * Given the contact angle, calculate the normal vector.
+ *
+ * This function is only applicable in 2D. This is the non-member variant of normalVector2D(initAngle).
+ * @param initAngle The angle in radiants.
+ */
+array<double, 3> normalVector2D(double initAngle, std::string trackedCP) {
     array<double, 3> initNormal;
     if (trackedCP == "left") {
         initNormal = { -sin(initAngle), cos(initAngle), 0};

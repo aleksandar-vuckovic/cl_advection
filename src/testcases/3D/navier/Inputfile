@@ -14,17 +14,20 @@ v0=0.2
 c1=0.1
 c2=-2
 field=navierField
-fieldAzimuthalAngle=30
+fieldAzimuthalAngle=0
 
 centerX=0.0
-centerY=-0.34641
+centerY=-0.2
 centerZ=0.0
 radius=0.4
 
 expcpX=0.2
 expcpY=0.0
 expcpZ=0.0
-expAngle=30.0
+// The vector is normalized internally.
+expNormalX=1
+expNormalY=1
+expNormalZ=0
 
 trackedContactPoint=left
 threads=5
