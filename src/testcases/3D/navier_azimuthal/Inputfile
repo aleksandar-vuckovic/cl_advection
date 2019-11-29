@@ -14,7 +14,7 @@ v0=0.2
 c1=0.1
 c2=-2
 field=navierField
-fieldAzimuthalAngle=0
+fieldAzimuthalAngle=45
 
 centerX=0.0
 centerY=-0.2
