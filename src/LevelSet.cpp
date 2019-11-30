@@ -190,6 +190,8 @@ array<int, 3> LevelSet::getContactPointIndices(int timestep) {
 array<double, 3> LevelSet::getNormalVector(array<int, 3> cell) {
     double normalX = 0, normalY = 0, normalZ = 0;
 
+    if (numZ == 1) {
+
 	if (trackedCP == "left") {
 		 // find root of phi, alpha: coefficient for convex combination
 		 double alpha = this->at(cell[0],0,0)-this->at(cell[0]-1,0,0);
@@ -227,10 +229,27 @@ array<double, 3> LevelSet::getNormalVector(array<int, 3> cell) {
 						  + 4.0*this->at(cell[0] + 1, cell[1] + 1, cell[2])
 						  - 3.0*this->at(cell[0] + 1, cell[1], cell[2]))/(2*dy);
 	}
-    if (this->numZ > 1)
-    	normalZ = (this->at(cell[0], cell[1], cell[2]+1) - this->at(cell[0], cell[1], cell[2]-1))/(2*dz);
-    else
-    	normalZ = 0;
+
+    } else {
+        if (cell[0] > 0 && cell[0] < numX - 1) {
+                normalX = (this->at(cell[0] + 1, cell[1], cell[2]) - this->at(cell[0] - 1, cell[1], cell[2]))/(2*dx);
+        } else if (cell[0] == 0) {
+                normalX = (-1*this->at(cell[0] + 2, cell[1], cell[2]) +4*this->at(cell[0] + 1, cell[1], cell[2]) -3*this->at(cell[0], cell[1], cell[2]))/(2*dx);
+        } else {
+                normalX = (this->at(cell[0] - 2, cell[1], cell[2]) -4*this->at(cell[0] - 1, cell[1], cell[2]) +3*this->at(cell[0], cell[1], cell[2]))/(2*dx);
+        }
+
+        normalY = (-1*this->at(cell[0], cell[1] + 2, cell[2]) +4*this->at(cell[0], cell[1] + 1, cell[2]) -3*this->at(cell[0], cell[1], cell[2]))/(2*dy);
+
+        if (cell[2] > 0 && cell[2] < numZ - 1) {
+                normalZ = (this->at(cell[0], cell[1], cell[2] + 1) - this->at(cell[0], cell[1], cell[2] - 1))/(2*dz);
+        } else if (cell[2] == 0) {
+                normalZ = (-1*this->at(cell[0], cell[1], cell[2] + 2) +4*this->at(cell[0], cell[1] + 1, cell[2]) -3*this->at(cell[0], cell[1], cell[2]))/(2*dz);
+        } else {
+                normalZ = (this->at(cell[0], cell[1], cell[2] - 2) -4*this->at(cell[0], cell[1], cell[2] - 1) +3*this->at(cell[0], cell[1], cell[2]))/(2*dz);
+        }
+    }
+
     array<double ,3> normal = {normalX, normalY, normalZ};
     normal = normal/abs(normal);
     
