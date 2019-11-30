@@ -187,7 +187,7 @@ array<int, 3> LevelSet::getContactPointIndices(int timestep) {
  * @param cell The indices of the contact point.
  * @return The normal vector.
  */
-array<double, 3> LevelSet::getNormalVector(array<int, 3> cell) {
+array<double, 3> LevelSet::getNormalVector(array<int, 3> cell) const {
     double normalX = 0, normalY = 0, normalZ = 0;
 
     if (numZ == 1) {
@@ -439,16 +439,7 @@ double LevelSet::getCurvatureDivergence(array<int, 3> cell) const {
                 array<int, 3> temp = {x, y, z};
                 temp = temp + cell;
 
-                double normalX = (this->at(temp[0] + 1, temp[1], temp[2]) - this->at(temp[0]-1, temp[1], temp[2])) / (2*dx);
-                // second order difference quotient
-                double normalY = (-this->at(temp[0], temp[1] + 2, temp[2]) + 4.0*this->at(temp[0], temp[1] + 1, temp[2]) - 3.0*this->at(temp[0], temp[1], temp[2])) / (2*dy);
-                double normalZ;
-                if (this->numZ > 1)
-                    normalZ = (this->at(temp[0], temp[1], temp[2] + 1) - this->at(temp[0], temp[1], temp[2] - 1)) / (2*dz);
-                else
-                    normalZ = 0;
-                array<double ,3> normal = {normalX, normalY, normalZ};
-                normal = normal/abs(normal);
+                array<double, 3> normal = getNormalVector(cell);
                 if (this->numZ > 1)
                     localField.at(x+local, y, z+local) = normal;
                 else
@@ -463,88 +454,43 @@ double LevelSet::getCurvatureDivergence(array<int, 3> cell) const {
                 + 4.0*localField.at(local, 1, sidelengthZ/2)[0]
                 - 3.0*localField.at(local, 0, sidelengthZ/2)[0] ) / (2*dy);
 
-
     double dny_dx = (localField.at(local + 1, 0, sidelengthZ/2)[1] - localField.at(local - 1, 0, sidelengthZ/2)[1]) / (2*dx);
 
     double dny_dy = (-localField.at(local, 2, sidelengthZ/2)[1]
                 + 4.0*localField.at(local, 1, sidelengthZ/2)[1]
                 - 3.0*localField.at(local, 0, sidelengthZ/2)[1] ) / (2*dy);
-    
+
+    double dnx_dz, dny_dz, dnz_dx, dnz_dy, dnz_dz;
+    dnx_dz = dny_dz = dnz_dx = dnz_dy = dnz_dz = 0;
+
+    if (numZ > 1) {
+        dnx_dz = (localField.at(local, 0, sidelengthZ/2 + 1)[0] - localField.at(local, 0, sidelengthZ/2 - 1)[0]) / (2*dz);
+
+        dny_dz = (localField.at(local, 0, sidelengthZ/2 + 1)[1] - localField.at(local, 0, sidelengthZ/2 - 1)[1]) / (2*dz);
+
+        dnz_dx = (localField.at(local + 1, 0, sidelengthZ/2)[2] - localField.at(local - 1, 0, sidelengthZ/2)[2]) / (2*dx);
+
+        dnz_dy = (-localField.at(local, 2, sidelengthZ/2)[2]
+                    + 4.0*localField.at(local, 1, sidelengthZ/2)[2]
+                    - 3.0*localField.at(local, 0, sidelengthZ/2)[2] ) / (2*dy);
+
+        dnz_dz = (localField.at(local, 0, sidelengthZ/2 + 1)[2] - localField.at(local, 0, sidelengthZ/2 - 1)[2]) / (2*dz);
+    }
     
     array<double, 3> normal = localField.at(local, 0, sidelengthZ/2);
+
+    // This still only works for 2D
     array<double, 3> tau = {normal[1], -normal[0], 0};
-    array<double, 3> row1 = {dnx_dx, dnx_dy, 0};
-    array<double, 3> row2 = {dny_dx, dny_dy, 0};
-    array<double, 3> row3 = {0,      0,      0};
-    //For this line, eclipse is complaining even though it compiles just fine
+
+    array<double, 3> row1 = {dnx_dx, dnx_dy, dnx_dz};
+    array<double, 3> row2 = {dny_dx, dny_dy, dny_dz};
+    array<double, 3> row3 = {dnz_dx, dnz_dy, dnz_dz};
+
     array< array<double, 3>, 3> gradNormal = {row1, row2, row3};
 
     double kappa = -1*(gradNormal*tau)*tau;
 
     return kappa;
-}
-
-/**
- * Calculate the curvature of the droplet at the contact point.
- *
- * Represent the interface as a height function h over an arbitrary vertical axis y. Then, the curvature \f$\kappa \f$ is given by
- * \f[ \kappa = \dfrac{h^{''}(y)}{(1 + (h^{'}(y))^{2})^{3/2}} |_{y = 0} \f]
- *
- * @param cell The indices of the contact point
- * @return The curvature
- */
-double LevelSet::getCurvatureHeight(array<int, 3> cell) const {
-    // x value of arbitrary axis
-    int axisPosition = 0;
-
-    // Set the axis to the right/left in the distance of one tenth of the available space
-    if (trackedCP == "left") {
-        axisPosition = cell[0] + 0.1*(numX - cell[0]);
-    } else if (trackedCP == "right") {
-        axisPosition = cell[0] - 0.1*cell[0];
-    }
-
-    // A cell width of 4 is needed to calculate the second derivative at the interface
-    array<double, 4> height;
-    array<double, 3> heightDeriv;
-    double heightDerivDeriv;
-
-    //Calculate height function for 4 layers of cells
-    for (int i = 0; i < 4; ++i) {
-        int h = 0;
-        while ( this->at(axisPosition + h, i, 0) < 0 ) {
-            if (trackedCP == "left")
-                --h;
-            else
-                ++h;
-        }
-
-        double alpha;
-        if (trackedCP == "left") {
-            alpha = this->at(axisPosition + h + 1, i, 0) - this->at(axisPosition + h, i, 0);
-//            if (alpha < 1e-12) {
-//                throw std::runtime_error("Difference in levelset values too small for convex combination.");
-//            }
-            alpha = this->at(axisPosition + h + 1, i, 0) / alpha;
-            height[i] = (-h - 1 + alpha)*dx;
-        } else {
-            alpha = this->at(axisPosition + h -1 , i, 0) / (this->at(axisPosition + h - 1, i, 0) - this->at(axisPosition + h, i, 0));
-            height[i] = (h - 1 + alpha)*dx;
-        }
-    }
-
-    //Calculate the derivative for 3 layers of cells
-    for (int i = 0; i < 3; ++i) {
-        if (i == 0)
-            heightDeriv[i] = (-height[i + 2] + 4*height[i + 1] - 3*height[i]) / (2*dy);
-        else
-            heightDeriv[i] = (height[i + 1] - height[i - 1]) / (2*dy);
-    }
-
-    heightDerivDeriv = (-heightDeriv[2] + 4*heightDeriv[1] - 3*heightDeriv[0]) / (2*dy);
-
-    return heightDerivDeriv/pow((1 + pow(heightDeriv[0], 2)), 3/2);
-
 }
 
 /**

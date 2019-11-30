@@ -41,13 +41,12 @@ public:
     array<int, 3> getContactPointIndices(int timestep);
     void referenceAngleExplicitEuler(double dt, int timestep, array<double, 3> n_sigma_init);
     void referenceAngleLinearField(double dt, int last_timestep, double theta0);
-    array<double, 3> getNormalVector(array<int, 3> cell);
+    array<double, 3> getNormalVector(array<int, 3> cell) const;
     double getContactAngle(array<int, 3> cell);
     void referenceCurvatureExplicitEuler(double dt, int timestep, double initCurvature, double initAngle);
     void referenceCurvatureLinearField(double dt, int timesteps, double init_curvature);
     void referenceCurvatureQuadraticField(double dt, int timesteps, double init_curvature);
     double getCurvatureDivergence(array<int, 3> cell) const;
-    double getCurvatureHeight(array<int, 3> cell) const;
     void writeToFile(double dt, int timestep, int total_timesteps, int total_writesteps, std::ofstream *xmfFile);
     void writeTangentialVectorToFile(double dt, int timestep);
     double sumLevelSet();
