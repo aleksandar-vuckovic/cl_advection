@@ -19,15 +19,15 @@ fieldAzimuthalAngle=45
 centerX=0.0
 centerY=-0.2
 centerZ=0.0
-radius=0.447
+radius=0.6
 
 expcpX=0.4
 expcpY=0.0
-expcpZ=0.0
+expcpZ=0.4
 // The vector is normalized internally.
 expNormalX=0.4
 expNormalY=0.2
-expNormalZ=0
+expNormalZ=0.4
 
 trackedContactPoint=left
 threads=7

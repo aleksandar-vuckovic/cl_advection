@@ -32,13 +32,13 @@ LevelSet::LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz
         if (numZ == 1 && (field->getName() == "navierField" || field->getName() == "timeDependentNavierField")) {
             referenceAngleLinearField(dt, timesteps, expAngle);
         } else {
-            referenceAngleExplicitEuler(dt, timesteps, expNormalVec, initCP);
+            referenceAngleExplicitEuler(dt, timesteps, expNormalVec);
         }
 
         if (field->getName() == "quadraticField") {
             referenceCurvatureQuadraticField(dt, timesteps, initCurvature);
         } else {
-            referenceCurvatureExplicitEuler(dt, timesteps, initCurvature,  expAngle, initCP);
+            referenceCurvatureExplicitEuler(dt, timesteps, initCurvature,  expAngle);
         }
 }
 
@@ -258,7 +258,7 @@ double LevelSet::getContactAngle(array<int, 3> cell) {
  * @param n_sigma_init The initial normal vector of the interface
  * @param CP The current position of the contact point
  */
-void LevelSet::referenceAngleExplicitEuler(double dt, int last_timestep, array<double, 3> n_sigma_init, array<double, 3> CP_init) {
+void LevelSet::referenceAngleExplicitEuler(double dt, int last_timestep, array<double, 3> n_sigma_init) {
 	array<double, 3> &n_sigma = n_sigma_init;
 	array<double, 3> deriv = {0, 0, 0};
 	for (int i = 0; i < last_timestep; i++) {
@@ -315,7 +315,7 @@ void LevelSet::referenceAngleLinearField(double dt, int last_timestep, double th
  * @param CP The coordinates of the contact point
  * @param cell The indices of the contact point
  */
-void LevelSet::referenceCurvatureExplicitEuler(double dt, int last_timestep, double initCurvature, double initAngle, array<double, 3> initCP) {
+void LevelSet::referenceCurvatureExplicitEuler(double dt, int last_timestep, double initCurvature, double initAngle) {
     double curvature = initCurvature;
     array<double, 3> initNormal;
     if (trackedCP == "left") {

@@ -39,11 +39,11 @@ public:
     array<double, 3> contactPointLinearField(double t, double c1, double x0, double v0);
     array<double, 3> getContactPoint(int timestep, bool indexOnly = false);
     array<int, 3> getContactPointIndices(int timestep);
-    void referenceAngleExplicitEuler(double dt, int timestep, array<double, 3> n_sigma_init, array<double, 3> CP_init);
+    void referenceAngleExplicitEuler(double dt, int timestep, array<double, 3> n_sigma_init);
     void referenceAngleLinearField(double dt, int last_timestep, double theta0);
     array<double, 3> getNormalVector(array<int, 3> cell);
     double getContactAngle(array<int, 3> cell);
-    void referenceCurvatureExplicitEuler(double dt, int timestep, double initCurvature, double initAngle, array<double, 3> CP);
+    void referenceCurvatureExplicitEuler(double dt, int timestep, double initCurvature, double initAngle);
     void referenceCurvatureLinearField(double dt, int timesteps, double init_curvature);
     void referenceCurvatureQuadraticField(double dt, int timesteps, double init_curvature);
     double getCurvatureDivergence(array<int, 3> cell) const;

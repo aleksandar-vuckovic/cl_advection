@@ -186,7 +186,7 @@ int main() {
       dt = CFL*std::min(std::min(dx,dy),dz)/field->getMaxNormValue();
       expNormalVec = {expNormalX, expNormalY, expNormalZ};
       expNormalVec = expNormalVec/abs(expNormalVec);
-    }
+    } 
 
     int timesteps = time/dt;
     int writesteps = ceil(writestepsFraction*timesteps);
@@ -215,9 +215,7 @@ int main() {
     	std::cout << "Overwriting folder \"data\".\n";
     }
     
-    std::ofstream positionFile;
-    if (numZ == 1)
-        std::ofstream positionFile("position.csv");
+    std::ofstream positionFile("position.csv");
     std::ofstream angleFile("contactAngle.csv");
     std::ofstream curvatureFile;
     if (calculateCurvature)
@@ -242,7 +240,7 @@ int main() {
 
 	// Calculate the reference position of the contact point
         array<double, 3> newCPReference;
-        if (field->getName() == "navierField" || field->getName() == "timeDependentNavierField")
+        if (numZ == 1 && (field->getName() == "navierField" || field->getName() == "timeDependentNavierField"))
         	newCPReference = Phi.contactPointLinearField(dt*i, c1, expcpX, v0);
         else
             newCPReference = positionTheoretical[i];
@@ -259,8 +257,8 @@ int main() {
         // Output to command line and positionFile
         std::cout << "Time: " << std::to_string(i*dt) << "\n";
         positionFile << std::to_string(i*dt) << ", "
-                     << std::to_string(newCPActual[0]) << ", "
-                     << std::to_string(newCPReference[0]) << std::endl;
+                     << std::to_string(newCPActual[0]) << ", " << std::to_string(newCPActual[1]) << ", " << std::to_string(newCPActual[2]) << ", "
+                     << std::to_string(newCPReference[0]) << ", " << std::to_string(newCPReference[1]) << ", " << std::to_string(newCPReference[2]) << std::endl;
 
 
         std::cout << "Actual: " << std::to_string(angleActual[i]/(2*M_PI)*360) + "\n";
