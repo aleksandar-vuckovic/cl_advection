@@ -59,6 +59,17 @@ array<double, 3> operator* (const array<array<double,3>, 3>& matrix, const array
     return tempReturn;
 }
 
+array< array<double, 3>, 3> operator* (const array<array<double,3>, 3>& matrixA, const array<array<double,3>, 3>& matrixB) {
+    array<array<double, 3>, 3> tempReturn;
+    array<array<double, 3>, 3> matrixB_T = transpose(matrixB);
+
+    for (int row = 0; row < 3; row++)
+        for (int col = 0; col < 3; col++)
+            tempReturn[row][col] = matrixA[row]*matrixB_T[col];
+
+    return tempReturn;
+}
+
 array<double, 3> operator/ (const array<double, 3>& vec, double a) {
   return { vec[0]/a, vec[1]/a, vec[2]/a };
 }

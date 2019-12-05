@@ -117,14 +117,21 @@ array<double, 3> VelocityField::at(double t, double x, double y, double z) {
  * @return The jacobian matrix at the given coordinates
  */
 array<array<double, 3>, 3> VelocityField::gradAt(double t, double x, double y, double z) {
+    // Matrix for rotation around y-axis
+    array<double, 3> row1 = { cos(azimuthalAngle), 0, -sin(azimuthalAngle)};
+    array<double, 3> row2 = {0, 0, 0};
+    array<double, 3> row3 = {sin(azimuthalAngle), 0, cos(azimuthalAngle)};
+
+    array<array<double, 3>, 3> rotMatrix = {row1, row2, row3};
+
 	if (name == "shearField") {
-		return gradShearField(x, y, z, v0);
+        return rotMatrix*gradShearField(x, y, z, v0);
 	} else if (name == "navierField") {
-		return gradNavierField(x, y, z, v0, c1, c2);
+        return rotMatrix*gradNavierField(x, y, z, v0, c1, c2);
 	} else if (name == "timeDependentNavierField") {
-		return cos(M_PI*t/tau)*gradNavierField(x, y, z, v0, c1, c2);
+        return cos(M_PI*t/tau)*rotMatrix*gradNavierField(x, y, z, v0, c1, c2);
 	} else if (name == "quadraticField") {
-	    return gradQuadraticField(x, y, z, v0, c1, c2, c3);
+        return rotMatrix*gradQuadraticField(x, y, z, v0, c1, c2, c3);
 	}
 	return {0, 0, 0};
 }
@@ -139,7 +146,7 @@ array<array<double, 3>, 3> VelocityField::gradAt(double t, double x, double y, d
  * @param t The time
  */
 void VelocityField::writeToFile(double t) {
-	int numX = (xmax - xmin)/dx;
+    int numX = (xmax - xmin)/dx;
 	int numY = (ymax - ymin)/dy;
 	int numZ = (zmax - zmin)/dz;
 

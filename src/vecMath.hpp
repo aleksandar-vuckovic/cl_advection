@@ -28,6 +28,8 @@ double operator* (const array<double, 3>& vecA, const array<double, 3>& vecB);
 
 array<double, 3> operator* (const array<array<double,3>, 3>& matrix, const array<double, 3> vec);
 
+array< array<double, 3>, 3> operator* (const array<array<double,3>, 3>& matrixA, const array<array<double,3>, 3>& matrixB);
+
 array<double, 3> operator/ (const array<double, 3>& vec, double a);
 
 double abs (const array<double, 3> vec);

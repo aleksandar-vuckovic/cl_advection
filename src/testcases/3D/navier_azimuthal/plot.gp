@@ -11,4 +11,4 @@ set style line 1 \
     pointtype 2 pointsize 0.5
 
 plot "contactAngle.csv" using 1:2 every 10 title "LevelSet" with points pointsize 0.5,\
-     "contactAngle.csv" using 1:3 every 10 title "Reference" with line
+     "contactAngle.csv" using 1:3 every 10 title "Reference" with points pointsize 0.5 

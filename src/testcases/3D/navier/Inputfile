@@ -1,12 +1,12 @@
-numX=1000
+numX=100
 numY=100
-numZ=50
-lenX=1.0
-lenY=0.1
-lenZ=0.05
+numZ=100
+lenX=1
+lenY=1
+lenZ=1
 
-time=1.0
-CFL=0.4
+time=1
+CFL=0.94
 writestepsFraction=0.1
 writeField=true
 
@@ -31,3 +31,5 @@ expNormalZ=0
 
 trackedContactPoint=left
 threads=7
+
+calculateCurvature=true

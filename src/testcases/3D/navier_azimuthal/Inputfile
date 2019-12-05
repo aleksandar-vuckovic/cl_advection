@@ -1,20 +1,20 @@
-numX=1000
+numX=75
 numY=100
-numZ=1000
-lenX=1.0
-lenY=0.1
+numZ=100
+lenX=0.75
+lenY=1.0
 lenZ=1.0
 
-time=1.0
-CFL=0.4
-writestepsFraction=0.1
-writeField=false
+time=2
+CFL=0.7
+writestepsFraction=0.05
+writeField=true
 
 v0=0.2
 c1=0.1
 c2=-2
 field=navierField
-fieldAzimuthalAngle=45
+fieldAzimuthalAngle=50
 
 centerX=0.0
 centerY=-0.2
@@ -31,3 +31,5 @@ expNormalZ=0.4
 
 trackedContactPoint=left
 threads=7
+
+calculateCurvature=true

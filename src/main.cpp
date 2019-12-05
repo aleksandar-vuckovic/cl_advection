@@ -176,12 +176,12 @@ int main() {
     array<double, 3> expNormalVec;
 
     double dt = 0.0;
-    if(numZ == 1){
+    if (numZ == 1) {
       // 2D case
       dt = CFL*std::min(dx,dy)/field->getMaxNormValue();
       expNormalVec = normalVector2D(expAngle, trackedContactPoint);
     }
-    else{
+    else {
       // 3D case
       dt = CFL*std::min(std::min(dx,dy),dz)/field->getMaxNormValue();
       expNormalVec = {expNormalX, expNormalY, expNormalZ};
@@ -223,8 +223,8 @@ int main() {
     double sumAtStart = Phi.sumLevelSet();
 
     // XMF file for Paraview
-    std::ofstream xmfFile("data/Phi.xmf");
-
+    std::ofstream MainXmfFile("data/Phi.xmf");
+    std::ofstream tauXmfFile("data/Tau.xmf");
 
 
 
@@ -235,7 +235,7 @@ int main() {
         if (writeField && i % (int)ceil((double)timesteps/writesteps) == 0) {
             if (i == 0)
                 streamlines.writeToFile();
-            Phi.writeToFile(dt, i, timesteps, writesteps, &xmfFile);
+            Phi.writeToFile(dt, i, timesteps, writesteps, &MainXmfFile, &tauXmfFile);
         }
 
 	// Calculate the reference position of the contact point
@@ -256,10 +256,13 @@ int main() {
 
         // Output to command line and positionFile
         std::cout << "Time: " << std::to_string(i*dt) << "\n";
-        positionFile << std::to_string(i*dt) << ", "
-                     << std::to_string(newCPActual[0]) << ", " << std::to_string(newCPActual[1]) << ", " << std::to_string(newCPActual[2]) << ", "
-                     << std::to_string(newCPReference[0]) << ", " << std::to_string(newCPReference[1]) << ", " << std::to_string(newCPReference[2]) << std::endl;
 
+        if (numZ == 1) {
+            positionFile << std::to_string(i*dt) << ", " << std::to_string(newCPActual[0]) << ", " << std::to_string(newCPReference[0]) << std::endl;
+        } else {
+            positionFile << std::to_string(i*dt) << ", "
+                         << std::to_string(newCPReference[0]) << ", " << std::to_string(newCPReference[1]) << ", " << std::to_string(newCPReference[2]) << std::endl;
+        }
 
         std::cout << "Actual: " << std::to_string(angleActual[i]/(2*M_PI)*360) + "\n";
 		angleFile << std::to_string(i*dt) << ", "
@@ -280,7 +283,7 @@ int main() {
             std::cout << "Reference curvature: " + std::to_string(curvatureTheoretical[i])  << std::endl;
         }
         
-        // Calculate numerical flux through all faces of each cell update Phi
+        // Calculate numerical flux through all faces of each cell and update Phi
         Phi.calculateNextTimestep(dt, i);
 
         positionFile.flush();
@@ -288,8 +291,9 @@ int main() {
         if (calculateCurvature)
             curvatureFile.flush();
     }
-    // Add closing line to the XMF file
-    xmfFile << "</Grid>\n</Domain>\n</Xdmf>" << std::endl;
+    // Add closing line to the XMF files
+    MainXmfFile << "</Grid>\n</Domain>\n</Xdmf>" << std::endl;
+    tauXmfFile << "</Grid>\n</Domain>\n</Xdmf>" << std::endl;
 
     std::cout << std::endl;
     std::cout << "Sum of Phi at start: " << sumAtStart << std::endl;
