@@ -17,7 +17,7 @@
  */
 LevelSet::LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz, VelocityField *field,
         std::string trackedCP, double dt, int timesteps, array<double, 3> expCP, array<double, 3> expNormalVec, double initCurvature)
-        : Field<double>(numX, numY, numZ), positionReference(timesteps), angleReference(timesteps), curvatureReference(timesteps){
+        : Field<double>(numX, numY, numZ), positionReference(timesteps), normalReference(timesteps), angleReference(timesteps), curvatureReference(timesteps) {
 		this->dx = dx;
 		this->dy = dy;
 		this->dz = dz;
@@ -32,13 +32,13 @@ LevelSet::LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz
         if (numZ == 1 && (field->getName() == "navierField" || field->getName() == "timeDependentNavierField")) {
             referenceAngleLinearField(dt, timesteps, expAngle);
         } else {
-            referenceAngleExplicitEuler(dt, timesteps, expNormalVec);
+            referenceNormalExplicitEuler(dt, timesteps, expNormalVec);
         }
 
         if (field->getName() == "quadraticField") {
             referenceCurvatureQuadraticField(dt, timesteps, initCurvature);
         } else {
-            referenceCurvatureExplicitEuler(dt, timesteps, initCurvature,  expAngle);
+            referenceCurvatureExplicitEuler(dt, timesteps, initCurvature);
         }
 }
 
@@ -257,6 +257,25 @@ array<double, 3> LevelSet::getNormalVector(array<int, 3> cell) const {
 }
 
 /**
+ * Calculate the tangential vector \f$\tau\f$.
+ *
+ * This function calculates \f$\tau\f$, where \f$\tau\f$ where and the normal vector \f$\n_{\Sigma}\f$ define a plane perpendicular to the x-z plane.
+ * @param normal The corresponding normal vector
+ * @return The tangential vector
+ */
+array<double, 3> LevelSet::getTangentialVector(array<double, 3> normal) const {
+
+    double tau1 = 1;
+    double tau2 = -(normal[2]*normal[2] / (normal[0]*normal[1]) + normal[0]/normal[1]);
+    double tau3 = normal[2] / normal[0];
+
+    array<double, 3> tau = {tau1, tau2, tau3};
+    tau = tau/abs(tau);
+
+    return tau;
+}
+
+/**
  * Calculate the contact angle.
  * This function uses finite differences to calculate the normal vector of the Level set field at cell and
  * thus calculate the contact angle. This is a wrapper function for LevelSet::getNormalVector. 
@@ -277,11 +296,12 @@ double LevelSet::getContactAngle(array<int, 3> cell) {
  * @param n_sigma_init The initial normal vector of the interface
  * @param CP The current position of the contact point
  */
-void LevelSet::referenceAngleExplicitEuler(double dt, int last_timestep, array<double, 3> n_sigma_init) {
-	array<double, 3> &n_sigma = n_sigma_init;
+void LevelSet::referenceNormalExplicitEuler(double dt, int last_timestep, array<double, 3> normal_init) {
+    array<double, 3> &n_sigma = normal_init;
 	array<double, 3> deriv = {0, 0, 0};
 	for (int i = 0; i < last_timestep; i++) {
-	    angleReference[i] = acos(n_sigma[1])/M_PI*180;
+        normalReference[i] = n_sigma;
+        angleReference[i] = acos(n_sigma[1])/M_PI*180;
 	    array<double, 3> CP = positionReference[i];
 		deriv = -1*transpose(field->gradAt(i*dt, CP[0], CP[1], CP[2]))*n_sigma + ((field->gradAt(i*dt, CP[0], CP[1], CP[2])*n_sigma)*n_sigma)*n_sigma;
 		n_sigma = deriv*dt + n_sigma;
@@ -329,34 +349,21 @@ void LevelSet::referenceAngleLinearField(double dt, int last_timestep, double th
  * Calculate the reference curvature at the contact point with the explicit Euler method at a given time.
  *
  * @param dt The length of a timestep
- * @param timestep The index of the timestep.
+ * @param last_timestep The index of the last timestep.
  * @param initCurvature The initial curvature at time t == 0
  * @param CP The coordinates of the contact point
  * @param cell The indices of the contact point
  */
-void LevelSet::referenceCurvatureExplicitEuler(double dt, int last_timestep, double initCurvature, double initAngle) {
+void LevelSet::referenceCurvatureExplicitEuler(double dt, int last_timestep, double initCurvature) {
     double curvature = initCurvature;
-    array<double, 3> initNormal;
-    if (trackedCP == "left") {
-        initNormal = { -sin(initAngle), cos(initAngle)};
-    } else {
-        initNormal = {sin(initAngle), cos(initAngle)};
-    }
 
     for (int i = 0; i < last_timestep; i++) {
         curvatureReference[i] = curvature;
         array<double, 3> CP = positionReference[i];
-        double contactAngle = angleReference[i]/180*M_PI;
-        array<double, 3> normal, tau;
-        if (trackedCP == "left") {
-            normal = { -sin(contactAngle), cos(contactAngle), 0};
-            tau = {cos(contactAngle), sin(contactAngle), 0};
-        } else {
-            normal = {sin(contactAngle), cos(contactAngle), 0};
-            tau = { -cos(contactAngle), sin(contactAngle), 0};
-        }
+        array<double, 3> normal = normalReference[i];
+        array<double, 3> tau = getTangentialVector(normal);
 
-        // temp is the second derivative of v in the tau direction (= y direction)
+        // temp is the second derivative of v in the tau direction
         array<double, 3> temp;
         if (field->getName() == "shearField") {
             double v0 = field->getV0();
@@ -364,7 +371,8 @@ void LevelSet::referenceCurvatureExplicitEuler(double dt, int last_timestep, dou
                                     v0*M_PI*M_PI*cos(M_PI*CP[0])*sin(M_PI*CP[1])*tau[0] + v0*M_PI*M_PI*sin(M_PI*CP[0])*cos(M_PI*CP[1])*tau[1],
                                     0};
             array<double, 3> row2 = {-v0*M_PI*M_PI*cos(M_PI*CP[0])*sin(M_PI*CP[1])*tau[0] - v0*M_PI*M_PI*sin(M_PI*CP[0])*cos(M_PI*CP[1])*tau[1],
-                                     -v0*M_PI*M_PI*sin(M_PI*CP[0])*cos(M_PI*CP[1])*tau[0]   -v0*M_PI*M_PI*cos(M_PI*CP[0])*sin(M_PI*CP[1])*tau[1]};
+                                     -v0*M_PI*M_PI*sin(M_PI*CP[0])*cos(M_PI*CP[1])*tau[0]   -v0*M_PI*M_PI*cos(M_PI*CP[0])*sin(M_PI*CP[1])*tau[1],
+                                    0};
             array<double, 3> row3 = {0, 0, 0};
             array<array<double, 3>, 3> M = {row1, row2, row3};
             temp = M*tau;
@@ -435,9 +443,12 @@ double LevelSet::getCurvatureDivergence(array<int, 3> cell) const {
 
     for (int x = -local; x <= local; x++)
         for (int y = 0; y <= local; y++)
-            for (int z = sidelengthZ/2; z <= sidelengthZ/2; z++) {
+            for (int z = -sidelengthZ/2; z <= sidelengthZ/2; z++) {
                 array<int, 3> temp = {x, y, z};
                 temp = temp + cell;
+
+                if (temp[0] < 0 || temp[0] > numX - 1 || temp[1] < 0 || temp[1] > numY - 1 || temp[2] < 0 || temp[2] > numZ - 1)
+                    continue;
 
                 array<double, 3> normal = getNormalVector(temp);
                 if (this->numZ > 1)
@@ -448,39 +459,90 @@ double LevelSet::getCurvatureDivergence(array<int, 3> cell) const {
 
     // Calculate divergence of localField at cell, which by definition
     // is in the "middle" of localField
-    double dnx_dx = (localField.at(local + 1, 0, sidelengthZ/2)[0] - localField.at(local - 1, 0, sidelengthZ/2)[0]) / (2*dx);
+    double dnx_dx, dnx_dy, dnx_dz, dny_dx, dny_dy, dny_dz, dnz_dx, dnz_dy, dnz_dz;
+    dnx_dx = dnx_dy = dnx_dz = dny_dx = dny_dy = dny_dz = dnz_dx = dnz_dy = dnz_dz = 0;
 
-    double dnx_dy = (-localField.at(local, 2, sidelengthZ/2)[0]
-                + 4.0*localField.at(local, 1, sidelengthZ/2)[0]
-                - 3.0*localField.at(local, 0, sidelengthZ/2)[0] ) / (2*dy);
+    if (cell[0] == 0) {
+        dnx_dx = (-localField.at(local + 2, 0, sidelengthZ/2)[0]
+                + 4.0*localField.at(local + 1, 0, sidelengthZ/2)[0]
+                - 3.0*localField.at(local, 0, sidelengthZ/2)[0] ) / (2*dx);
 
-    double dny_dx = (localField.at(local + 1, 0, sidelengthZ/2)[1] - localField.at(local - 1, 0, sidelengthZ/2)[1]) / (2*dx);
+        dny_dx = (-localField.at(local + 2, 0, sidelengthZ/2)[1]
+                + 4.0*localField.at(local + 1, 0, sidelengthZ/2)[1]
+                - 3.0*localField.at(local, 0, sidelengthZ/2)[1] ) / (2*dx);
 
-    double dny_dy = (-localField.at(local, 2, sidelengthZ/2)[1]
-                + 4.0*localField.at(local, 1, sidelengthZ/2)[1]
-                - 3.0*localField.at(local, 0, sidelengthZ/2)[1] ) / (2*dy);
+        if (numZ > 1) {
+            dnz_dx = (-localField.at(local + 2, 0, sidelengthZ/2)[2]
+                    + 4.0*localField.at(local + 1, 0, sidelengthZ/2)[2]
+                    - 3.0*localField.at(local, 0, sidelengthZ/2)[2] ) / (2*dx);
+        }
 
-    double dnx_dz, dny_dz, dnz_dx, dnz_dy, dnz_dz;
-    dnx_dz = dny_dz = dnz_dx = dnz_dy = dnz_dz = 0;
+    } else if (cell[0] == numX - 1) {
+        dnx_dx = (localField.at(local - 2, 0, sidelengthZ/2)[0]
+                - 4.0*localField.at(local - 1, 0, sidelengthZ/2)[0]
+                + 3.0*localField.at(local, 0, sidelengthZ/2)[0] ) / (2*dx);
+
+        dny_dx = (localField.at(local - 2, 0, sidelengthZ/2)[1]
+                - 4.0*localField.at(local - 1, 0, sidelengthZ/2)[1]
+                + 3.0*localField.at(local, 0, sidelengthZ/2)[1] ) / (2*dx);
+
+        if (numZ > 1) {
+            dnz_dx = (localField.at(local - 2, 0, sidelengthZ/2)[2]
+                    - 4.0*localField.at(local - 1, 0, sidelengthZ/2)[2]
+                    + 3.0*localField.at(local, 0, sidelengthZ/2)[2] ) / (2*dx);
+        }
+    } else {
+        dnx_dx = (localField.at(local + 1, 0, sidelengthZ/2)[0] - localField.at(local - 1, 0, sidelengthZ/2)[0]) / (2*dx);
+        dny_dx = (localField.at(local + 1, 0, sidelengthZ/2)[1] - localField.at(local - 1, 0, sidelengthZ/2)[1]) / (2*dx);
+        dnz_dx = (localField.at(local + 1, 0, sidelengthZ/2)[2] - localField.at(local - 1, 0, sidelengthZ/2)[2]) / (2*dx);
+    }
+
+    dnx_dy = (-localField.at(local, 2, sidelengthZ/2)[0]
+            + 4.0*localField.at(local, 1, sidelengthZ/2)[0]
+            - 3.0*localField.at(local, 0, sidelengthZ/2)[0] ) / (2*dy);
+
+
+    dny_dy = (-localField.at(local, 2, sidelengthZ/2)[1]
+            + 4.0*localField.at(local, 1, sidelengthZ/2)[1]
+            - 3.0*localField.at(local, 0, sidelengthZ/2)[1] ) / (2*dy);
+
+
 
     if (numZ > 1) {
-        dnx_dz = (localField.at(local, 0, sidelengthZ/2 + 1)[0] - localField.at(local, 0, sidelengthZ/2 - 1)[0]) / (2*dz);
 
-        dny_dz = (localField.at(local, 0, sidelengthZ/2 + 1)[1] - localField.at(local, 0, sidelengthZ/2 - 1)[1]) / (2*dz);
-
-        dnz_dx = (localField.at(local + 1, 0, sidelengthZ/2)[2] - localField.at(local - 1, 0, sidelengthZ/2)[2]) / (2*dx);
+        if (cell[2] == 0) {
+            dnx_dz = (-localField.at(local, 0, sidelengthZ/2 + 2)[0]
+                     + 4.0*localField.at(local, 0, sidelengthZ/2 + 1)[0]
+                     - 3.0*localField.at(local, 0, sidelengthZ/2)[0] ) / (2*dz);
+            dny_dz = (-localField.at(local, 0, sidelengthZ/2 + 2)[1]
+                     + 4.0*localField.at(local, 0, sidelengthZ/2 + 1)[1]
+                     - 3.0*localField.at(local, 0, sidelengthZ/2)[1] ) / (2*dz);
+            dnz_dz = (-localField.at(local, 0, sidelengthZ/2 + 2)[2]
+                     + 4.0*localField.at(local, 0, sidelengthZ/2 + 1)[2]
+                     - 3.0*localField.at(local, 0, sidelengthZ/2)[2] ) / (2*dz);
+        } else if (cell[2] == numZ - 1) {
+            dnx_dz = (localField.at(local, 0, sidelengthZ/2 - 2)[0]
+                    - 4.0*localField.at(local, 0, sidelengthZ/2 - 1)[0]
+                    + 3.0*localField.at(local, 0, sidelengthZ/2)[0] ) / (2*dz);
+            dny_dz = (localField.at(local, 0, sidelengthZ/2 - 2)[1]
+                    - 4.0*localField.at(local, 0, sidelengthZ/2 - 1)[1]
+                    + 3.0*localField.at(local, 0, sidelengthZ/2)[1] ) / (2*dz);
+            dnz_dz = (localField.at(local, 0, sidelengthZ/2 - 2)[2]
+                    - 4.0*localField.at(local, 0, sidelengthZ/2 - 1)[2]
+                    + 3.0*localField.at(local, 0, sidelengthZ/2)[2] ) / (2*dz);
+        } else {
+            dnx_dz = (localField.at(local, 0, sidelengthZ/2 + 1)[0] - localField.at(local, 0, sidelengthZ/2 - 1)[0]) / (2*dz);
+            dny_dz = (localField.at(local, 0, sidelengthZ/2 + 1)[1] - localField.at(local, 0, sidelengthZ/2 - 1)[1]) / (2*dz);
+            dnz_dz = (localField.at(local, 0, sidelengthZ/2 + 1)[2] - localField.at(local, 0, sidelengthZ/2 - 1)[2]) / (2*dz);
+        }
 
         dnz_dy = (-localField.at(local, 2, sidelengthZ/2)[2]
                     + 4.0*localField.at(local, 1, sidelengthZ/2)[2]
                     - 3.0*localField.at(local, 0, sidelengthZ/2)[2] ) / (2*dy);
-
-        dnz_dz = (localField.at(local, 0, sidelengthZ/2 + 1)[2] - localField.at(local, 0, sidelengthZ/2 - 1)[2]) / (2*dz);
     }
-    
-    array<double, 3> normal = localField.at(local, 0, sidelengthZ/2);
 
-    // This still only works for 2D
-    array<double, 3> tau = {normal[1], -normal[0], 0};
+    array<double, 3> normal = localField.at(local, 0, sidelengthZ/2);
+    array<double, 3> tau = getTangentialVector(normal);
 
     array<double, 3> row1 = {dnx_dx, dnx_dy, dnx_dz};
     array<double, 3> row2 = {dny_dx, dny_dy, dny_dz};

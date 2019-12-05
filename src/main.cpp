@@ -179,7 +179,11 @@ int main() {
     if (numZ == 1) {
       // 2D case
       dt = CFL*std::min(dx,dy)/field->getMaxNormValue();
-      expNormalVec = normalVector2D(expAngle, trackedContactPoint);
+      if (trackedContactPoint == "left") {
+          expNormalVec = { -sin(expAngle/180*M_PI), cos(expAngle/180*M_PI), 0};
+      } else {
+          expNormalVec = {sin(expAngle/180*M_PI), cos(expAngle/180*M_PI), 0};
+      }
     }
     else {
       // 3D case
@@ -202,7 +206,6 @@ int main() {
     std::vector<double> curvatureTheoretical = Phi.getCurvatureReference();
     std::vector<double> angleActual(timesteps);
     std::vector<double> curvatureActualDivergence(timesteps);
-    std::vector<double> curvatureActualHeight(timesteps);
 
     if (geometryType == "sphere")
         Phi.initDroplet(center, radius);
@@ -276,10 +279,9 @@ int main() {
 
             curvatureFile << std::to_string(i*dt) + ", "
                     + std::to_string(curvatureActualDivergence[i]) + ", "
-                    + std::to_string(curvatureActualHeight[i]) + ", "
                     + std::to_string(curvatureTheoretical[i]) + "\n";
 
-            std::cout << "Measured curvature with divergence:     " + std::to_string(curvatureActualDivergence[i]) + "\n";
+            std::cout << "Measured curvature with divergence: " + std::to_string(curvatureActualDivergence[i]) + "\n";
             std::cout << "Reference curvature: " + std::to_string(curvatureTheoretical[i])  << std::endl;
         }
         

@@ -27,6 +27,7 @@ private:
     *   leading to a high number in nested loops. 
     **/
     std::vector< array<double, 3>> positionReference;
+    std::vector< array<double, 3>> normalReference;
     std::vector<double> angleReference;
     std::vector<double> curvatureReference;
 
@@ -39,13 +40,14 @@ public:
     array<double, 3> contactPointLinearField(double t, double c1, double x0, double v0);
     array<double, 3> getContactPoint(int timestep, bool indexOnly = false);
     array<int, 3> getContactPointIndices(int timestep);
-    void referenceAngleExplicitEuler(double dt, int timestep, array<double, 3> n_sigma_init);
+    void referenceNormalExplicitEuler(double dt, int timestep, array<double, 3> n_sigma_init);
     void referenceAngleLinearField(double dt, int last_timestep, double theta0);
     array<double, 3> getNormalVector(array<int, 3> cell) const;
+    array<double, 3> getTangentialVector(array<double, 3> normal) const;
     double getContactAngle(array<int, 3> cell);
-    void referenceCurvatureExplicitEuler(double dt, int timestep, double initCurvature, double initAngle);
-    void referenceCurvatureLinearField(double dt, int timesteps, double init_curvature);
-    void referenceCurvatureQuadraticField(double dt, int timesteps, double init_curvature);
+    void referenceCurvatureExplicitEuler(double dt, int timestep, double initCurvature);
+    void referenceCurvatureLinearField(double dt, int timesteps, double initCurvature);
+    void referenceCurvatureQuadraticField(double dt, int timesteps, double initCurvature);
     double getCurvatureDivergence(array<int, 3> cell) const;
     void writeToFile(double dt, int timestep, int total_timesteps, int total_writesteps, std::ofstream *mainXmfFile, std::ofstream *tauXmfFile);
     void writeTangentialVectorToFile(double dt, int timestep);

@@ -23,5 +23,4 @@ set output "results_curvature.pdf"
 set ylabel "Curvature"
 
 plot "curvature.csv" using 1:2 every 10 title "LevelSet Divergence" with points pointsize 0.5, \
-     "curvature.csv" using 1:3 every 10 title "LevelSet Height" with points pointsize 0.5, \
-     "curvature.csv" using 1:4 every 10 title "Reference" with line,\
+     "curvature.csv" using 1:3 every 10 title "Reference" with line,\

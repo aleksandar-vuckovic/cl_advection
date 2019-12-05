@@ -16,6 +16,7 @@ c2=-2
 field=navierField
 fieldAzimuthalAngle=50
 
+geometryType=sphere
 centerX=0.0
 centerY=-0.2
 centerZ=0.0
