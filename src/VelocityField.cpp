@@ -92,7 +92,7 @@ array<double, 3> VelocityField::at(double t, double x, double y, double z) {
     
     // Matrix for rotation around y-axis
     array<double, 3> row1 = { cos(azimuthalAngle), 0, -sin(azimuthalAngle)};
-    array<double, 3> row2 = {0, 0, 0};
+    array<double, 3> row2 = {0, 1, 0};
     array<double, 3> row3 = {sin(azimuthalAngle), 0, cos(azimuthalAngle)};
     
     array<array<double, 3>, 3> rotMatrix = {row1, row2, row3};
@@ -119,7 +119,7 @@ array<double, 3> VelocityField::at(double t, double x, double y, double z) {
 array<array<double, 3>, 3> VelocityField::gradAt(double t, double x, double y, double z) {
     // Matrix for rotation around y-axis
     array<double, 3> row1 = { cos(azimuthalAngle), 0, -sin(azimuthalAngle)};
-    array<double, 3> row2 = {0, 0, 0};
+    array<double, 3> row2 = {0, 1, 0};
     array<double, 3> row3 = {sin(azimuthalAngle), 0, cos(azimuthalAngle)};
 
     array<array<double, 3>, 3> rotMatrix = {row1, row2, row3};
