@@ -219,3 +219,7 @@ std::string VelocityField::getName() {
 double VelocityField::getMaxNormValue() {
 	return maxAbsoluteValue;
 }
+
+double VelocityField::getAzimuthalAngle() {
+    return azimuthalAngle;
+}

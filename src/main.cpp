@@ -179,6 +179,7 @@ int main() {
     if (numZ == 1) {
       // 2D case
       dt = CFL*std::min(dx,dy)/field->getMaxNormValue();
+
       if (trackedContactPoint == "left") {
           expNormalVec = { -sin(expAngle/180*M_PI), cos(expAngle/180*M_PI), 0};
       } else {
@@ -198,7 +199,7 @@ int main() {
     array<double, 3> center = {centerX, centerY, centerZ};
     array<double, 3> expCP = {expcpX, expcpY, expcpZ};
 
-    LevelSet Phi(numX, numY, numZ, dx, dy, dz, field, trackedContactPoint, dt, timesteps, expCP, expNormalVec, initCurvature);
+    LevelSet Phi(numX, numY, numZ, dx, dy, dz, field, trackedContactPoint, dt, timesteps, expCP, expNormalVec, expAngle, initCurvature);
     Streamlines streamlines(numX, numY, numZ, *field, dt);
 
     std::vector< array<double, 3>> positionTheoretical = Phi.getPositionReference();

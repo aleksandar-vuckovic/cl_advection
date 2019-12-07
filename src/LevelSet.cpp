@@ -16,17 +16,16 @@
  * @param trackedCP Which contact point to track. Only applicable in 2D.
  */
 LevelSet::LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz, VelocityField *field,
-        std::string trackedCP, double dt, int timesteps, array<double, 3> expCP, array<double, 3> expNormalVec, double initCurvature)
+        std::string trackedCP, double dt, int timesteps, array<double, 3> expCP, array<double, 3> expNormalVec, double expAngle, double initCurvature)
         : Field<double>(numX, numY, numZ), positionReference(timesteps), normalReference(timesteps), angleReference(timesteps), curvatureReference(timesteps) {
 		this->dx = dx;
 		this->dy = dy;
 		this->dz = dz;
 		this->field = field;
 		this->trackedCP = trackedCP;
+        expAngle = expAngle/180*M_PI;
 
-
-	    array<double, 3> initCP = getInitCP(expCP, 0.001);
-        double expAngle = acos(expNormalVec[1]);
+        array<double, 3> initCP = getInitCP(expCP, 0.001);
 		// Calculate reference data
         contactPointExplicitEuler(dt, timesteps, initCP);
         if (numZ == 1 && (field->getName() == "navierField" || field->getName() == "timeDependentNavierField")) {
@@ -192,42 +191,42 @@ array<double, 3> LevelSet::getNormalVector(array<int, 3> cell) const {
 
     if (numZ == 1) {
 
-	if (trackedCP == "left") {
-		 // find root of phi, alpha: coefficient for convex combination
-		 double alpha = this->at(cell[0],0,0)-this->at(cell[0]-1,0,0);
+        if (trackedCP == "left") {
+             // find root of phi, alpha: coefficient for convex combination
+             double alpha = this->at(cell[0],0,0)-this->at(cell[0]-1,0,0);
 
-		 if(std::abs(alpha) < 1E-12){
-		   throw std::runtime_error("LevelSet::getContactAngle: \nDifference of LevelSet values at contact point too small for convex combination");
-		 }
+             if(std::abs(alpha) < 1E-12){
+               throw std::runtime_error("LevelSet::getContactAngle: \nDifference of LevelSet values at contact point too small for convex combination");
+             }
 
-		 alpha = this->at(cell[0],0,0)/(alpha);
+             alpha = this->at(cell[0],0,0)/(alpha);
 
-		//Calculate angle at this cell with finite differences
-		normalX = alpha*(this->at(cell[0], cell[1], cell[2]) - this->at(cell[0]-2, cell[1], cell[2]))/(2*dx)
-		+ (1-alpha)*(this->at(cell[0]+1, cell[1], cell[2]) - this->at(cell[0]-1, cell[1], cell[2]))/(2*dx);
-		normalY = alpha*(-this->at(cell[0]-1, cell[1] + 2, cell[2])
-						  + 4.0*this->at(cell[0]-1, cell[1] + 1, cell[2])
-						  - 3.0*this->at(cell[0]-1, cell[1], cell[2]))/(2*dy)
-						  + (1-alpha)*(-this->at(cell[0], cell[1] + 2, cell[2])
-						  + 4.0*this->at(cell[0], cell[1] + 1, cell[2])
-						  - 3.0*this->at(cell[0], cell[1], cell[2]))/(2*dy); // second order difference quotient
+            //Calculate angle at this cell with finite differences
+            normalX = alpha*(this->at(cell[0], cell[1], cell[2]) - this->at(cell[0]-2, cell[1], cell[2]))/(2*dx)
+            + (1-alpha)*(this->at(cell[0]+1, cell[1], cell[2]) - this->at(cell[0]-1, cell[1], cell[2]))/(2*dx);
+            normalY = alpha*(-this->at(cell[0]-1, cell[1] + 2, cell[2])
+                              + 4.0*this->at(cell[0]-1, cell[1] + 1, cell[2])
+                              - 3.0*this->at(cell[0]-1, cell[1], cell[2]))/(2*dy)
+                              + (1-alpha)*(-this->at(cell[0], cell[1] + 2, cell[2])
+                              + 4.0*this->at(cell[0], cell[1] + 1, cell[2])
+                              - 3.0*this->at(cell[0], cell[1], cell[2]))/(2*dy); // second order difference quotient
 
-	} else if (trackedCP == "right") {
-		double alpha = this->at(cell[0] + 1, 0, 0) - this->at(cell[0], 0, 0);
-        if(std::abs(alpha) < 1E-12) {
-		   throw std::runtime_error("LevelSet::getContactAngle: \nDifference of LevelSet values at contact point too small for convex combination");
-        }
+        } else if (trackedCP == "right") {
+            double alpha = this->at(cell[0] + 1, 0, 0) - this->at(cell[0], 0, 0);
+            if(std::abs(alpha) < 1E-12) {
+               throw std::runtime_error("LevelSet::getContactAngle: \nDifference of LevelSet values at contact point too small for convex combination");
+            }
 
-        alpha = this->at(cell[0] + 1, 0, 0) / alpha;
+            alpha = this->at(cell[0] + 1, 0, 0) / alpha;
 
-        normalX = alpha*(this->at(cell[0] + 1, 0, 0) - this->at(cell[0] - 1, 0, 0))/(2*dx)
-        		+ (1 - alpha)*(this->at(cell[0] + 2, 0, 0) - this->at(cell[0], 0, 0))/(2*dx);
-        normalY = alpha*(-this->at(cell[0], cell[1] + 2, cell[2])
-						  + 4.0*this->at(cell[0], cell[1] + 1, cell[2])
-						  - 3.0*this->at(cell[0], cell[1], cell[2]))/(2*dy)
-						  + (1 - alpha)*(-this->at(cell[0] + 1, cell[1] + 2, cell[2])
-						  + 4.0*this->at(cell[0] + 1, cell[1] + 1, cell[2])
-						  - 3.0*this->at(cell[0] + 1, cell[1], cell[2]))/(2*dy);
+            normalX = alpha*(this->at(cell[0] + 1, 0, 0) - this->at(cell[0] - 1, 0, 0))/(2*dx)
+                    + (1 - alpha)*(this->at(cell[0] + 2, 0, 0) - this->at(cell[0], 0, 0))/(2*dx);
+            normalY = alpha*(-this->at(cell[0], cell[1] + 2, cell[2])
+                              + 4.0*this->at(cell[0], cell[1] + 1, cell[2])
+                              - 3.0*this->at(cell[0], cell[1], cell[2]))/(2*dy)
+                              + (1 - alpha)*(-this->at(cell[0] + 1, cell[1] + 2, cell[2])
+                              + 4.0*this->at(cell[0] + 1, cell[1] + 1, cell[2])
+                              - 3.0*this->at(cell[0] + 1, cell[1], cell[2]))/(2*dy);
 	}
 
     } else {
@@ -357,6 +356,16 @@ void LevelSet::referenceAngleLinearField(double dt, int last_timestep, double th
 void LevelSet::referenceCurvatureExplicitEuler(double dt, int last_timestep, double initCurvature) {
     double curvature = initCurvature;
 
+
+    double v0 = field->getV0();
+    double azimuthalAngle = field->getAzimuthalAngle();
+
+    array<double, 3> rotRow1 = { cos(azimuthalAngle), 0, -sin(azimuthalAngle)};
+    array<double, 3> rotRow2 = {0, 1, 0};
+    array<double, 3> rotRow3 = {sin(azimuthalAngle), 0, cos(azimuthalAngle)};
+
+    array<array<double, 3>, 3> rotMatrix = {rotRow1, rotRow2, rotRow3};
+
     for (int i = 0; i < last_timestep; i++) {
         curvatureReference[i] = curvature;
         array<double, 3> CP = positionReference[i];
@@ -366,7 +375,6 @@ void LevelSet::referenceCurvatureExplicitEuler(double dt, int last_timestep, dou
         // temp is the second derivative of v in the tau direction
         array<double, 3> temp;
         if (field->getName() == "shearField") {
-            double v0 = field->getV0();
             array<double, 3> row1 = {v0*M_PI*M_PI*sin(M_PI*CP[0])*cos(M_PI*CP[1])*tau[0] + v0*M_PI*M_PI*cos(M_PI*CP[0])*sin(M_PI*CP[1])*tau[1],
                                     v0*M_PI*M_PI*cos(M_PI*CP[0])*sin(M_PI*CP[1])*tau[0] + v0*M_PI*M_PI*sin(M_PI*CP[0])*cos(M_PI*CP[1])*tau[1],
                                     0};
@@ -375,7 +383,7 @@ void LevelSet::referenceCurvatureExplicitEuler(double dt, int last_timestep, dou
                                     0};
             array<double, 3> row3 = {0, 0, 0};
             array<array<double, 3>, 3> M = {row1, row2, row3};
-            temp = M*tau;
+            temp = rotMatrix*M*tau;
         } else if (field->getName() == "navierField") {
             temp = {0, 0, 0};
         }
@@ -753,8 +761,8 @@ void LevelSet::initDroplet(array<double, 3> center, double radius) {
 /** Initialize a plane.
  * 
  *  @param refPoint The reference point of the plane in degrees.
- *  @param angleA The angle between the initialized plane and the x-z-plane (= polar angle of normal vector).
- *  @param angleB The angle of rotation around the y-axis (= azimuthal angle).
+ *  @param angleA The angle between the initialized plane and the x-z-plane (= polar angle of normal vector) in deg.
+ *  @param angleB The angle of rotation around the y-axis (= azimuthal angle) in deg.
  */
 void LevelSet::initPlane(array<double, 3> refPoint, double polarAngle, double azimuthalAngle) {
     polarAngle = polarAngle/180*M_PI;

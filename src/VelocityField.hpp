@@ -42,6 +42,7 @@ public:
 	double getTau();
 	std::string getName();
 	double getMaxNormValue();
+    double getAzimuthalAngle();
 };
 
 #endif
