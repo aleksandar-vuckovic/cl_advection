@@ -8,37 +8,35 @@
 
 using std::array;
 
-array<double, 3> operator+ (array<double, 3> vecA, array<double, 3> vecB);
+typedef array<double, 3> Vector;
+typedef array<Vector, 3> Matrix;
+
+Vector operator+ (Vector vecA, Vector vecB);
 
 array<int, 3> operator+ (array<int, 3> vecA, array<int, 3> vecB);
 
-array<double, 3> operator- (array<double, 3> vecA, array<double, 3> vecB);
+Vector operator- (Vector vecA, Vector vecB);
 
-array<double, 3> operator- (array<double, 3> vecA, array<int, 3> vecB);
+Vector operator- (Vector vecA, array<int, 3> vecB);
 
-array<double, 3> operator*(double a, const array<double, 3>& vec);
+Vector operator*(double a, const Vector& vec);
 
-array<double, 3> operator*(const array<double, 3>& vec, double a);
+Vector operator*(const Vector& vec, double a);
 
-array<double, 3> operator*(const array<int, 3>& vec, double a);
+Vector operator*(const array<int, 3>& vec, double a);
 
-array<array<double, 3>, 3> operator* (double a, const array<array<double,3>, 3>& matrix);
+Matrix operator* (double a, const array<array<double,3>, 3>& matrix);
 
-double operator* (const array<double, 3>& vecA, const array<double, 3>& vecB);
+double operator* (const Vector& vecA, const Vector& vecB);
 
-array<double, 3> operator* (const array<array<double,3>, 3>& matrix, const array<double, 3> vec);
+Vector operator* (const array<array<double,3>, 3>& matrix, const Vector vec);
 
-array< array<double, 3>, 3> operator* (const array<array<double,3>, 3>& matrixA, const array<array<double,3>, 3>& matrixB);
+Matrix operator* (const Matrix& matrixA, const Matrix& matrixB);
 
-array<double, 3> operator/ (const array<double, 3>& vec, double a);
+Vector operator/ (const Vector& vec, double a);
 
-double abs (const array<double, 3> vec);
+double abs (const Vector vec);
 
-array<array<double, 3>, 3> transpose(const array<array<double, 3>, 3> matrix);
-
-// 2D
-array<double, 2> operator+ (array<double, 2> vecA, array<double, 2> vecB);
-
-array<double, 2> operator* (double a, array<double, 2>& vec);
+Matrix transpose(const Matrix matrix);
 
 #endif

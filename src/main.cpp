@@ -48,9 +48,9 @@ int main() {
     threads = 1;
     
     double lenX, lenY, lenZ, time, centerX, centerY, centerZ, radius, expcpX, expcpY, expcpZ, expAngle, expNormalX, expNormalY, expNormalZ;
-    double v0, c1, c2, c3, tau, CFL, writestepsFraction, polarAngle, planeAzimuthalAngle, fieldAzimuthalAngle;
+    double v0, w0, x0, y0, z0, c1, c2, c3, c4, c5, c6, tau, CFL, writestepsFraction, polarAngle, planeAzimuthalAngle, fieldAzimuthalAngle;
     lenX = lenY = lenZ = time = centerX = centerY = centerZ = radius = expcpX = expcpY = expcpZ = expNormalX = expNormalY = expNormalZ = 0;
-    expAngle = v0 = c1 = c2 = c3 = tau = CFL = writestepsFraction = polarAngle = planeAzimuthalAngle =  fieldAzimuthalAngle = 0;
+    expAngle = v0 = w0 = x0 = y0 = z0 = c1 = c2 = c3 = c4 = c5 = c6 = tau = CFL = writestepsFraction = polarAngle = planeAzimuthalAngle =  fieldAzimuthalAngle = 0;
     
     bool writeField = false, calculateCurvature = false;
     std::string trackedContactPoint = "left", fieldName = "", geometryType = "sphere";
@@ -91,12 +91,26 @@ int main() {
                     std::stringstream(value) >> std::boolalpha >> writeField;
                 else if (varName == "v0")
                     v0 = std::stod(value);
+                else if (varName == "w0")
+                    w0 = std::stod(value);
                 else if (varName == "c1")
                     c1 = std::stod(value);
                 else if (varName == "c2")
                     c2 = std::stod(value);
                 else if (varName == "c3")
                     c3 = std::stod(value);
+                else if (varName == "c4")
+                    c4 = std::stod(value);
+                else if (varName == "c5")
+                    c5 = std::stod(value);
+                else if (varName == "c6")
+                    c6= std::stod(value);
+                else if (varName == "x0")
+                    x0 = std::stod(value);
+                else if (varName == "y0")
+                    y0 = std::stod(value);
+                else if (varName == "z0")
+                    z0 = std::stod(value);
                 else if (varName == "tau")
                     tau = std::stod(value);
                 else if (varName == "field")
@@ -139,7 +153,8 @@ int main() {
                     if (numZ == 1)
                         expAngle = std::stod(value);
                     else
-                        throw std::invalid_argument("Input parameter expAngle is not applicable in 3D. Instead define the expected normal vector by setting the parameters expNormalX, expNormalY and expNormalZ.");
+                        throw std::invalid_argument("Input parameter expAngle is not applicable in 3D. Instead define the expected normal vector "
+                                                    "by setting the parameters expNormalX, expNormalY and expNormalZ.");
                 }
                 else if (varName == "expNormalX")
                     expNormalX = std::stod(value);
@@ -156,13 +171,19 @@ int main() {
                 else
                     throw std::invalid_argument("Input parameter \"" + varName + "\" not recognized");
                 }
+            // In case a line is commented out
+            else if (varName.substr(0, 2) == "//")
+                continue;
+            else
+                throw std::invalid_argument("Input parameter \"" + varName + "\" is not set.");
             }
         }
 
   	//Parallel computing
   	omp_set_num_threads(threads);
 
-    field = new VelocityField(fieldName, v0, c1, c2, c3, tau, 0, lenX, 0, lenY, 0, lenZ, lenX/numX,lenY/numY,lenZ/numZ, fieldAzimuthalAngle);
+    field = new VelocityField(fieldName, v0, w0, x0, y0, z0, c1, c2, c3, c4, c5, c6,
+                              tau, 0, lenX, 0, lenY, 0, lenZ, lenX/numX,lenY/numY,lenZ/numZ, fieldAzimuthalAngle);
 
     double dx = lenX/numX;
     double dy = lenY/numY;

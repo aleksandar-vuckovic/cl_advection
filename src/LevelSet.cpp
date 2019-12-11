@@ -263,10 +263,17 @@ array<double, 3> LevelSet::getNormalVector(array<int, 3> cell) const {
  * @return The tangential vector
  */
 array<double, 3> LevelSet::getTangentialVector(array<double, 3> normal) const {
+    double tau1, tau2, tau3;
 
-    double tau1 = 1;
-    double tau2 = -(normal[2]*normal[2] / (normal[0]*normal[1]) + normal[0]/normal[1]);
-    double tau3 = normal[2] / normal[0];
+    if (normal[1] > 1e-12) {
+        tau1 = 1;
+        tau2 = -(normal[2]*normal[2] / (normal[0]*normal[1]) + normal[0]/normal[1]);
+        tau3 = normal[2] / normal[0];
+    } else {
+        tau1 = 0;
+        tau2 = 1;
+        tau3 = 0;
+    }
 
     array<double, 3> tau = {tau1, tau2, tau3};
     tau = tau/abs(tau);
@@ -382,9 +389,9 @@ void LevelSet::referenceCurvatureExplicitEuler(double dt, int last_timestep, dou
                                      -v0*M_PI*M_PI*sin(M_PI*CP[0])*cos(M_PI*CP[1])*tau[0]   -v0*M_PI*M_PI*cos(M_PI*CP[0])*sin(M_PI*CP[1])*tau[1],
                                     0};
             array<double, 3> row3 = {0, 0, 0};
-            array<array<double, 3>, 3> M = {row1, row2, row3};
+            Matrix M = {row1, row2, row3};
             temp = rotMatrix*M*tau;
-        } else if (field->getName() == "navierField") {
+        } else if (field->getName() == "navierField" || field->getName() == "timeDependentNavierField" || field->getName() == "strawberryField") {
             temp = {0, 0, 0};
         }
 

@@ -6,11 +6,7 @@
  * a navier or a shear field, its parameters and the space it is defined on.
  */
 
-#include <string>
-#include <array>
 #include "VelocityField.hpp"
-#include "velocityFields.hpp"
-
 
 #define _USE_MATH_DEFINES
 #include <cmath>
@@ -23,17 +19,26 @@ using std::array;
  *
  * @param name The kind of the field. This decides the underlying function the velocity field will apply at each point
  * @param v0 For the shear field, this is a scaling factor. For the navier field, this is the velocity of the x-component in the origin.
- * @param c1, c2 Parameters of the velocity field, currently only used for the navier field
+ * @param \f$c_i\f$ Parameters of the velocity field, currently only used for the navier field
  * @param tau tau/2 is the period of osciallation of the time dependent navier field.
  * @param xmin, xmax, ymin, ymax, zmin, zmax The space the velocity field is defined on
  * @param dx, dy, dz The width of a cell in each direction
  */
-VelocityField::VelocityField(std::string name, double v0, double c1, double c2, double c3, double tau,
-		double xmin, double xmax, double ymin, double ymax, double zmin, double zmax, double dx, double dy, double dz, double azimuthalAngle) {
+VelocityField::VelocityField(std::string name, double v0, double w0, double x0, double y0, double z0,
+                             double c1, double c2, double c3, double c4, double c5, double c6, double tau,
+                             double xmin, double xmax, double ymin, double ymax, double zmin, double zmax,
+                             double dx, double dy, double dz, double azimuthalAngle) {
 	this->v0 = v0;
+    this->w0 = w0;
+    this->x0 = x0;
+    this->y0 = y0;
+    this->z0 = z0;
 	this->c1 = c1;
 	this->c2 = c2;
 	this->c3 = c3;
+    this->c4 = c4;
+    this->c5 = c5;
+    this->c6 = c6;
 	this->tau = tau;
 
 	this->xmin = xmin;
@@ -47,6 +52,13 @@ VelocityField::VelocityField(std::string name, double v0, double c1, double c2, 
 	this->dz = dz;
     this->azimuthalAngle = azimuthalAngle/180 * M_PI;
 
+    // Matrix for rotation around y-axis
+    array<double, 3> row1 = { cos(azimuthalAngle), 0, -sin(azimuthalAngle)};
+    array<double, 3> row2 = {0, 1, 0};
+    array<double, 3> row3 = {sin(azimuthalAngle), 0, cos(azimuthalAngle)};
+
+    rotMatrix = {row1, row2, row3};
+
 	double maxNormValue = 0, currentVal = 0, x, y, z;
 
 	for (int i = 0; i < (xmax - xmin)/dx; i++) {
@@ -56,16 +68,19 @@ VelocityField::VelocityField(std::string name, double v0, double c1, double c2, 
 				y = j*dy - ymin;
 				z = k*dz - zmin;
 				if (name == "shearField")
-					currentVal = abs(shearField(x, y, z, v0));
+                    currentVal = abs(rotMatrix * shearField(x, y, z, v0));
 				else if (name == "navierField")
-					currentVal = abs(navierField(x, y, z, v0, c1, c2));
+                    currentVal = abs(rotMatrix * navierField(x, y, z, v0, c1, c2));
 				else if (name == "timeDependentNavierField") {
 					// Since |cos(x)| <= 1 we assume the worst case and take the maximum absolute value for the norm value of the velocity field
-					currentVal = abs(navierField(x, y, z, v0, c1, c2));
+                    currentVal = abs(rotMatrix * navierField(x, y, z, v0, c1, c2));
 				}
 				else if (name == "quadraticField") {
-				    currentVal = abs(quadraticField(x, y, z, v0, c1, c2, c3));
+                    currentVal = abs(rotMatrix * quadraticField(x, y, z, v0, c1, c2, c3));
 				}
+                else if (name == "strawberryField") {
+                    currentVal = abs(rotMatrix * strawberryField(x, y, z, v0, w0, x0, y0, z0, c1, c2, c3, c4, c5, c6));
+                }
 				if (currentVal > maxNormValue)
 					maxNormValue = currentVal;
 			}
@@ -74,7 +89,7 @@ VelocityField::VelocityField(std::string name, double v0, double c1, double c2, 
 
 	this->maxAbsoluteValue = maxNormValue;
 
-	if (name == "shearField" || name == "navierField" || name == "timeDependentNavierField" || name == "quadraticField") {
+    if (name == "shearField" || name == "navierField" || name == "timeDependentNavierField" || name == "quadraticField" || name == "strawberryField") {
 		this->name = name;
 	} else {
 		throw std::invalid_argument("No available field was chosen.");
@@ -89,14 +104,7 @@ VelocityField::VelocityField(std::string name, double v0, double c1, double c2, 
  * @return The velocity field at the given coordinates
  */
 array<double, 3> VelocityField::at(double t, double x, double y, double z) {
-    
-    // Matrix for rotation around y-axis
-    array<double, 3> row1 = { cos(azimuthalAngle), 0, -sin(azimuthalAngle)};
-    array<double, 3> row2 = {0, 1, 0};
-    array<double, 3> row3 = {sin(azimuthalAngle), 0, cos(azimuthalAngle)};
-    
-    array<array<double, 3>, 3> rotMatrix = {row1, row2, row3};
-    
+
 	if (name == "shearField") {
 		return rotMatrix *  shearField(x, y, z, v0);
 	} else if (name == "navierField") {
@@ -105,7 +113,9 @@ array<double, 3> VelocityField::at(double t, double x, double y, double z) {
 		return cos(M_PI*t/tau) * rotMatrix * navierField(x, y, z, v0, c1, c2);
 	} else if (name == "quadraticField") {
 	    return rotMatrix * quadraticField(x, y, z, v0, c1, c2, c3);
-	}
+    } else if (name == "strawberryField") {
+        return strawberryField(x, y, z, v0, w0, x0, y0, z0, c1, c2, c3, c4, c5, c6);
+    }
 	return {0, 0, 0};
 }
 
@@ -116,13 +126,7 @@ array<double, 3> VelocityField::at(double t, double x, double y, double z) {
  * @param x, y, z The coordinates of the point
  * @return The jacobian matrix at the given coordinates
  */
-array<array<double, 3>, 3> VelocityField::gradAt(double t, double x, double y, double z) {
-    // Matrix for rotation around y-axis
-    array<double, 3> row1 = { cos(azimuthalAngle), 0, -sin(azimuthalAngle)};
-    array<double, 3> row2 = {0, 1, 0};
-    array<double, 3> row3 = {sin(azimuthalAngle), 0, cos(azimuthalAngle)};
-
-    array<array<double, 3>, 3> rotMatrix = {row1, row2, row3};
+Matrix VelocityField::gradAt(double t, double x, double y, double z) {
 
 	if (name == "shearField") {
         return rotMatrix*gradShearField(x, y, z, v0);
@@ -132,7 +136,9 @@ array<array<double, 3>, 3> VelocityField::gradAt(double t, double x, double y, d
         return cos(M_PI*t/tau)*rotMatrix*gradNavierField(x, y, z, v0, c1, c2);
 	} else if (name == "quadraticField") {
         return rotMatrix*gradQuadraticField(x, y, z, v0, c1, c2, c3);
-	}
+    } else if (name == "strawberryField") {
+        return rotMatrix*gradStrawberryField(x, y, z, v0, w0, x0, y0, z0, c1, c2, c3, c4, c5, c6);
+    }
 	return {0, 0, 0};
 }
 
