@@ -28,3 +28,9 @@ latex/*
 .settings
 src/Debug
 
+#qtcreator project files
+cl_advection.config
+cl_advection.creator
+cl_advection.files
+cl_advection.includes
+

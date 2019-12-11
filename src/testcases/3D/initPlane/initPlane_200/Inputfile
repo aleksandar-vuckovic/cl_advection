@@ -1,6 +1,6 @@
-numX=500
-numY=100
-numZ=500
+numX=1000
+numY=200
+numZ=1000
 lenX=0.5
 lenY=0.1
 lenZ=0.5
@@ -14,7 +14,7 @@ field=shearField
 v0=-0.2
 c1=0.1
 c2=-2
-fieldAzimuthalAngle=30
+fieldAzimuthalAngle=45
 
 geometryType=plane
 
@@ -22,12 +22,14 @@ centerX=0.2
 centerY=0.0
 centerZ=0.2
 polarAngle=45
-planeAzimuthalAngle=30
+planeAzimuthalAngle=45
 
 expcpX=0.2
 expcpY=0.0
 expcpZ=0.2
-expAngle=45
+expNormalX=0.5
+expNormalY=0.7071067811865476
+expNormalZ=0.5
 
 trackedContactPoint=left
 threads=5
