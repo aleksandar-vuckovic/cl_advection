@@ -28,11 +28,7 @@ LevelSet::LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz
         array<double, 3> initCP = getInitCP(expCP, 0.001);
 		// Calculate reference data
         contactPointExplicitEuler(dt, timesteps, initCP);
-        if (numZ == 1 && (field->getName() == "navierField" || field->getName() == "timeDependentNavierField")) {
-            referenceAngleLinearField(dt, timesteps, expAngle);
-        } else {
-            referenceNormalExplicitEuler(dt, timesteps, expNormalVec);
-        }
+        referenceNormalExplicitEuler(dt, timesteps, expNormalVec);
 
         if (field->getName() == "quadraticField") {
             referenceCurvatureQuadraticField(dt, timesteps, initCurvature);
@@ -184,12 +180,13 @@ array<int, 3> LevelSet::getContactPointIndices(int timestep) {
  * 
  * This function uses finite differences to calculate the normal vector of the Level set field at cell
  * @param cell The indices of the contact point.
- * @return The normal vector.
+ * @param cellIsCP Whether cell is the index-vector of the contact point.
+ * @return The normal vector at cell.
  */
-array<double, 3> LevelSet::getNormalVector(array<int, 3> cell) const {
+array<double, 3> LevelSet::getNormalVector(array<int, 3> cell, bool useInterpolation /* = true */) const {
     double normalX = 0, normalY = 0, normalZ = 0;
 
-    if (numZ == 1) {
+    if (numZ == 1 && useInterpolation) {
 
         if (trackedCP == "left") {
              // find root of phi, alpha: coefficient for convex combination
@@ -227,7 +224,7 @@ array<double, 3> LevelSet::getNormalVector(array<int, 3> cell) const {
                               + (1 - alpha)*(-this->at(cell[0] + 1, cell[1] + 2, cell[2])
                               + 4.0*this->at(cell[0] + 1, cell[1] + 1, cell[2])
                               - 3.0*this->at(cell[0] + 1, cell[1], cell[2]))/(2*dy);
-	}
+        }
 
     } else {
         if (cell[0] > 0 && cell[0] < numX - 1) {
@@ -240,12 +237,14 @@ array<double, 3> LevelSet::getNormalVector(array<int, 3> cell) const {
 
         normalY = (-1*this->at(cell[0], cell[1] + 2, cell[2]) +4*this->at(cell[0], cell[1] + 1, cell[2]) -3*this->at(cell[0], cell[1], cell[2]))/(2*dy);
 
-        if (cell[2] > 0 && cell[2] < numZ - 1) {
-                normalZ = (this->at(cell[0], cell[1], cell[2] + 1) - this->at(cell[0], cell[1], cell[2] - 1))/(2*dz);
-        } else if (cell[2] == 0) {
-                normalZ = (-1*this->at(cell[0], cell[1], cell[2] + 2) +4*this->at(cell[0], cell[1], cell[2] + 1) -3*this->at(cell[0], cell[1], cell[2]))/(2*dz);
-        } else {
-                normalZ = (this->at(cell[0], cell[1], cell[2] - 2) -4*this->at(cell[0], cell[1], cell[2] - 1) +3*this->at(cell[0], cell[1], cell[2]))/(2*dz);
+        if (numZ > 1) {
+            if (cell[2] > 0 && cell[2] < numZ - 1) {
+                    normalZ = (this->at(cell[0], cell[1], cell[2] + 1) - this->at(cell[0], cell[1], cell[2] - 1))/(2*dz);
+            } else if (cell[2] == 0) {
+                    normalZ = (-1*this->at(cell[0], cell[1], cell[2] + 2) +4*this->at(cell[0], cell[1], cell[2] + 1) -3*this->at(cell[0], cell[1], cell[2]))/(2*dz);
+            } else {
+                    normalZ = (this->at(cell[0], cell[1], cell[2] - 2) -4*this->at(cell[0], cell[1], cell[2] - 1) +3*this->at(cell[0], cell[1], cell[2]))/(2*dz);
+            }
         }
     }
 
@@ -465,7 +464,8 @@ double LevelSet::getCurvatureDivergence(array<int, 3> cell) const {
                 if (temp[0] < 0 || temp[0] > numX - 1 || temp[1] < 0 || temp[1] > numY - 1 || temp[2] < 0 || temp[2] > numZ - 1)
                     continue;
 
-                array<double, 3> normal = getNormalVector(temp);
+                Vector normal = getNormalVector(temp, false);
+
                 if (this->numZ > 1)
                     localField.at(x+local, y, z+local) = normal;
                 else

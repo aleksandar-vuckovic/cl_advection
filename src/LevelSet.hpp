@@ -42,7 +42,7 @@ public:
     array<int, 3> getContactPointIndices(int timestep);
     void referenceNormalExplicitEuler(double dt, int timestep, array<double, 3> n_sigma_init);
     void referenceAngleLinearField(double dt, int last_timestep, double theta0);
-    array<double, 3> getNormalVector(array<int, 3> cell) const;
+    array<double, 3> getNormalVector(array<int, 3> cell,  bool useInterpolation = true) const;
     array<double, 3> getTangentialVector(array<double, 3> normal) const;
     double getContactAngle(array<int, 3> cell);
     void referenceCurvatureExplicitEuler(double dt, int timestep, double initCurvature);
