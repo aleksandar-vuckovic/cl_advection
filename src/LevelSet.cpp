@@ -261,7 +261,7 @@ array<double, 3> LevelSet::getNormalVector(array<int, 3> cell, bool useInterpola
  * @param normal The corresponding normal vector
  * @return The tangential vector
  */
-array<double, 3> LevelSet::getTangentialVector(array<double, 3> normal) const {
+Vector LevelSet::getTangentialVector(Vector normal) const {
     double tau1, tau2, tau3;
 
     if (normal[1] > 1e-12) {
@@ -274,10 +274,13 @@ array<double, 3> LevelSet::getTangentialVector(array<double, 3> normal) const {
         tau3 = 0;
     }
 
-    array<double, 3> tau = {tau1, tau2, tau3};
+    Vector tau = {tau1, tau2, tau3};
     tau = tau/abs(tau);
 
-    return tau;
+    if (tau[1] > 0)
+        return tau;
+    else
+        return -1*tau;
 }
 
 /**
@@ -289,7 +292,7 @@ array<double, 3> LevelSet::getTangentialVector(array<double, 3> normal) const {
  * @return The contact angle in degrees
  */
 double LevelSet::getContactAngle(array<int, 3> cell) {
-    array<double, 3> normal = getNormalVector(cell);
+    Vector normal = getNormalVector(cell);
     return acos(normal[1]);
 }
 
@@ -361,7 +364,6 @@ void LevelSet::referenceAngleLinearField(double dt, int last_timestep, double th
  */
 void LevelSet::referenceCurvatureExplicitEuler(double dt, int last_timestep, double initCurvature) {
     double curvature = initCurvature;
-
 
     double v0 = field->getV0();
     double azimuthalAngle = field->getAzimuthalAngle();
@@ -453,7 +455,7 @@ double LevelSet::getCurvatureDivergence(array<int, 3> cell) const {
         sidelengthZ = 1;
 
     // Declare a field of normal vectors
-    Field<array<double, 3> > localField(2*local + 1, local + 1, sidelengthZ);
+    Field<Vector> localField(2*local + 1, local + 1, sidelengthZ);
 
     for (int x = -local; x <= local; x++)
         for (int y = 0; y <= local; y++)
@@ -556,14 +558,14 @@ double LevelSet::getCurvatureDivergence(array<int, 3> cell) const {
                     - 3.0*localField.at(local, 0, sidelengthZ/2)[2] ) / (2*dy);
     }
 
-    array<double, 3> normal = localField.at(local, 0, sidelengthZ/2);
-    array<double, 3> tau = getTangentialVector(normal);
+    Vector normal = localField.at(local, 0, sidelengthZ/2);
+    Vector tau = getTangentialVector(normal);
 
-    array<double, 3> row1 = {dnx_dx, dnx_dy, dnx_dz};
-    array<double, 3> row2 = {dny_dx, dny_dy, dny_dz};
-    array<double, 3> row3 = {dnz_dx, dnz_dy, dnz_dz};
+    Vector row1 = {dnx_dx, dnx_dy, dnx_dz};
+    Vector row2 = {dny_dx, dny_dy, dny_dz};
+    Vector row3 = {dnz_dx, dnz_dy, dnz_dz};
 
-    array< array<double, 3>, 3> gradNormal = {row1, row2, row3};
+    Matrix gradNormal = {row1, row2, row3};
 
     double kappa = -1*(gradNormal*tau)*tau;
 
@@ -707,16 +709,9 @@ void LevelSet::writeToFile(double dt, int timestep, int total_timesteps, int tot
  * @param t The time
  */
 void LevelSet::writeTangentialVectorToFile(double dt, int timestep) {
-    double *tau = new double[3];
-    double *fieldTau = new double[3];
-
-    array<double, 3> CP = positionReference[timestep];
-    array<double, 3> normal = getNormalVector(getContactPointIndices(timestep));
-
-    for (int i = 0; i < 3; i++) {
-        tau[i] = normal[i];
-        fieldTau[i] = CP[i];
-    }
+    double *fieldTau = positionReference[timestep].data();
+    Vector normal = getNormalVector(getContactPointIndices(timestep));
+    Vector tangential = getTangentialVector(normal);
 
     std::string filenameTau = "data/Tau_t=" + std::to_string(dt*timestep) + ".bin";
     std::string filenameFieldTau = "data/CP_reference_t=" + std::to_string(timestep*dt) +".bin";
@@ -724,13 +719,10 @@ void LevelSet::writeTangentialVectorToFile(double dt, int timestep) {
     FILE *fieldTauFile;
     tauFile = fopen(filenameTau.data(), "wb");
     fieldTauFile = fopen(filenameFieldTau.data(), "wb");
-    fwrite(tau, sizeof(double), 3, tauFile);
+    fwrite(tangential.data(), sizeof(double), 3, tauFile);
     fwrite(fieldTau, sizeof(double), 3, fieldTauFile);
     fclose(tauFile);
     fclose(fieldTauFile);
-
-    delete[] tau;
-    delete[] fieldTau;
 }
 
 /**
