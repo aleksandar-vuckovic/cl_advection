@@ -50,7 +50,8 @@ VelocityField::VelocityField(std::string name, double v0, double w0, double x0, 
 	this->dx = dx;
 	this->dy = dy;
 	this->dz = dz;
-    this->azimuthalAngle = azimuthalAngle/180 * M_PI;
+    azimuthalAngle = azimuthalAngle/180 * M_PI;
+    this->azimuthalAngle = azimuthalAngle;
 
     // Matrix for rotation around y-axis
     array<double, 3> row1 = { cos(azimuthalAngle), 0, -sin(azimuthalAngle)};
@@ -114,7 +115,7 @@ array<double, 3> VelocityField::at(double t, double x, double y, double z) {
 	} else if (name == "quadraticField") {
 	    return rotMatrix * quadraticField(x, y, z, v0, c1, c2, c3);
     } else if (name == "strawberryField") {
-        return strawberryField(x, y, z, v0, w0, x0, y0, z0, c1, c2, c3, c4, c5, c6);
+        return rotMatrix*strawberryField(x, y, z, v0, w0, x0, y0, z0, c1, c2, c3, c4, c5, c6);
     }
 	return {0, 0, 0};
 }
