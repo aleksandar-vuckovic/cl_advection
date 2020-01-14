@@ -25,7 +25,11 @@ LevelSet::LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz
 		this->trackedCP = trackedCP;
         expAngle = expAngle/180*M_PI;
 
-        array<double, 3> initCP = getInitCP(expCP, 0.001);
+        array<double, 3> initCP;
+        if (numZ == 1)
+            initCP = expCP;
+        else
+            initCP = getInitCP(expCP, 0.001);
 		// Calculate reference data
         contactPointExplicitEuler(dt, timesteps, initCP);
         referenceNormalExplicitEuler(dt, timesteps, expNormalVec);
@@ -69,11 +73,11 @@ array<double, 3> LevelSet::getInitCP(array<double, 3> expcp, double epsilon) {
  * @param timestep The index of the timestep
  * @param initCP The position of the contact point at timestep 0
  */
-void LevelSet::contactPointExplicitEuler(double dt, int last_timestep, array<double, 3> initCP) {
-    array<double, 3> &temp = initCP;
+void LevelSet::contactPointExplicitEuler(double dt, int last_timestep, Vector initCP) {
+    Vector &temp = initCP;
     for (int i = 0; i < last_timestep; i++) {
-    	temp = temp + dt*field->at(i*dt, temp[0], temp[1], temp[2]);
-    	positionReference[i] = temp;
+        positionReference[i] = temp;
+        temp = temp + dt*field->at(i*dt, temp[0], temp[1], temp[2]);
     }
 }
 
@@ -368,28 +372,28 @@ void LevelSet::referenceCurvatureExplicitEuler(double dt, int last_timestep, dou
     double v0 = field->getV0();
     double azimuthalAngle = field->getAzimuthalAngle();
 
-    array<double, 3> rotRow1 = { cos(azimuthalAngle), 0, -sin(azimuthalAngle)};
-    array<double, 3> rotRow2 = {0, 1, 0};
-    array<double, 3> rotRow3 = {sin(azimuthalAngle), 0, cos(azimuthalAngle)};
+    Vector rotRow1 = { cos(azimuthalAngle), 0, -sin(azimuthalAngle)};
+    Vector rotRow2 = {0, 1, 0};
+    Vector rotRow3 = {sin(azimuthalAngle), 0, cos(azimuthalAngle)};
 
     array<array<double, 3>, 3> rotMatrix = {rotRow1, rotRow2, rotRow3};
 
     for (int i = 0; i < last_timestep; i++) {
         curvatureReference[i] = curvature;
-        array<double, 3> CP = positionReference[i];
-        array<double, 3> normal = normalReference[i];
-        array<double, 3> tau = getTangentialVector(normal);
+        Vector CP = positionReference[i];
+        Vector normal = normalReference[i];
+        Vector tau = getTangentialVector(normal);
 
         // temp is the second derivative of v in the tau direction
-        array<double, 3> temp;
+        Vector temp;
         if (field->getName() == "shearField") {
-            array<double, 3> row1 = {v0*M_PI*M_PI*sin(M_PI*CP[0])*cos(M_PI*CP[1])*tau[0] + v0*M_PI*M_PI*cos(M_PI*CP[0])*sin(M_PI*CP[1])*tau[1],
+            Vector row1 = {v0*M_PI*M_PI*sin(M_PI*CP[0])*cos(M_PI*CP[1])*tau[0] + v0*M_PI*M_PI*cos(M_PI*CP[0])*sin(M_PI*CP[1])*tau[1],
                                     v0*M_PI*M_PI*cos(M_PI*CP[0])*sin(M_PI*CP[1])*tau[0] + v0*M_PI*M_PI*sin(M_PI*CP[0])*cos(M_PI*CP[1])*tau[1],
                                     0};
-            array<double, 3> row2 = {-v0*M_PI*M_PI*cos(M_PI*CP[0])*sin(M_PI*CP[1])*tau[0] - v0*M_PI*M_PI*sin(M_PI*CP[0])*cos(M_PI*CP[1])*tau[1],
+            Vector row2 = {-v0*M_PI*M_PI*cos(M_PI*CP[0])*sin(M_PI*CP[1])*tau[0] - v0*M_PI*M_PI*sin(M_PI*CP[0])*cos(M_PI*CP[1])*tau[1],
                                      -v0*M_PI*M_PI*sin(M_PI*CP[0])*cos(M_PI*CP[1])*tau[0]   -v0*M_PI*M_PI*cos(M_PI*CP[0])*sin(M_PI*CP[1])*tau[1],
                                     0};
-            array<double, 3> row3 = {0, 0, 0};
+            Vector row3 = {0, 0, 0};
             Matrix M = {row1, row2, row3};
             temp = rotMatrix*M*tau;
         } else if (field->getName() == "navierField" || field->getName() == "timeDependentNavierField" || field->getName() == "strawberryField") {

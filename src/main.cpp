@@ -241,10 +241,14 @@ int main() {
     }
     
     std::ofstream positionFile("position.csv");
+    positionFile.precision(16);
     std::ofstream angleFile("contactAngle.csv");
+    angleFile.precision(16);
     std::ofstream curvatureFile;
-    if (calculateCurvature)
+    if (calculateCurvature) {
         curvatureFile = std::ofstream("curvature.csv");
+        curvatureFile.precision(16);
+    }
     double sumAtStart = Phi.sumLevelSet();
 
     // XMF file for Paraview
@@ -283,10 +287,10 @@ int main() {
         std::cout << "Time: " << std::to_string(i*dt) << "\n";
 
         if (numZ == 1) {
-            positionFile << std::to_string(i*dt) << ", " << std::to_string(newCPActual[0]) << ", " << std::to_string(newCPReference[0]) << std::endl;
+            positionFile << i*dt << ", " << newCPActual[0] << ", " << newCPReference[0] << std::endl;
         } else {
-            positionFile << std::to_string(i*dt) << ", "
-                         << std::to_string(newCPReference[0]) << ", " << std::to_string(newCPReference[1]) << ", " << std::to_string(newCPReference[2]) << std::endl;
+            positionFile << i*dt << ", "
+                         << newCPReference[0] << ", " << newCPReference[1] << ", " << newCPReference[2] << std::endl;
         }
 
         std::cout << "Actual: " << std::to_string(angleActual[i]/(2*M_PI)*360) + "\n";
