@@ -54,7 +54,7 @@ int main(int argc, char **argv) {
     expAngle = v0 = w0 = x0 = y0 = z0 = c1 = c2 = c3 = c4 = c5 = c6 = tau = CFL = writestepsFraction = polarAngle = planeAzimuthalAngle =  fieldAzimuthalAngle = 0;
     
     bool writeField = false, calculateCurvature = false;
-    std::string trackedContactPoint = "left", fieldName = "", geometryType = "sphere";
+    std::string trackedContactPoint = "left", fieldName = "", geometryType = "sphere", outputDirectory = "";
     VelocityField *field = nullptr;
 
     // Read data from Inputfile
@@ -181,25 +181,42 @@ int main(int argc, char **argv) {
     }
 
     static struct option long_options[] = {
-    {"resolution", required_argument, 0, 'r'}
+        {"resolution", required_argument, nullptr, 'r'},
+        {"field", required_argument, nullptr, 'f'},
+        {"CFL",required_argument , nullptr, 'c'},
+        {"output", required_argument, nullptr, 'o'},
+        {nullptr, 0, nullptr, 0}
     };
 
     int opt;
+    extern char* optarg;
     // Parse command line arguments with GNU getopt
     while (true) {
         int option_index;
-        opt = getopt_long(argc, argv, "r", long_options, &option_index);
+        opt = getopt_long(argc, argv, "f:r:c:o:", long_options, &option_index);
 
         if (opt == -1)      //If there are no more options or arguments left, exit the loop
             break;
 
         switch(opt) {
+            case 'f': {
+                fieldName = optarg;
+                break;
+            }
             case 'r': {
                 double resolution = std::stod(optarg);
                 numX = numX * resolution;
                 numY = numY * resolution;
-                numZ = numZ * resolution;
+                if (numZ != 1)
+                    numZ = numZ * resolution;
                 break;
+            }
+            case 'c': {
+                CFL = std::stod(optarg);
+                break;
+            }
+            case 'o': {
+                outputDirectory = optarg;
             }
 
             default:
