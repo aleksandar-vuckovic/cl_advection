@@ -100,11 +100,11 @@ array<double, 3> LevelSet::contactPointLinearField(double t, double c1, double x
 /**
  * Return the indices of the contact point in 2D or the coordinates most closely matching the given parameter.
  * This function works differently for 2D and 3D. If the simulation is 2D, it ignores the input parameter and returns
- * the contact point by checking where the sign of the LevelSet field changes.
+ * the contact point by checking where the sign of the LevelSet field changes.  It uses a convex combination of
+ * neighboring LevelSet values depending on whether the right or the left contact point is being tracked.
  *
  * In 3D, it returns the coordinates of the point according to the reference ODE. In other words, it is assumed that in 3D,
- * the solution exactly matches the actual contact point. It uses a convex combination of 
- * neighboring LevelSet values depending on whether the right or the left contact point is being tracked.
+ * the solution exactly matches the actual contact point.
  *
  * @param point A point in the space of the Level set field.
  * @param indexOnly Whether to return only the indices of the point or its actual coordinates. Default is false.
