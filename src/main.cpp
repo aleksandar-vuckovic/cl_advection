@@ -15,6 +15,7 @@
 #include <string>
 #include <vector>
 #include <chrono>
+#include <getopt.h>   // GNU getopt
 #include "LevelSet.hpp"
 #include "VelocityField.hpp"
 #include "Streamlines.hpp"
@@ -40,7 +41,7 @@ using std::array;
  * expcpX, expcpY, expcpZ, expAngle | The expected coordinates for the initial contact point and the expected initial contact angle. Those are used for the reference solutions.
  * trackedContactPoint | Whether to track the left or right contact point. Only applicable in 2D.
  */
-int main() {
+int main(int argc, char **argv) {
 	auto start = std::chrono::system_clock::now();
 
     int numX, numY, numZ, threads;
@@ -176,8 +177,41 @@ int main() {
                 continue;
             else
                 throw std::invalid_argument("Input parameter \"" + varName + "\" is not set.");
-            }
         }
+    }
+
+    static struct option long_options[] = {
+    {"resolution", required_argument, 0, 'r'}
+    };
+
+    int opt;
+    // Parse command line arguments with GNU getopt
+    while (true) {
+        int option_index;
+        opt = getopt_long(argc, argv, "r", long_options, &option_index);
+
+        if (opt == -1)      //If there are no more options or arguments left, exit the loop
+            break;
+
+        switch(opt) {
+            case 'r': {
+                double resolution = std::stod(optarg);
+                numX = numX * resolution;
+                numY = numY * resolution;
+                numZ = numZ * resolution;
+                break;
+            }
+
+            default:
+                abort();
+
+        }
+    }
+
+    while (optind < argc) {
+        std::cout << "non-option argument" << std::string(argv[optind]) << std::endl;
+        optind++;
+    }
 
   	//Parallel computing
   	omp_set_num_threads(threads);
@@ -241,10 +275,14 @@ int main() {
     }
     
     std::ofstream positionFile("position.csv");
+    positionFile.precision(16);
     std::ofstream angleFile("contactAngle.csv");
+    angleFile.precision(16);
     std::ofstream curvatureFile;
-    if (calculateCurvature)
+    if (calculateCurvature) {
         curvatureFile = std::ofstream("curvature.csv");
+        curvatureFile.precision(16);
+    }
     double sumAtStart = Phi.sumLevelSet();
 
     // XMF file for Paraview
@@ -283,10 +321,10 @@ int main() {
         std::cout << "Time: " << std::to_string(i*dt) << "\n";
 
         if (numZ == 1) {
-            positionFile << std::to_string(i*dt) << ", " << std::to_string(newCPActual[0]) << ", " << std::to_string(newCPReference[0]) << std::endl;
+            positionFile << i*dt << ", " << newCPActual[0] << ", " << newCPReference[0] << std::endl;
         } else {
-            positionFile << std::to_string(i*dt) << ", "
-                         << std::to_string(newCPReference[0]) << ", " << std::to_string(newCPReference[1]) << ", " << std::to_string(newCPReference[2]) << std::endl;
+            positionFile << i*dt << ", "
+                         << newCPReference[0] << ", " << newCPReference[1] << ", " << newCPReference[2] << std::endl;
         }
 
         std::cout << "Actual: " << std::to_string(angleActual[i]/(2*M_PI)*360) + "\n";
