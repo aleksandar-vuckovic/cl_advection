@@ -3,7 +3,6 @@
 
 #include <string>
 #include <array>
-#include "VelocityField.hpp"
 #include "velocityFields.hpp"
 
 using std::array;
@@ -26,7 +25,7 @@ private:
     Matrix rotMatrix;
 	//@}
 
-	/// The kind of velocity field, either navier, navier with cosine modulation or shear.
+    /// The kind of velocity field, either navier, navier with cosine modulation, shear or strawberry.
 	std::string name;
 	///The maximum absolute value of the field on the space it is defined on.
 	double maxAbsoluteValue;
