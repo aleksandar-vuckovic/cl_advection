@@ -288,8 +288,10 @@ int main(int argc, char **argv) {
     else if (geometryType == "plane") 
         Phi.initPlane(center, polarAngle, planeAzimuthalAngle);
 
-    int sysRet = system("mkdir data");
-
+    std::string temp = "mkdir " + outputDirectory;
+    int sysRet = system(temp.data());
+    temp = "mkdir " + outputDirectory + "/data";
+    sysRet = system(temp.data());
     if (sysRet == 256) {
     	std::cout << "Overwriting folder \"data\".\n";
     }
