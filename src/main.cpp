@@ -217,6 +217,8 @@ int main(int argc, char **argv) {
             }
             case 'o': {
                 outputDirectory = optarg;
+                if (outputDirectory.back() != '/')
+                    outputDirectory = outputDirectory + '/';
             }
 
             default:
@@ -271,8 +273,8 @@ int main(int argc, char **argv) {
     array<double, 3> center = {centerX, centerY, centerZ};
     array<double, 3> expCP = {expcpX, expcpY, expcpZ};
 
-    LevelSet Phi(numX, numY, numZ, dx, dy, dz, field, trackedContactPoint, dt, timesteps, expCP, expNormalVec, expAngle, initCurvature);
-    Streamlines streamlines(numX, numY, numZ, *field, dt);
+    LevelSet Phi(numX, numY, numZ, dx, dy, dz, field, trackedContactPoint, dt, timesteps, expCP, expNormalVec, expAngle, initCurvature, outputDirectory);
+    Streamlines streamlines(numX, numY, numZ, *field, dt, outputDirectory);
 
     std::vector< array<double, 3>> positionTheoretical = Phi.getPositionReference();
     std::vector<double> angleTheoretical = Phi.getAngleReference();
@@ -291,20 +293,20 @@ int main(int argc, char **argv) {
     	std::cout << "Overwriting folder \"data\".\n";
     }
     
-    std::ofstream positionFile("position.csv");
+    std::ofstream positionFile(outputDirectory + "position.csv");
     positionFile.precision(16);
-    std::ofstream angleFile("contactAngle.csv");
+    std::ofstream angleFile(outputDirectory + "contactAngle.csv");
     angleFile.precision(16);
     std::ofstream curvatureFile;
     if (calculateCurvature) {
-        curvatureFile = std::ofstream("curvature.csv");
+        curvatureFile = std::ofstream(outputDirectory + "curvature.csv");
         curvatureFile.precision(16);
     }
     double sumAtStart = Phi.sumLevelSet();
 
     // XMF file for Paraview
-    std::ofstream MainXmfFile("data/Phi.xmf");
-    std::ofstream tauXmfFile("data/Tau.xmf");
+    std::ofstream MainXmfFile(outputDirectory + "data/Phi.xmf");
+    std::ofstream tauXmfFile(outputDirectory + "data/Tau.xmf");
 
 
 

@@ -16,13 +16,15 @@
  * @param trackedCP Which contact point to track. Only applicable in 2D.
  */
 LevelSet::LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz, VelocityField *field,
-        std::string trackedCP, double dt, int timesteps, array<double, 3> expCP, array<double, 3> expNormalVec, double expAngle, double initCurvature)
+        std::string trackedCP, double dt, int timesteps, array<double, 3> expCP, array<double, 3> expNormalVec, double expAngle,
+        double initCurvature, std::string outputDirectory)
         : Field<double>(numX, numY, numZ), positionReference(timesteps), normalReference(timesteps), angleReference(timesteps), curvatureReference(timesteps) {
 		this->dx = dx;
 		this->dy = dy;
 		this->dz = dz;
 		this->field = field;
 		this->trackedCP = trackedCP;
+        this->outputDirectory = outputDirectory;
         expAngle = expAngle/180*M_PI;
 
         array<double, 3> initCP;
@@ -636,14 +638,15 @@ void LevelSet::writeToFile(double dt, int timestep, int total_timesteps, int tot
 
         //Write field coordinates into binary file
         FILE *fieldFile;
-        fieldFile = fopen("data/field.bin", "wb");
+        temp = outputDirectory + "data/field.bin";
+        fieldFile = fopen(temp.data(), "wb");
         fwrite(pointCoordinates, sizeof(double), Npoints*3, fieldFile);
         fclose(fieldFile);
 
     }
 
     FILE *PhiFile;
-    std::string filename = "data/Phi_t="+ std::to_string(timestep*dt)+".bin";
+    std::string filename = outputDirectory + "data/Phi_t="+ std::to_string(timestep*dt)+".bin";
     PhiFile = fopen(filename.data(), "wb");
 	fwrite(pointPhiValues, sizeof(double), Npoints, PhiFile);
 	fclose(PhiFile);
@@ -717,8 +720,8 @@ void LevelSet::writeTangentialVectorToFile(double dt, int timestep) {
     Vector normal = getNormalVector(getContactPointIndices(timestep));
     Vector tangential = getTangentialVector(normal);
 
-    std::string filenameTau = "data/Tau_t=" + std::to_string(dt*timestep) + ".bin";
-    std::string filenameFieldTau = "data/CP_reference_t=" + std::to_string(timestep*dt) +".bin";
+    std::string filenameTau = outputDirectory + "data/Tau_t=" + std::to_string(dt*timestep) + ".bin";
+    std::string filenameFieldTau = outputDirectory + "data/CP_reference_t=" + std::to_string(timestep*dt) +".bin";
     FILE *tauFile;
     FILE *fieldTauFile;
     tauFile = fopen(filenameTau.data(), "wb");

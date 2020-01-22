@@ -17,7 +17,8 @@ using std::vector;
  * @param vel The velocity field to generate the streamlines on.
  * @param dt Timestep width to use for streamline calculation.
  */
-Streamlines::Streamlines(int numX, int numY, int numZ, VelocityField& vel, double dt) : Field<int>(numX, numY, numZ) {
+Streamlines::Streamlines(int numX, int numY, int numZ, VelocityField& vel, double dt, std::string outputDirectory) : Field<int>(numX, numY, numZ) {
+    this->outputDirectory = outputDirectory;
 	// Array to store streamline points for 10 streamlines
 	array<vector< array<double, 3>> , 10> streamlines;
 

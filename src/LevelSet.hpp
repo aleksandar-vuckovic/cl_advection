@@ -19,7 +19,7 @@ private:
     VelocityField *field;
 
     // Decides which contact point to track. Only applicable in 2D.
-    std::string trackedCP;
+    std::string trackedCP, outputDirectory;
 
     /**
     *   Reference data..
@@ -33,7 +33,7 @@ private:
 
 public:
     LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz, VelocityField *field, std::string trackedCP, double dt, int timesteps,
-            array<double, 3> expcp, array<double, 3> expNormalVec, double expAngle, double initCurvature);
+            array<double, 3> expcp, array<double, 3> expNormalVec, double expAngle, double initCurvature, std::string outputDirectory);
 
     array<double, 3> getInitCP(array<double, 3> expcp, double epsilon);
     void contactPointExplicitEuler(double dt, int timestep, array<double, 3> initCP);
