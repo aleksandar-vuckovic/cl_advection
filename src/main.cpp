@@ -219,6 +219,7 @@ int main(int argc, char **argv) {
                 outputDirectory = optarg;
                 if (outputDirectory.back() != '/')
                     outputDirectory = outputDirectory + '/';
+                break;
             }
 
             default:
