@@ -288,7 +288,7 @@ int main(int argc, char **argv) {
     else if (geometryType == "plane") 
         Phi.initPlane(center, polarAngle, planeAzimuthalAngle);
 
-    std::string temp = "mkdir " + outputDirectory;
+    std::string temp = "mkdir -p " + outputDirectory;
     int sysRet = system(temp.data());
     temp = "mkdir " + outputDirectory + "/data";
     sysRet = system(temp.data());
