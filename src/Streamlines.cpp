@@ -66,7 +66,8 @@ Streamlines::Streamlines(int numX, int numY, int numZ, VelocityField& vel, doubl
 void Streamlines::writeToFile() {
 	int Npoints = numX*numY*numZ;
 	FILE *streamfile;
-	streamfile = fopen("data/stream.bin", "wb");
+    std::string temp = outputDirectory + "data/stream.bin";
+    streamfile = fopen(temp.data(), "wb");
 	fwrite(getData().data(), sizeof(int), Npoints, streamfile);
 	fclose(streamfile);
 }
