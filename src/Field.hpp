@@ -19,10 +19,13 @@ protected:
     ///@{
     int numX, numY, numZ;
     ///@}
+
+    double dx, dy, dz;
 public:
-    Field(int numX, int numY, int numZ);
-    T& at(int x, int y, int z);
-    const T& at(int x, int y, int z) const;
+    Field(double dx, double dy, double dz,int numX, int numY, int numZ);
+    T& at(int i, int j, int k);
+    const T& at(int i, int j, int k) const;
+    const T at(double x, double y, double z) const;
     const std::vector<T>& getData() const;
 
 };

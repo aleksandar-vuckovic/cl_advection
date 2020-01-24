@@ -11,10 +11,13 @@
  * @param numX, numY, numZ The number of cells in each direction
  */
 template<class T>
-Field<T>::Field(int numX, int numY, int numZ) : data(numX*numY*numZ){
+Field<T>::Field(double dx, double dy, double dz,int numX, int numY, int numZ) : data(numX*numY*numZ){
     this->numX = numX;
     this->numY = numY;
     this->numZ = numZ;
+    this->dx = dx;
+    this->dy = dy;
+    this->dz = dz;
 }
 
 /**
@@ -24,8 +27,8 @@ Field<T>::Field(int numX, int numY, int numZ) : data(numX*numY*numZ){
  * @return The value of T at the point
  */
 template<class T>
-T& Field<T>::at(int x, int y, int z) {
-    return data[x + y*numX + z*numX*numY];
+T& Field<T>::at(int i, int j, int k) {
+    return data[i + j*numX + k*numX*numY];
 }
 
 /**
@@ -37,8 +40,21 @@ T& Field<T>::at(int x, int y, int z) {
  * @return The value of T a the point
  */
 template<class T>
-const T& Field<T>::at(int x, int y, int z) const {
-    return data[x + y*numX + z*numX*numY];
+const T& Field<T>::at(int i, int j, int k) const {
+    return data[i + j*numX + k*numX*numY];
+}
+
+template<class T>
+const T Field<T>::at(double x, double y, double z) const {
+    int i = (int)floor(x/dx);
+    int j  =(int)ceil(y/dy);
+    int k = (int)floor(z/dz);
+
+    double lambda = x/dx - (i + 1);
+    double mu = z/dz - (k + 1);
+
+    return     mu * (lambda * at(i, j, k) + (1 - lambda)*at(i + 1, j, k))
+       + (1 - mu) * (lambda * at(i, j, k + 1) + (1 - lambda)*at(i + 1, j, k + 1));
 }
 
 template<class T>

@@ -15,10 +15,11 @@
  * @param field Pointer to the velocity field object acting on the levelset field
  * @param trackedCP Which contact point to track. Only applicable in 2D.
  */
-LevelSet::LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz, VelocityField *field,
+LevelSet::LevelSet(int numX, int numY, int numZ, VelocityField *field,
         std::string trackedCP, double dt, int timesteps, array<double, 3> expCP, array<double, 3> expNormalVec, double expAngle,
         double initCurvature, std::string outputDirectory)
-        : Field<double>(numX, numY, numZ), positionReference(timesteps), normalReference(timesteps), angleReference(timesteps), curvatureReference(timesteps) {
+        : Field<double>(double dx, double dy, double dz, numX, numY, numZ),
+          positionReference(timesteps), normalReference(timesteps), angleReference(timesteps), curvatureReference(timesteps) {
 		this->dx = dx;
 		this->dy = dy;
 		this->dz = dz;
@@ -850,6 +851,7 @@ void LevelSet::calculateNextTimestep(double dt, int timestep) {
                     switch(dir) {
                     case 0:
                         sp = field->at(timestep*dt, (x+1/2)*dx, (y+1)*dy, (z+1/2)*dz) * upNormal;
+                        sp = field->>at(timestep*dt, (x*dx, (y + 1/2)*dy, z*dz))
                         if (y == numY - 1) {
                             flux += sp*tempPhi.at(x, y, z)*dx*dz;
                         }

@@ -13,7 +13,7 @@
 class LevelSet : Field<double> {
 private:
     //The width of a cell in each direction
-    double dx, dy, dz, dt;
+    double dt;
 
     // A pointer to the VelocityField acting on the LevelSet field.
     VelocityField *field;
