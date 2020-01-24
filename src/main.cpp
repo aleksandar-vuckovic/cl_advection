@@ -185,6 +185,7 @@ int main(int argc, char **argv) {
         {"field", required_argument, nullptr, 'f'},
         {"CFL",required_argument , nullptr, 'c'},
         {"output", required_argument, nullptr, 'o'},
+        {"threads", required_argument, nullptr, 't'},
         {nullptr, 0, nullptr, 0}
     };
 
@@ -219,6 +220,10 @@ int main(int argc, char **argv) {
                 outputDirectory = optarg;
                 if (outputDirectory.back() != '/')
                     outputDirectory = outputDirectory + '/';
+                break;
+            }
+            case 't': {
+                threads = std::stoi(optarg);
                 break;
             }
 
