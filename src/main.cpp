@@ -237,7 +237,7 @@ int main(int argc, char **argv) {
   	omp_set_num_threads(threads);
 
     field = new VelocityField(fieldName, v0, w0, x0, y0, z0, c1, c2, c3, c4, c5, c6,
-                              tau, 0, lenX, 0, lenY, 0, lenZ, lenX/numX,lenY/numY,lenZ/numZ, fieldAzimuthalAngle);
+                              tau, 0, lenX, 0, lenY, 0, lenZ, lenX/numX,lenY/numY,lenZ/numZ, fieldAzimuthalAngle, outputDirectory);
 
     double dx = lenX/numX;
     double dy = lenY/numY;

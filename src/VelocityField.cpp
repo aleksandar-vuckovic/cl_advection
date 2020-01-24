@@ -27,7 +27,7 @@ using std::array;
 VelocityField::VelocityField(std::string name, double v0, double w0, double x0, double y0, double z0,
                              double c1, double c2, double c3, double c4, double c5, double c6, double tau,
                              double xmin, double xmax, double ymin, double ymax, double zmin, double zmax,
-                             double dx, double dy, double dz, double azimuthalAngle) {
+                             double dx, double dy, double dz, double azimuthalAngle, std::string outputDirectory) {
 	this->v0 = v0;
     this->w0 = w0;
     this->x0 = x0;
@@ -52,6 +52,7 @@ VelocityField::VelocityField(std::string name, double v0, double w0, double x0, 
 	this->dz = dz;
     azimuthalAngle = azimuthalAngle/180 * M_PI;
     this->azimuthalAngle = azimuthalAngle;
+    this->outputDirectory = outputDirectory;
 
     // Matrix for rotation around y-axis
     array<double, 3> row1 = { cos(azimuthalAngle), 0, -sin(azimuthalAngle)};
@@ -176,7 +177,7 @@ void VelocityField::writeToFile(double t) {
 		}
 	}
 
-	std::string filename = "data/Vel_t=" + std::to_string(t) + ".bin";
+    std::string filename = outputDirectory + "data/Vel_t=" + std::to_string(t) + ".bin";
 	FILE *velFile;
 	velFile = fopen(filename.data(), "wb");
 	fwrite(fieldValues, sizeof(double), numX*numY*numZ*3, velFile);
