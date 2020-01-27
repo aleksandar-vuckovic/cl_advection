@@ -14,7 +14,7 @@ class Streamlines : Field<int> {
 private:
     std::string outputDirectory;
 public:
-    Streamlines(int numX, int numY, int numZ, VelocityField& vel, double dt, std::string outputDirectory);
+    Streamlines(int numX, int numY, int numZ, double dx, double dy, double dz, VelocityField* field, double dt, std::string outputDirectory);
 	void writeToFile();
 };
 

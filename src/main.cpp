@@ -280,7 +280,7 @@ int main(int argc, char **argv) {
     array<double, 3> expCP = {expcpX, expcpY, expcpZ};
 
     LevelSet Phi(numX, numY, numZ, dx, dy, dz, field, trackedContactPoint, dt, timesteps, expCP, expNormalVec, expAngle, initCurvature, outputDirectory);
-    Streamlines streamlines(numX, numY, numZ, *field, dt, outputDirectory);
+    Streamlines streamlines(numX, numY, numZ, dx, dy, dz, field, dt, outputDirectory);
 
     std::vector< array<double, 3>> positionTheoretical = Phi.getPositionReference();
     std::vector<double> angleTheoretical = Phi.getAngleReference();
@@ -294,7 +294,9 @@ int main(int argc, char **argv) {
         Phi.initPlane(center, polarAngle, planeAzimuthalAngle);
 
     std::string temp = "mkdir -p " + outputDirectory;
-    int sysRet = system(temp.data());
+    int sysRet;
+    if (outputDirectory != "")
+        sysRet = system(temp.data());
     temp = "mkdir " + outputDirectory + "data";
     sysRet = system(temp.data());
     if (sysRet == 256) {
@@ -362,7 +364,10 @@ int main(int argc, char **argv) {
                 
         
         if (calculateCurvature) {
-            curvatureActualDivergence[i] = Phi.getCurvatureDivergence(CP_indices);
+            if (numZ == 1)
+                curvatureActualDivergence[i] = Phi.getCurvatureInterpolated(i);
+            else
+                curvatureActualDivergence[i] = Phi.getCurvatureDivergence(CP_indices);
 
             curvatureFile << std::to_string(i*dt) + ", "
                     + std::to_string(curvatureActualDivergence[i]) + ", "

@@ -22,7 +22,7 @@ protected:
 
     double dx, dy, dz;
 public:
-    Field(double dx, double dy, double dz,int numX, int numY, int numZ);
+    Field(int numX, int numY, int numZ, double dx, double dy, double dz);
     T& at(int i, int j, int k);
     const T& at(int i, int j, int k) const;
     const T at(double x, double y, double z) const;

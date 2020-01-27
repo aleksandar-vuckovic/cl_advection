@@ -1,5 +1,6 @@
 #ifndef FIELD_CPP
 #define FIELD_CPP
+#include <cmath>
 #include "Field.hpp"
 
 /**
@@ -11,7 +12,7 @@
  * @param numX, numY, numZ The number of cells in each direction
  */
 template<class T>
-Field<T>::Field(double dx, double dy, double dz,int numX, int numY, int numZ) : data(numX*numY*numZ){
+Field<T>::Field(int numX, int numY, int numZ, double dx, double dy, double dz) : data(numX*numY*numZ){
     this->numX = numX;
     this->numY = numY;
     this->numZ = numZ;

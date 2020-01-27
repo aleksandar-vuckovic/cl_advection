@@ -32,14 +32,15 @@ private:
     std::vector<double> curvatureReference;
 
 public:
-    LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz, VelocityField *field, std::string trackedCP, double dt, int timesteps,
-            array<double, 3> expcp, array<double, 3> expNormalVec, double expAngle, double initCurvature, std::string outputDirectory);
+    LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz, VelocityField *field,
+            std::string trackedCP, double dt, int timesteps, array<double, 3> expCP, array<double, 3> expNormalVec, double expAngle,
+            double initCurvature, std::string outputDirectory);
 
     array<double, 3> getInitCP(array<double, 3> expcp, double epsilon);
     void contactPointExplicitEuler(double dt, int timestep, array<double, 3> initCP);
     array<double, 3> contactPointLinearField(double t, double c1, double x0, double v0);
-    array<double, 3> getContactPoint(int timestep, bool indexOnly = false);
-    array<int, 3> getContactPointIndices(int timestep);
+    array<double, 3> getContactPoint(int timestep, bool indexOnly = false) const;
+    array<int, 3> getContactPointIndices(int timestep) const;
     void referenceNormalExplicitEuler(double dt, int timestep, array<double, 3> n_sigma_init);
     void referenceAngleLinearField(double dt, int last_timestep, double theta0);
     array<double, 3> getNormalVector(array<int, 3> cell,  bool useInterpolation = true) const;
@@ -49,6 +50,7 @@ public:
     void referenceCurvatureLinearField(double dt, int timesteps, double initCurvature);
     void referenceCurvatureQuadraticField(double dt, int timesteps, double initCurvature);
     double getCurvatureDivergence(array<int, 3> cell) const;
+    double getCurvatureInterpolated(int timestep) const;
     void writeToFile(double dt, int timestep, int total_timesteps, int total_writesteps, std::ofstream *mainXmfFile, std::ofstream *tauXmfFile);
     void writeTangentialVectorToFile(double dt, int timestep);
     double sumLevelSet();

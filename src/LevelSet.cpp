@@ -15,14 +15,11 @@
  * @param field Pointer to the velocity field object acting on the levelset field
  * @param trackedCP Which contact point to track. Only applicable in 2D.
  */
-LevelSet::LevelSet(int numX, int numY, int numZ, VelocityField *field,
+LevelSet::LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz, VelocityField *field,
         std::string trackedCP, double dt, int timesteps, array<double, 3> expCP, array<double, 3> expNormalVec, double expAngle,
         double initCurvature, std::string outputDirectory)
-        : Field<double>(double dx, double dy, double dz, numX, numY, numZ),
+        : Field<double>(numX, numY, numZ, dx, dy, dz),
           positionReference(timesteps), normalReference(timesteps), angleReference(timesteps), curvatureReference(timesteps) {
-		this->dx = dx;
-		this->dy = dy;
-		this->dz = dz;
 		this->field = field;
 		this->trackedCP = trackedCP;
         this->outputDirectory = outputDirectory;
@@ -111,13 +108,13 @@ array<double, 3> LevelSet::contactPointLinearField(double t, double c1, double x
  * neighboring LevelSet values depending on whether the right or the left contact point is being tracked.
  *
  * In 3D, it returns the coordinates of the point according to the reference ODE. In other words, it is assumed that in 3D,
- * the solution exactly matches the actual contact point.
+ * the solution of the ODE exactly matches the actual contact point.
  *
  * @param point A point in the space of the Level set field.
  * @param indexOnly Whether to return only the indices of the point or its actual coordinates. Default is false.
  * @return The contact point
  */
-array<double, 3> LevelSet::getContactPoint(int timestep, bool indexOnly /* = false */) {
+array<double, 3> LevelSet::getContactPoint(int timestep, bool indexOnly /* = false */) const {
     if (numZ == 1) {
         if (trackedCP == "left") {
             double initSign = this->at(0, 0, 0)/std::abs(this->at(0, 0, 0));
@@ -126,8 +123,8 @@ array<double, 3> LevelSet::getContactPoint(int timestep, bool indexOnly /* = fal
                     
                     if (indexOnly)
                         return {double(i) + 0.5, 0, 0}; //Add 0.5 to compensate floating-point errors
-                    double alpha = this->at(i,0,0)-this->at(i -1,0,0);
-                    if(std::abs(alpha) < 1E-12) {
+                    double alpha = this->at(i,0,0)-this->at(i - 1, 0, 0);
+                    if(std::abs(alpha) < 1e-12) {
                         throw std::runtime_error("LevelSet::getContactPoint: \nDifference of LevelSet values at contact point too small for convex combination");
                     }
 
@@ -142,7 +139,7 @@ array<double, 3> LevelSet::getContactPoint(int timestep, bool indexOnly /* = fal
                     if (indexOnly)
                         return {double(i) + 0.5, 0, 0};
                     double alpha = this->at(i + 1, 0, 0) - this->at(i, 0, 0);
-                    if(std::abs(alpha) < 1E-12) {
+                    if(std::abs(alpha) < 1e-12) {
                         throw std::runtime_error("LevelSet::getContactPoint: \nDifference of LevelSet values at contact point too small for convex combination");
                     }
 
@@ -177,7 +174,7 @@ array<double, 3> LevelSet::getContactPoint(int timestep, bool indexOnly /* = fal
  * @param timestep The timestep
  * @return The indices of the contact point.
  */
-array<int, 3> LevelSet::getContactPointIndices(int timestep) {
+array<int, 3> LevelSet::getContactPointIndices(int timestep) const {
     array<double, 3> vec = getContactPoint(timestep, true);
     return { int(vec[0]), int(vec[1]), int(vec[2]) };
 }
@@ -206,11 +203,11 @@ array<double, 3> LevelSet::getNormalVector(array<int, 3> cell, bool useInterpola
              alpha = this->at(cell[0],0,0)/(alpha);
 
             //Calculate angle at this cell with finite differences
-            normalX = alpha*(this->at(cell[0], cell[1], cell[2]) - this->at(cell[0]-2, cell[1], cell[2]))/(2*dx)
-            + (1-alpha)*(this->at(cell[0]+1, cell[1], cell[2]) - this->at(cell[0]-1, cell[1], cell[2]))/(2*dx);
-            normalY = alpha*(-this->at(cell[0]-1, cell[1] + 2, cell[2])
-                              + 4.0*this->at(cell[0]-1, cell[1] + 1, cell[2])
-                              - 3.0*this->at(cell[0]-1, cell[1], cell[2]))/(2*dy)
+            normalX = alpha*(this->at(cell[0], cell[1], cell[2]) - this->at(cell[0] - 2, cell[1], cell[2]))/(2*dx)
+            + (1-alpha)*(this->at(cell[0] + 1, cell[1], cell[2]) - this->at(cell[0] - 1, cell[1], cell[2]))/(2*dx);
+            normalY = alpha*(-this->at(cell[0] - 1, cell[1] + 2, cell[2])
+                              + 4.0*this->at(cell[0] - 1, cell[1] + 1, cell[2])
+                              - 3.0*this->at(cell[0] - 1, cell[1], cell[2]))/(2*dy)
                               + (1-alpha)*(-this->at(cell[0], cell[1] + 2, cell[2])
                               + 4.0*this->at(cell[0], cell[1] + 1, cell[2])
                               - 3.0*this->at(cell[0], cell[1], cell[2]))/(2*dy); // second order difference quotient
@@ -462,7 +459,7 @@ double LevelSet::getCurvatureDivergence(array<int, 3> cell) const {
         sidelengthZ = 1;
 
     // Declare a field of normal vectors
-    Field<Vector> localField(2*local + 1, local + 1, sidelengthZ);
+    Field<Vector> localField(2*local + 1, local + 1, sidelengthZ, dx, dy, dz);
 
     for (int x = -local; x <= local; x++)
         for (int y = 0; y <= local; y++)
@@ -577,6 +574,63 @@ double LevelSet::getCurvatureDivergence(array<int, 3> cell) const {
     double kappa = -1*(gradNormal*tau)*tau;
 
     return kappa;
+}
+
+double LevelSet::getCurvatureInterpolated(int timestep) const {
+
+    double curvature;
+
+    if (numZ == 1) {
+        array<int, 3> cell = getContactPointIndices(timestep);
+        if (trackedCP == "left") {
+             // find root of phi, alpha: coefficient for convex combination
+             double alpha = this->at(cell[0],0,0)-this->at(cell[0]-1,0,0);
+
+             if(std::abs(alpha) < 1E-12){
+               throw std::runtime_error("LevelSet::getCurvatureInterpolated: \nDifference of LevelSet values at contact point too small for convex combination");
+             }
+
+             alpha = this->at(cell[0],0,0)/(alpha);
+
+            //Calculate angle at this cell with finite differences
+            /*normalX = alpha*(this->at(cell[0], cell[1], cell[2]) - this->at(cell[0]-2, cell[1], cell[2]))/(2*dx)
+            + (1-alpha)*(this->at(cell[0]+1, cell[1], cell[2]) - this->at(cell[0]-1, cell[1], cell[2]))/(2*dx);
+            normalY = alpha*(-this->at(cell[0]-1, cell[1] + 2, cell[2])
+                              + 4.0*this->at(cell[0]-1, cell[1] + 1, cell[2])
+                              - 3.0*this->at(cell[0]-1, cell[1], cell[2]))/(2*dy)
+                              + (1-alpha)*(-this->at(cell[0], cell[1] + 2, cell[2])
+                              + 4.0*this->at(cell[0], cell[1] + 1, cell[2])
+                              - 3.0*this->at(cell[0], cell[1], cell[2]))/(2*dy);*/ // second order difference quotient
+
+             curvature = alpha * getCurvatureDivergence({cell[0] - 1, cell[1], cell[2]}) + (1 - alpha) * getCurvatureDivergence(cell);
+
+
+
+        } else if (trackedCP == "right") {
+            double alpha = this->at(cell[0] + 1, 0, 0) - this->at(cell[0], 0, 0);
+            if(std::abs(alpha) < 1E-12) {
+               throw std::runtime_error("LevelSet::getCurvatureInterpolated: \nDifference of LevelSet values at contact point too small for convex combination");
+            }
+
+            alpha = this->at(cell[0] + 1, 0, 0) / alpha;
+
+//            normalX = alpha*(this->at(cell[0] + 1, 0, 0) - this->at(cell[0] - 1, 0, 0))/(2*dx)
+//                    + (1 - alpha)*(this->at(cell[0] + 2, 0, 0) - this->at(cell[0], 0, 0))/(2*dx);
+//            normalY = alpha*(-this->at(cell[0], cell[1] + 2, cell[2])
+//                              + 4.0*this->at(cell[0], cell[1] + 1, cell[2])
+//                              - 3.0*this->at(cell[0], cell[1], cell[2]))/(2*dy)
+//                              + (1 - alpha)*(-this->at(cell[0] + 1, cell[1] + 2, cell[2])
+//                              + 4.0*this->at(cell[0] + 1, cell[1] + 1, cell[2])
+//                              - 3.0*this->at(cell[0] + 1, cell[1], cell[2]))/(2*dy);
+
+            curvature = alpha * getCurvatureDivergence(cell) + (1 - alpha) * getCurvatureDivergence({cell[0] + 1, cell[1], cell[2]});
+        }
+    // In the 3D case, use the reference contact point with the built-in interpolation of the Field<T> class
+    } else {
+        return -1;
+    }
+
+    return curvature;
 }
 
 /**
@@ -851,7 +905,6 @@ void LevelSet::calculateNextTimestep(double dt, int timestep) {
                     switch(dir) {
                     case 0:
                         sp = field->at(timestep*dt, (x+1/2)*dx, (y+1)*dy, (z+1/2)*dz) * upNormal;
-                        sp = field->>at(timestep*dt, (x*dx, (y + 1/2)*dy, z*dz))
                         if (y == numY - 1) {
                             flux += sp*tempPhi.at(x, y, z)*dx*dz;
                         }
