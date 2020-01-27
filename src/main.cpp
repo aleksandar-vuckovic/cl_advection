@@ -194,7 +194,7 @@ int main(int argc, char **argv) {
     // Parse command line arguments with GNU getopt
     while (true) {
         int option_index;
-        opt = getopt_long(argc, argv, "f:r:c:o:", long_options, &option_index);
+        opt = getopt_long(argc, argv, "f:r:c:o:t:", long_options, &option_index);
 
         if (opt == -1)      //If there are no more options or arguments left, exit the loop
             break;
