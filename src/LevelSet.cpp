@@ -259,6 +259,20 @@ array<double, 3> LevelSet::getNormalVector(array<int, 3> cell, bool useInterpola
 }
 
 /**
+ * @brief Get normal vector at given indices.
+ *
+ * This is a wrapper function for getNormalVector(array<int, 3>)
+ * @param i Index along the x-axis
+ * @param j Index along the y-axis
+ * @param k Index along the z-axis
+ * @return
+ */
+array<double, 3> LevelSet::getNormalVector(int i, int j, int k) const {
+    array<int, 3> cell{i, j, k};
+    return getNormalVector(cell);
+}
+
+/**
  * Calculate the tangential vector \f$\tau\f$.
  *
  * This function calculates \f$\tau\f$, where \f$\tau\f$ where and the normal vector \f$\n_{\Sigma}\f$ define a plane perpendicular to the x-z plane.
@@ -292,11 +306,30 @@ Vector LevelSet::getTangentialVector(Vector normal) const {
  * This function uses finite differences to calculate the normal vector of the Level set field at cell and
  * thus calculate the contact angle. This is a wrapper function for LevelSet::getNormalVector. 
  *
- * @param cell The indices of the contact point.
+ * @param timestep The timestep when the contact angle is calculated.
  * @return The contact angle in degrees
  */
-double LevelSet::getContactAngle(array<int, 3> cell) {
-    Vector normal = getNormalVector(cell);
+double LevelSet::getContactAngleInterpolated(int timestep) {
+    Vector normal;
+    Vector cell = getContactPointIndices(timestep);
+    if (numZ == 1)
+        normal = getNormalVector(cell);
+    else {
+        Vector contactPoint = positionReference[timestep];
+        double x = contactPoint[0];
+        double y = contactPoint[1];
+        double z = contactPoint[2];
+        int i = (int)floor(x/dx);
+        int j  =(int)ceil(y/dy);
+        int k = (int)floor(z/dz);
+
+        double lambda = x/dx - (i + 1);
+        double mu = z/dz - (k + 1);
+
+        normal = mu * (lambda * getNormalVector(i, j, k) + (1 - lambda)*getNormalVector(i + 1, j, k))
+           + (1 - mu) * (lambda * getNormalVector(i, j, k + 1) + (1 - lambda)*getNormalVector(i + 1, j, k + 1));
+    }
+
     return acos(normal[1]);
 }
 

@@ -44,8 +44,9 @@ public:
     void referenceNormalExplicitEuler(double dt, int timestep, array<double, 3> n_sigma_init);
     void referenceAngleLinearField(double dt, int last_timestep, double theta0);
     array<double, 3> getNormalVector(array<int, 3> cell,  bool useInterpolation = true) const;
+    array<double, 3> getNormalVector(int i, int j, int k) const;
     array<double, 3> getTangentialVector(array<double, 3> normal) const;
-    double getContactAngle(array<int, 3> cell);
+    double getContactAngleInterpolated(int timestep);
     void referenceCurvatureExplicitEuler(double dt, int timestep, double initCurvature);
     void referenceCurvatureLinearField(double dt, int timesteps, double initCurvature);
     void referenceCurvatureQuadraticField(double dt, int timesteps, double initCurvature);
