@@ -311,7 +311,7 @@ Vector LevelSet::getTangentialVector(Vector normal) const {
  */
 double LevelSet::getContactAngleInterpolated(int timestep) {
     Vector normal;
-    Vector cell = getContactPointIndices(timestep);
+    array<int, 3> cell = getContactPointIndices(timestep);
     if (numZ == 1)
         normal = getNormalVector(cell);
     else {
@@ -319,9 +319,9 @@ double LevelSet::getContactAngleInterpolated(int timestep) {
         double x = contactPoint[0];
         double y = contactPoint[1];
         double z = contactPoint[2];
-        int i = (int)floor(x/dx);
-        int j  =(int)ceil(y/dy);
-        int k = (int)floor(z/dz);
+        int i = floor(x/dx);
+        int j = ceil(y/dy);
+        int k = floor(z/dz);
 
         double lambda = x/dx - (i + 1);
         double mu = z/dz - (k + 1);
@@ -611,7 +611,7 @@ double LevelSet::getCurvatureDivergence(array<int, 3> cell) const {
 
 double LevelSet::getCurvatureInterpolated(int timestep) const {
 
-    double curvature;
+    double curvature = 0;
 
     if (numZ == 1) {
         array<int, 3> cell = getContactPointIndices(timestep);

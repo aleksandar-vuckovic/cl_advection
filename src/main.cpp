@@ -344,7 +344,7 @@ int main(int argc, char **argv) {
         array<int, 3> CP_indices = Phi.getContactPointIndices(i);
 
         // Evaluate te Contact Angle numerically based on Phi
-        angleActual[i] = Phi.getContactAngleInterpolated(CP_indices);
+        angleActual[i] = Phi.getContactAngleInterpolated(i);
 
         // Output to command line and positionFile
         std::cout << "Time: " << std::to_string(i*dt) << "\n";
