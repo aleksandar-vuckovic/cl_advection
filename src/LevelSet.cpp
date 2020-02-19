@@ -323,11 +323,11 @@ double LevelSet::getContactAngleInterpolated(int timestep) {
         int j = ceil(y/dy);
         int k = floor(z/dz);
 
-        double lambda = x/dx - (i + 1);
-        double mu = z/dz - (k + 1);
+        double lambda = x/dx - i;
+        double mu = z/dz - k;
 
-        normal = mu * (lambda * getNormalVector(i, j, k) + (1 - lambda)*getNormalVector(i + 1, j, k))
-           + (1 - mu) * (lambda * getNormalVector(i, j, k + 1) + (1 - lambda)*getNormalVector(i + 1, j, k + 1));
+        normal = (1 - mu) * ((1 - lambda) * getNormalVector(i, j, k) + lambda*getNormalVector(i + 1, j, k))
+           + mu * ((1 - lambda) * getNormalVector(i, j, k + 1) + lambda*getNormalVector(i + 1, j, k + 1));
     }
 
     return acos(normal[1]);
@@ -660,7 +660,14 @@ double LevelSet::getCurvatureInterpolated(int timestep) const {
         }
     // In the 3D case, use the reference contact point with the built-in interpolation of the Field<T> class
     } else {
-        return -1;
+        /*
+        Field<double> curvatureField(2, 2, 1, dx, dy, dz);
+        Vector cp = positionReference[timestep];
+        int x_left = floor(cp[0]/dx);
+        int x_right= ceil(cp[0]/dx);
+        int z_back = floor(cp[2]/dz);
+        int z_front = ceil(cp[2]/dz);
+        curvatureField.at(0, 0, 0) = getCurvatureDivergence() */
     }
 
     return curvature;
