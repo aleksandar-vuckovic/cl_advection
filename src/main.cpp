@@ -339,11 +339,8 @@ int main(int argc, char **argv) {
 
         // Get the the new contact point
         array<double, 3> newCPActual = Phi.getContactPoint(i);
-        
-        // Get the indices of the new contact point
-        array<int, 3> CP_indices = Phi.getContactPointIndices(i);
 
-        // Evaluate te Contact Angle numerically based on Phi
+        // Evaluate the Contact Angle numerically based on Phi
         angleActual[i] = Phi.getContactAngleInterpolated(i);
 
         // Output to command line and positionFile
@@ -364,10 +361,8 @@ int main(int argc, char **argv) {
                 
         
         if (calculateCurvature) {
-            if (numZ == 1)
-                curvatureActualDivergence[i] = Phi.getCurvatureInterpolated(i);
-            else
-                curvatureActualDivergence[i] = Phi.getCurvatureDivergence(CP_indices);
+
+            curvatureActualDivergence[i] = Phi.getCurvatureInterpolated(i);
 
             curvatureFile << std::to_string(i*dt) + ", "
                     + std::to_string(curvatureActualDivergence[i]) + ", "

@@ -50,7 +50,8 @@ public:
     void referenceCurvatureExplicitEuler(double dt, int timestep, double initCurvature);
     void referenceCurvatureLinearField(double dt, int timesteps, double initCurvature);
     void referenceCurvatureQuadraticField(double dt, int timesteps, double initCurvature);
-    double getCurvatureDivergence(array<int, 3> cell) const;
+    double getCurvature(array<int, 3> cell) const;
+    double getCurvature(int i, int j, int k) const;
     double getCurvatureInterpolated(int timestep) const;
     void writeToFile(double dt, int timestep, int total_timesteps, int total_writesteps, std::ofstream *mainXmfFile, std::ofstream *tauXmfFile);
     void writeTangentialVectorToFile(double dt, int timestep);

@@ -46,19 +46,6 @@ const T& Field<T>::at(int i, int j, int k) const {
 }
 
 template<class T>
-const T Field<T>::at(double x, double y, double z) const {
-    int i = floor(x/dx);
-    int j = ceil(y/dy);
-    int k = floor(z/dz);
-
-    double lambda = x/dx - (i + 1);
-    double mu = z/dz - (k + 1);
-
-    return     mu * (lambda * at(i, j, k) + (1 - lambda)*at(i + 1, j, k))
-       + (1 - mu) * (lambda * at(i, j, k + 1) + (1 - lambda)*at(i + 1, j, k + 1));
-}
-
-template<class T>
 const std::vector<T>& Field<T>::getData() const {
 	return data;
 }

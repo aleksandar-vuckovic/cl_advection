@@ -481,7 +481,7 @@ void LevelSet::referenceCurvatureQuadraticField(double dt, int timesteps, double
  * @param cell The indices of the contact point
  * @return The curvature
  */
-double LevelSet::getCurvatureDivergence(array<int, 3> cell) const {
+double LevelSet::getCurvature(array<int, 3> cell) const {
     /* Define what number of cells in each direction(excluding the main cell) are considered local.
        The resulting normal vector field is defined on a cuboid with sidelength 2*local + 1 */
     int local = 2;
@@ -609,6 +609,11 @@ double LevelSet::getCurvatureDivergence(array<int, 3> cell) const {
     return kappa;
 }
 
+double LevelSet::getCurvature(int i, int j, int k) const {
+    array<int, 3> cell{i, j, k};
+    return getCurvature(cell);
+}
+
 double LevelSet::getCurvatureInterpolated(int timestep) const {
 
     double curvature = 0;
@@ -635,7 +640,7 @@ double LevelSet::getCurvatureInterpolated(int timestep) const {
                               + 4.0*this->at(cell[0], cell[1] + 1, cell[2])
                               - 3.0*this->at(cell[0], cell[1], cell[2]))/(2*dy);*/ // second order difference quotient
 
-             curvature = alpha * getCurvatureDivergence({cell[0] - 1, cell[1], cell[2]}) + (1 - alpha) * getCurvatureDivergence(cell);
+             curvature = alpha * getCurvature({cell[0] - 1, cell[1], cell[2]}) + (1 - alpha) * getCurvature(cell);
 
 
 
@@ -656,18 +661,23 @@ double LevelSet::getCurvatureInterpolated(int timestep) const {
 //                              + 4.0*this->at(cell[0] + 1, cell[1] + 1, cell[2])
 //                              - 3.0*this->at(cell[0] + 1, cell[1], cell[2]))/(2*dy);
 
-            curvature = alpha * getCurvatureDivergence(cell) + (1 - alpha) * getCurvatureDivergence({cell[0] + 1, cell[1], cell[2]});
+            curvature = alpha * getCurvature(cell) + (1 - alpha) * getCurvature({cell[0] + 1, cell[1], cell[2]});
         }
     // In the 3D case, use the reference contact point with the built-in interpolation of the Field<T> class
     } else {
-        /*
-        Field<double> curvatureField(2, 2, 1, dx, dy, dz);
-        Vector cp = positionReference[timestep];
-        int x_left = floor(cp[0]/dx);
-        int x_right= ceil(cp[0]/dx);
-        int z_back = floor(cp[2]/dz);
-        int z_front = ceil(cp[2]/dz);
-        curvatureField.at(0, 0, 0) = getCurvatureDivergence() */
+        Vector contactPoint = positionReference[timestep];
+        double x = contactPoint[0];
+        double y = contactPoint[1];
+        double z = contactPoint[2];
+        int i = floor(x/dx);
+        int j = ceil(y/dy);
+        int k = floor(z/dz);
+
+        double lambda = x/dx - i;
+        double mu = z/dz - k;
+
+        curvature = (1 - mu) * ((1 - lambda) * getCurvature(i, j, k) + lambda*getCurvature(i + 1, j, k))
+           + mu * ((1 - lambda) * getCurvature(i, j, k + 1) + lambda*getCurvature(i + 1, j, k + 1));
     }
 
     return curvature;

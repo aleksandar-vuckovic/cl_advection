@@ -25,7 +25,6 @@ public:
     Field(int numX, int numY, int numZ, double dx, double dy, double dz);
     T& at(int i, int j, int k);
     const T& at(int i, int j, int k) const;
-    const T at(double x, double y, double z) const;
     const std::vector<T>& getData() const;
 
 };
