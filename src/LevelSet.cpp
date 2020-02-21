@@ -25,13 +25,8 @@ LevelSet::LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz
         this->outputDirectory = outputDirectory;
         expAngle = expAngle/180*M_PI;
 
-        array<double, 3> initCP;
-        if (numZ == 1)
-            initCP = expCP;
-        else
-            initCP = getInitCP(expCP, 0.001);
 		// Calculate reference data
-        contactPointExplicitEuler(dt, timesteps, initCP);
+        contactPointExplicitEuler(dt, timesteps, expCP);
         referenceNormalExplicitEuler(dt, timesteps, expNormalVec);
 
         if (field->getName() == "quadraticField") {
@@ -75,8 +70,11 @@ array<double, 3> LevelSet::getInitCP(array<double, 3> expcp, double epsilon) {
  */
 void LevelSet::contactPointExplicitEuler(double dt, int last_timestep, Vector initCP) {
     Vector &temp = initCP;
-    for (int i = 0; i < last_timestep; i++) {
-        positionReference[i] = temp;
+    int factor = 100;
+    dt = dt / factor;
+    for (int i = 0; i < factor * last_timestep; i++) {
+        if (i % factor == 0)
+            positionReference[i/factor] = temp;
         temp = temp + dt*field->at(i*dt, temp[0], temp[1], temp[2]);
     }
 }
@@ -717,12 +715,18 @@ void LevelSet::writeToFile(double dt, int timestep, int total_timesteps, int tot
 
     // If it is the first iteration, create coordinate file
     if (timestep == 0) {
-        *xmfFile << "<?xml version=\"1.0\" ?>\n"
-                         "<!DOCTYPE Xdmf SYSTEM \"Xdmf.dtd\" [\n"
-                         "<!ENTITY Npoints \"" + std::to_string(Npoints) + "\">\n" ;
+        *xmfFile    << "<?xml version=\"1.0\" ?>\n"
+                       "<!DOCTYPE Xdmf SYSTEM \"Xdmf.dtd\" [\n"
+                       "<!ENTITY Npoints \"" + std::to_string(Npoints) + "\">\n"
+                       "<!ENTITY numX \"" + std::to_string(numX) + "\">\n"
+                       "<!ENTITY numY \"" + std::to_string(numY) + "\">\n"
+                       "<!ENTITY numZ \"" + std::to_string(numZ) + "\">\n";
         *tauXmfFile << "<?xml version=\"1.0\" ?>\n"
                        "<!DOCTYPE Xdmf SYSTEM \"Xdmf.dtd\" [\n"
-                       "<!ENTITY Npoints \"1\">\n" ;
+                       "<!ENTITY Npoints \"1\">\n"
+                       "<!ENTITY numX \"1\">\n"
+                       "<!ENTITY numY \"1\">\n"
+                       "<!ENTITY numZ \"1\">\n";
 
         std::string temp = "]>\n"
                          "<Xdmf xmlns:xi=\"http://www.w3.org/2001/XInclude\" Version=\"2.0\">\n"
@@ -756,20 +760,24 @@ void LevelSet::writeToFile(double dt, int timestep, int total_timesteps, int tot
 	fwrite(pointPhiValues, sizeof(double), Npoints, PhiFile);
 	fclose(PhiFile);
 
+    // TODO: Testen ob wirklich Reihenfolge numX,numY,numZ in NumberOfElements und Dimensions bei Topology und DataItem vertauscht ist
 
-
-	*xmfFile << "<Grid>\n"
-			 << "<Topology TopologyType=\"Polyvertex\" NumberOfElements=\""+std::to_string(Npoints) +"\"/>\n"
-			 << "<Geometry GeometryType=\"XYZ\"> \n"
-			 << "<DataItem Name=\"points\" Format=\"Binary\" NumberType=\"Float\" Precision=\"8\" Endian=\"Little\" Dimensions=\"&Npoints; 3\">\n"
-			 << "field.bin\n"
-			 << "</DataItem>\n</Geometry>\n"
-			 << "<Attribute Name =\"lvlset\" AttributeType=\"Scalar\" Center=\"Cell\">\n"
-			 << "<DataItem Format=\"Binary\" NumberType=\"Float\" Precision=\"8\"  Endian=\"Little\" Dimensions=\"&Npoints;\">\n"
+     *xmfFile << "<Grid GridType=\"Uniform\">\n"
+             << "<Topology TopologyType=\"3DCoRectMesh\" NumberOfElements=\"&numZ; &numY; &numX;\"/>\n"
+             << "<Geometry GeometryType=\"ORIGIN_DXDYDZ\"> \n"
+             << "<DataItem Format=\"XML\" NumberType=\"Float\" Dimensions=\"3\">"
+             << "0.00 0.00 0.00"
+             << "</DataItem>"
+             << "<DataItem Name=\"points\" NumberType=\"Float\" Dimensions=\"3\">\n"
+             << std::to_string(dx) + " " + std::to_string(dy) + " " + std::to_string(dz)
+             << "</DataItem>\n"
+             << "</Geometry>\n"
+             << "<Attribute Name =\"lvlset\" AttributeType=\"Scalar\" Center=\"Node\">\n"
+             << "<DataItem Format=\"Binary\" NumberType=\"Float\" Precision=\"8\"  Endian=\"Little\" Dimensions=\"&numZ; &numY; &numX;\">\n"
 			 << "Phi_t=" + std::to_string(timestep*dt) +".bin\n"
 			 << "</DataItem></Attribute>\n"
-			 << "<Attribute Name =\"VelocityField\" AttributeType=\"Vector\" Center=\"Cell\">\n"
-			 << "<DataItem Format=\"Binary\" NumberType=\"Float\" Precision=\"8\" Endian=\"Little\" Dimensions=\"&Npoints; 3\">\n";
+             << "<Attribute Name =\"VelocityField\" AttributeType=\"Vector\" Center=\"Node\">\n"
+             << "<DataItem Format=\"Binary\" NumberType=\"Float\" Precision=\"8\" Endian=\"Little\" Dimensions=\"&numZ; &numY; &numX; 3\">\n";
 
     if (field->getName() == "timeDependentNavierField") {
 		*xmfFile << "Vel_t=" + std::to_string(timestep*dt) +".bin\n";
@@ -780,8 +788,8 @@ void LevelSet::writeToFile(double dt, int timestep, int total_timesteps, int tot
 
         *xmfFile << "</DataItem></Attribute>\n"
 
-                 << "<Attribute Name =\"Streamlines\" AttributeType=\"Scalar\" Center=\"Cell\">\n"
-                 << "<DataItem Format=\"Binary\" NumberType=\"Int\" Precision=\"4\" Endian=\"Little\" Dimensions=\"&Npoints;\">\n"
+                 << "<Attribute Name =\"Streamlines\" AttributeType=\"Scalar\" Center=\"Node\">\n"
+                 << "<DataItem Format=\"Binary\" NumberType=\"Int\" Precision=\"4\" Endian=\"Little\" Dimensions=\"&numZ; &numY; &numX;\">\n"
                  << "stream.bin\n"
                  << "</DataItem></Attribute>\n"
                  << "</Grid>\n";
