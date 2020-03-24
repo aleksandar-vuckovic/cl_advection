@@ -16,23 +16,24 @@
  * @param trackedCP Which contact point to track. Only applicable in 2D.
  */
 LevelSet::LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz, VelocityField *field,
-        std::string trackedCP, double dt, int timesteps, array<double, 3> expCP, array<double, 3> expNormalVec, double expAngle,
+        std::string trackedCP, double dt, int timesteps, Vector expCP, Vector expNormalVec, double expAngle,
         double initCurvature, std::string outputDirectory)
         : Field<double>(numX, numY, numZ, dx, dy, dz),
           positionReference(timesteps), normalReference(timesteps), angleReference(timesteps), curvatureReference(timesteps) {
 		this->field = field;
 		this->trackedCP = trackedCP;
         this->outputDirectory = outputDirectory;
+        this->timesteps = timesteps;
         expAngle = expAngle/180*M_PI;
 
 		// Calculate reference data
-        contactPointExplicitEuler(dt, timesteps, expCP);
-        referenceNormalExplicitEuler(dt, timesteps, expNormalVec);
+        contactPointExplicitEuler(dt, this->timesteps, expCP);
+        referenceNormalExplicitEuler(dt, this->timesteps, expNormalVec);
 
         if (field->getName() == "quadraticField") {
-            referenceCurvatureQuadraticField(dt, timesteps, initCurvature);
+            referenceCurvatureQuadraticField(dt, this->timesteps, initCurvature);
         } else {
-            referenceCurvatureExplicitEuler(dt, timesteps, initCurvature);
+            referenceCurvatureExplicitEuler(dt, this->timesteps, initCurvature);
         }
 }
 
@@ -46,12 +47,12 @@ LevelSet::LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz
  * @return The contact point closest to the expected contact point
  *
  */
-array<double, 3> LevelSet::getInitCP(array<double, 3> expcp, double epsilon) {
-    array<double, 3> candidate = {0, 0, 0};
+Vector LevelSet::getInitCP(Vector expcp, double epsilon) {
+    Vector candidate = {0, 0, 0};
     for (int x = 0; x < this->numX; x++)
         for (int y = 0; y < this->numY; y++)
             for (int z = 0; z < this->numZ; z++) {
-                array<double, 3> other = {x*dx, y*dy, z*dz};
+                Vector other = {x*dx, y*dy, z*dz};
                 if (abs(candidate - expcp) > abs(other - expcp) && std::abs(this->at(x, y, z)) < epsilon && y == 0) {
                     candidate = other;
 		}
@@ -62,7 +63,7 @@ array<double, 3> LevelSet::getInitCP(array<double, 3> expcp, double epsilon) {
 /**
  * Calculate the new position of the contact point at a given time.
  * Using the explicit euler method, calculate the position of the contact point initCP at all times and writes them to
- * the reference array.
+ * the reference array. If the contact p
  *
  * @param dt The length of a single timestep
  * @param timestep The index of the timestep
@@ -73,6 +74,7 @@ void LevelSet::contactPointExplicitEuler(double dt, int last_timestep, Vector in
     int factor = 100;
     dt = dt / factor;
     for (int i = 0; i < factor * last_timestep; i++) {
+
         if (i % factor == 0)
             positionReference[i/factor] = temp;
         temp = temp + dt*field->at(i*dt, temp[0], temp[1], temp[2]);
@@ -88,7 +90,7 @@ void LevelSet::contactPointExplicitEuler(double dt, int last_timestep, Vector in
  * @param v0 A parameter of the navier field
  * @return The position of the contact point in arbitrary units
  */
-array<double, 3> LevelSet::contactPointLinearField(double t, double c1, double x0, double v0) {
+Vector LevelSet::contactPointLinearField(double t, double c1, double x0, double v0) {
 	if (field->getName() == "navierField") {
 		return {x0 * exp(c1 * t) + v0/c1 * (exp(c1 * t) - 1), 0, 0};
 	} else if (field->getName() == "timeDependentNavierField") {
@@ -112,7 +114,7 @@ array<double, 3> LevelSet::contactPointLinearField(double t, double c1, double x
  * @param indexOnly Whether to return only the indices of the point or its actual coordinates. Default is false.
  * @return The contact point
  */
-array<double, 3> LevelSet::getContactPoint(int timestep, bool indexOnly /* = false */) const {
+Vector LevelSet::getContactPoint(int timestep, bool indexOnly /* = false */) const {
     if (numZ == 1) {
         if (trackedCP == "left") {
             double initSign = this->at(0, 0, 0)/std::abs(this->at(0, 0, 0));
@@ -148,12 +150,12 @@ array<double, 3> LevelSet::getContactPoint(int timestep, bool indexOnly /* = fal
         }
     } else {
         if (indexOnly) {
-            array<double, 3> cell = {0, 0, 0};
-            const array<double, 3> ref = positionReference[timestep];
+            Vector cell = {0, 0, 0};
+            const Vector ref = positionReference[timestep];
             for (int i = 0; i < numX; ++i)
                 for (int k = 0; k < numZ; ++k) {
-                    array<double, 3> current = {i*dx, 0, k*dz};
-                    array<double, 3> temp = {int(cell[0]) * dx, 0, int(cell[2]) * dz};
+                    Vector current = {i*dx, 0, k*dz};
+                    Vector temp = {int(cell[0]) * dx, 0, int(cell[2]) * dz};
                     if ( abs(current - ref) < abs(temp - ref))
                         cell = {double(i) + 0.5, 0, double(k) + 0.5};
                 }
@@ -173,7 +175,7 @@ array<double, 3> LevelSet::getContactPoint(int timestep, bool indexOnly /* = fal
  * @return The indices of the contact point.
  */
 array<int, 3> LevelSet::getContactPointIndices(int timestep) const {
-    array<double, 3> vec = getContactPoint(timestep, true);
+    Vector vec = getContactPoint(timestep, true);
     return { int(vec[0]), int(vec[1]), int(vec[2]) };
 }
 
@@ -185,7 +187,7 @@ array<int, 3> LevelSet::getContactPointIndices(int timestep) const {
  * @param cellIsCP Whether cell is the index-vector of the contact point.
  * @return The normal vector at cell.
  */
-array<double, 3> LevelSet::getNormalVector(array<int, 3> cell, bool useInterpolation /* = true */) const {
+Vector LevelSet::getNormalVector(array<int, 3> cell, bool useInterpolation /* = true */) const {
     double normalX = 0, normalY = 0, normalZ = 0;
 
     if (numZ == 1 && useInterpolation) {
@@ -265,7 +267,7 @@ array<double, 3> LevelSet::getNormalVector(array<int, 3> cell, bool useInterpola
  * @param k Index along the z-axis
  * @return
  */
-array<double, 3> LevelSet::getNormalVector(int i, int j, int k) const {
+Vector LevelSet::getNormalVector(int i, int j, int k) const {
     array<int, 3> cell{i, j, k};
     return getNormalVector(cell);
 }
@@ -339,13 +341,13 @@ double LevelSet::getContactAngleInterpolated(int timestep) {
  * @param n_sigma_init The initial normal vector of the interface
  * @param CP The current position of the contact point
  */
-void LevelSet::referenceNormalExplicitEuler(double dt, int last_timestep, array<double, 3> normal_init) {
-    array<double, 3> &n_sigma = normal_init;
-	array<double, 3> deriv = {0, 0, 0};
+void LevelSet::referenceNormalExplicitEuler(double dt, int last_timestep, Vector normal_init) {
+    Vector &n_sigma = normal_init;
+	Vector deriv = {0, 0, 0};
 	for (int i = 0; i < last_timestep; i++) {
         normalReference[i] = n_sigma;
         angleReference[i] = acos(n_sigma[1])/M_PI*180;
-	    array<double, 3> CP = positionReference[i];
+	    Vector CP = positionReference[i];
 		deriv = -1*transpose(field->gradAt(i*dt, CP[0], CP[1], CP[2]))*n_sigma + ((field->gradAt(i*dt, CP[0], CP[1], CP[2])*n_sigma)*n_sigma)*n_sigma;
 		n_sigma = deriv*dt + n_sigma;
 		n_sigma = n_sigma/abs(n_sigma);
@@ -407,7 +409,7 @@ void LevelSet::referenceCurvatureExplicitEuler(double dt, int last_timestep, dou
     Vector rotRow2 = {0, 1, 0};
     Vector rotRow3 = {sin(azimuthalAngle), 0, cos(azimuthalAngle)};
 
-    array<array<double, 3>, 3> rotMatrix = {rotRow1, rotRow2, rotRow3};
+    array<Vector, 3> rotMatrix = {rotRow1, rotRow2, rotRow3};
 
     for (int i = 0; i < last_timestep; i++) {
         curvatureReference[i] = curvature;
@@ -769,7 +771,7 @@ void LevelSet::writeToFile(double dt, int timestep, int total_timesteps, int tot
              << "0.00 0.00 0.00"
              << "</DataItem>"
              << "<DataItem Name=\"points\" NumberType=\"Float\" Dimensions=\"3\">\n"
-             << std::to_string(dx) + " " + std::to_string(dy) + " " + std::to_string(dz)
+             << std::to_string(dz) + " " + std::to_string(dy) + " " + std::to_string(dx)
              << "</DataItem>\n"
              << "</Geometry>\n"
              << "<Attribute Name =\"lvlset\" AttributeType=\"Scalar\" Center=\"Node\">\n"
@@ -870,7 +872,7 @@ double LevelSet::sumLevelSet() {
  * @param center The center of the droplet
  * @param radius The radius of the droplet
  */
-void LevelSet::initDroplet(array<double, 3> center, double radius) {
+void LevelSet::initDroplet(Vector center, double radius) {
     for (int x = 0; x < this->numX; x++)
         for (int y = 0; y < this->numY; y++)
             for (int z = 0; z < this->numZ; z++)
@@ -883,15 +885,15 @@ void LevelSet::initDroplet(array<double, 3> center, double radius) {
  *  @param angleA The angle between the initialized plane and the x-z-plane (= polar angle of normal vector) in deg.
  *  @param angleB The angle of rotation around the y-axis (= azimuthal angle) in deg.
  */
-void LevelSet::initPlane(array<double, 3> refPoint, double polarAngle, double azimuthalAngle) {
+void LevelSet::initPlane(Vector refPoint, double polarAngle, double azimuthalAngle) {
     polarAngle = polarAngle/180*M_PI;
     azimuthalAngle = azimuthalAngle/180*M_PI;
-    array<double, 3> normal = {sin(polarAngle) * cos(azimuthalAngle), cos(polarAngle), sin(polarAngle)* sin(azimuthalAngle)};
+    Vector normal = {sin(polarAngle) * cos(azimuthalAngle), cos(polarAngle), sin(polarAngle)* sin(azimuthalAngle)};
     
     for (int x = 0; x < numX; x++)
         for (int y = 0; y < numY; y++)
             for (int z = 0; z < numZ; z++) 
-                this->at(x, y, z) = normal * (array<double, 3>({x*dx, y*dy, z*dz}) - refPoint);
+                this->at(x, y, z) = normal * (Vector({x*dx, y*dy, z*dz}) - refPoint);
             
 }
 
@@ -901,8 +903,8 @@ void LevelSet::initPlane(array<double, 3> refPoint, double polarAngle, double az
  * This function is only applicable in 2D.
  * @param initAngle The angle in radiants.
  */
-array<double, 3> LevelSet::normalVector2D(double initAngle) {
-    array<double, 3> initNormal;
+Vector LevelSet::normalVector2D(double initAngle) {
+    Vector initNormal;
     if (trackedCP == "left") {
         initNormal = { -sin(initAngle), cos(initAngle), 0};
     } else {
@@ -917,8 +919,8 @@ array<double, 3> LevelSet::normalVector2D(double initAngle) {
  * This function is only applicable in 2D. This is the non-member variant of normalVector2D(initAngle).
  * @param initAngle The angle in radiants.
  */
-array<double, 3> normalVector2D(double initAngle, std::string trackedCP) {
-    array<double, 3> initNormal;
+Vector normalVector2D(double initAngle, std::string trackedCP) {
+    Vector initNormal;
     if (trackedCP == "left") {
         initNormal = { -sin(initAngle), cos(initAngle), 0};
     } else {
@@ -939,12 +941,12 @@ array<double, 3> normalVector2D(double initAngle, std::string trackedCP) {
 void LevelSet::calculateNextTimestep(double dt, int timestep) {
     LevelSet tempPhi(*this);
 
-    const array<double, 3> upNormal = {0, 1, 0};
-    const array<double, 3> downNormal = {0,-1, 0};
-    const array<double, 3> leftNormal = {-1, 0, 0};
-    const array<double, 3> rightNormal = {1, 0, 0};
-    const array<double, 3> frontNormal = {0, 0, 1};
-    const array<double, 3> backNormal = {0, 0, -1};
+    const Vector upNormal = {0, 1, 0};
+    const Vector downNormal = {0,-1, 0};
+    const Vector leftNormal = {-1, 0, 0};
+    const Vector rightNormal = {1, 0, 0};
+    const Vector frontNormal = {0, 0, 1};
+    const Vector backNormal = {0, 0, -1};
 
     // loop over all cells
 #pragma omp parallel shared(tempPhi)
@@ -1034,14 +1036,14 @@ void LevelSet::calculateNextTimestep(double dt, int timestep) {
     }
 }
 
-std::vector<array<double, 3>> LevelSet::getPositionReference() {
+std::vector<Vector> LevelSet::getPositionReference() const {
     return positionReference;
 }
 
-std::vector<double> LevelSet::getAngleReference() {
+std::vector<double> LevelSet::getAngleReference() const {
     return angleReference;
 }
 
-std::vector<double> LevelSet::getCurvatureReference() {
+std::vector<double> LevelSet::getCurvatureReference() const {
     return curvatureReference;
 }

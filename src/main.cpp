@@ -338,7 +338,19 @@ int main(int argc, char **argv) {
             newCPReference = positionTheoretical[i];
 
         // Get the the new contact point
-        array<double, 3> newCPActual = Phi.getContactPoint(i);
+        Vector newCPActual = Phi.getContactPoint(i);
+
+
+        if (newCPActual[0] < 0 || newCPActual[1] < 0 || newCPActual[2] < 0
+                || newCPActual[0] > lenX || newCPActual[1] > lenY || newCPActual[2] > lenZ) {
+            std::cout << "WARNING: Contact point left simulation plane during evolution time. Exiting.\n";
+            positionFile.flush();
+            angleFile.flush();
+            if (calculateCurvature)
+                curvatureFile.flush();
+            break;
+        }
+
 
         // Evaluate the Contact Angle numerically based on Phi
         angleActual[i] = Phi.getContactAngleInterpolated(i);

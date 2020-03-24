@@ -12,9 +12,6 @@
 
 class LevelSet : Field<double> {
 private:
-    //The width of a cell in each direction
-    double dt;
-
     // A pointer to the VelocityField acting on the LevelSet field.
     VelocityField *field;
 
@@ -26,26 +23,26 @@ private:
     *   This is needed, since many other reference solvers are coupled, and all of them require this data,
     *   leading to a high number in nested loops. 
     **/
-    std::vector< array<double, 3>> positionReference;
-    std::vector< array<double, 3>> normalReference;
+    std::vector<Vector> positionReference;
+    std::vector<Vector> normalReference;
     std::vector<double> angleReference;
     std::vector<double> curvatureReference;
 
 public:
     LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz, VelocityField *field,
-            std::string trackedCP, double dt, int timesteps, array<double, 3> expCP, array<double, 3> expNormalVec, double expAngle,
+            std::string trackedCP, double dt, int timesteps, Vector expCP, Vector expNormalVec, double expAngle,
             double initCurvature, std::string outputDirectory);
 
-    array<double, 3> getInitCP(array<double, 3> expcp, double epsilon);
-    void contactPointExplicitEuler(double dt, int timestep, array<double, 3> initCP);
-    array<double, 3> contactPointLinearField(double t, double c1, double x0, double v0);
-    array<double, 3> getContactPoint(int timestep, bool indexOnly = false) const;
+    Vector getInitCP(Vector expcp, double epsilon);
+    void contactPointExplicitEuler(double dt, int timestep, Vector initCP);
+    Vector contactPointLinearField(double t, double c1, double x0, double v0);
+    Vector getContactPoint(int timestep, bool indexOnly = false) const;
     array<int, 3> getContactPointIndices(int timestep) const;
-    void referenceNormalExplicitEuler(double dt, int timestep, array<double, 3> n_sigma_init);
+    void referenceNormalExplicitEuler(double dt, int timestep, Vector n_sigma_init);
     void referenceAngleLinearField(double dt, int last_timestep, double theta0);
-    array<double, 3> getNormalVector(array<int, 3> cell,  bool useInterpolation = true) const;
-    array<double, 3> getNormalVector(int i, int j, int k) const;
-    array<double, 3> getTangentialVector(array<double, 3> normal) const;
+    Vector getNormalVector(array<int, 3> cell,  bool useInterpolation = true) const;
+    Vector getNormalVector(int i, int j, int k) const;
+    Vector getTangentialVector(Vector normal) const;
     double getContactAngleInterpolated(int timestep);
     void referenceCurvatureExplicitEuler(double dt, int timestep, double initCurvature);
     void referenceCurvatureLinearField(double dt, int timesteps, double initCurvature);
@@ -56,17 +53,17 @@ public:
     void writeToFile(double dt, int timestep, int total_timesteps, int total_writesteps, std::ofstream *mainXmfFile, std::ofstream *tauXmfFile);
     void writeTangentialVectorToFile(double dt, int timestep);
     double sumLevelSet();
-    void initDroplet(array<double, 3> center, double radius);
-    void initPlane(array<double, 3> refPoint, double angleA, double angleB);
-    array<double, 3> normalVector2D(double initAngle);
-    static array<double, 3> normalVector2D(double initAngle, std::string trackedCP);
+    void initDroplet(Vector center, double radius);
+    void initPlane(Vector refPoint, double angleA, double angleB);
+    Vector normalVector2D(double initAngle);
+    static Vector normalVector2D(double initAngle, std::string trackedCP);
     void calculateNextTimestep(double dt, int timestep);
 
-    std::vector<array<double, 3>> getPositionReference();
-    std::vector<double> getAngleReference();
-    std::vector<double> getCurvatureReference();
+    std::vector<Vector> getPositionReference() const;
+    std::vector<double> getAngleReference() const;
+    std::vector<double> getCurvatureReference() const;
 };
 
-array<double, 3> normalVector2D(double initAngle, std::string trackedCP);
+Vector normalVector2D(double initAngle, std::string trackedCP);
 
 #endif

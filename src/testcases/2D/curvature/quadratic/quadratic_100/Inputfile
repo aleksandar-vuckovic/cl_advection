@@ -5,10 +5,10 @@ lenX=1.0
 lenY=0.1
 lenZ=0.001
 
-time=3.0
+time=10.0
 CFL=0.5
 writestepsFraction=0.05
-writeField=true
+writeField=false
 
 v0=0.1
 c1=0.1
@@ -28,3 +28,5 @@ expAngle=90
 
 trackedContactPoint=left
 calculateCurvature=true
+
+threads=24
