@@ -253,7 +253,7 @@ int main(int argc, char **argv) {
     else if (geometryType == "plane")
         initCurvature = 0;
     
-    array<double, 3> expNormalVec;
+    Vector expNormalVec;
 
     double dt = 0.0;
     if (numZ == 1) {
@@ -276,13 +276,13 @@ int main(int argc, char **argv) {
     int timesteps = time/dt;
     int writesteps = ceil(writestepsFraction*timesteps);
 
-    array<double, 3> center = {centerX, centerY, centerZ};
-    array<double, 3> expCP = {expcpX, expcpY, expcpZ};
+    Vector center = {centerX, centerY, centerZ};
+    Vector expCP = {expcpX, expcpY, expcpZ};
 
     LevelSet Phi(numX, numY, numZ, dx, dy, dz, field, trackedContactPoint, dt, timesteps, expCP, expNormalVec, expAngle, initCurvature, outputDirectory);
     Streamlines streamlines(numX, numY, numZ, dx, dy, dz, field, dt, outputDirectory);
 
-    std::vector< array<double, 3>> positionTheoretical = Phi.getPositionReference();
+    std::vector<Vector> positionTheoretical = Phi.getPositionReference();
     std::vector<double> angleTheoretical = Phi.getAngleReference();
     std::vector<double> curvatureTheoretical = Phi.getCurvatureReference();
     std::vector<double> angleActual(timesteps);
@@ -331,26 +331,27 @@ int main(int argc, char **argv) {
         }
 
 	// Calculate the reference position of the contact point
-        array<double, 3> newCPReference;
+        Vector newCPReference;
         if (numZ == 1 && (field->getName() == "navierField" || field->getName() == "timeDependentNavierField"))
         	newCPReference = Phi.contactPointLinearField(dt*i, c1, expcpX, v0);
         else
             newCPReference = positionTheoretical[i];
 
         // Get the the new contact point
-        Vector newCPActual = Phi.getContactPoint(i);
-
-
-        if (newCPActual[0] < 0 || newCPActual[1] < 0 || newCPActual[2] < 0
-                || newCPActual[0] > lenX || newCPActual[1] > lenY || newCPActual[2] > lenZ) {
-            std::cout << "WARNING: Contact point left simulation plane during evolution time. Exiting.\n";
-            positionFile.flush();
-            angleFile.flush();
-            if (calculateCurvature)
-                curvatureFile.flush();
-            break;
+        Vector newCPActual;
+        try {
+            newCPActual = Phi.getContactPoint(i);
+        } catch (std::runtime_error& e) {
+            std::string str = e.what();
+            if (str.compare("CP_Exit_Simulation_Plane") == 0) {
+                std::cout << "WARNING: Contact point left simulation plane during evolution time. Exiting.\n";
+                positionFile.flush();
+                angleFile.flush();
+                if (calculateCurvature)
+                    curvatureFile.flush();
+                break;
+            }
         }
-
 
         // Evaluate the Contact Angle numerically based on Phi
         angleActual[i] = Phi.getContactAngleInterpolated(i);

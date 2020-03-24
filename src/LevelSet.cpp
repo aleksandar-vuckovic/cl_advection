@@ -23,17 +23,16 @@ LevelSet::LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz
 		this->field = field;
 		this->trackedCP = trackedCP;
         this->outputDirectory = outputDirectory;
-        this->timesteps = timesteps;
         expAngle = expAngle/180*M_PI;
 
 		// Calculate reference data
-        contactPointExplicitEuler(dt, this->timesteps, expCP);
-        referenceNormalExplicitEuler(dt, this->timesteps, expNormalVec);
+        contactPointExplicitEuler(dt, timesteps, expCP);
+        referenceNormalExplicitEuler(dt, timesteps, expNormalVec);
 
         if (field->getName() == "quadraticField") {
-            referenceCurvatureQuadraticField(dt, this->timesteps, initCurvature);
+            referenceCurvatureQuadraticField(dt, timesteps, initCurvature);
         } else {
-            referenceCurvatureExplicitEuler(dt, this->timesteps, initCurvature);
+            referenceCurvatureExplicitEuler(dt, timesteps, initCurvature);
         }
 }
 
@@ -118,7 +117,7 @@ Vector LevelSet::getContactPoint(int timestep, bool indexOnly /* = false */) con
     if (numZ == 1) {
         if (trackedCP == "left") {
             double initSign = this->at(0, 0, 0)/std::abs(this->at(0, 0, 0));
-            for (int i = 0; i < numX; i++)
+            for (int i = 0; i < numX; i++) {
                 if (this->at(i, 0, 0)*initSign < 0) {
                     
                     if (indexOnly)
@@ -131,6 +130,7 @@ Vector LevelSet::getContactPoint(int timestep, bool indexOnly /* = false */) con
                     alpha = this->at(i,0,0)/(alpha);
                     return {(1 - alpha)*i*dx + alpha*(i - 1)*dx, 0, 0};
                 }
+            }
         } else {
             double initSign = this->at(numX - 1, 0, 0)/std::abs(this->at(numX - 1, 0, 0));
             for (int i = numX - 1; i >= 0; i--) {
@@ -148,10 +148,17 @@ Vector LevelSet::getContactPoint(int timestep, bool indexOnly /* = false */) con
                 }
             }
         }
-    } else {
+        throw std::runtime_error("CP_Exit_Simulation_Plane");
+    } 
+    
+    else {
+        const Vector ref = positionReference[timestep];
+         if (ref[0] < 0 || ref[1] < 0 || ref[2] < 0 || 
+             ref[0] > this->numX*dx || ref[1] > this->numY*dy || ref[2] > this->numZ*dz) {
+                 throw std::runtime_error("CP_Exit_Simulation_Plane");
+             }
         if (indexOnly) {
             Vector cell = {0, 0, 0};
-            const Vector ref = positionReference[timestep];
             for (int i = 0; i < numX; ++i)
                 for (int k = 0; k < numZ; ++k) {
                     Vector current = {i*dx, 0, k*dz};
@@ -161,10 +168,9 @@ Vector LevelSet::getContactPoint(int timestep, bool indexOnly /* = false */) con
                 }
             return cell;
         } else {
-            return positionReference[timestep];
+            return ref;
         }
     }
-    throw std::runtime_error("LevelSet::getContactPoint: \nReached end of function without returning a value");
 }
 
 /**
