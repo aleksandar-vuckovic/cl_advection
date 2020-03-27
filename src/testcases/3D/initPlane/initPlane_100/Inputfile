@@ -21,7 +21,7 @@ geometryType=plane
 centerX=0.2
 centerY=0.0
 centerZ=0.2
-polarAngle=45
+planePolarAngle=45
 planeAzimuthalAngle=45
 
 expcpX=0.2

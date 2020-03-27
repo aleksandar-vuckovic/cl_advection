@@ -16,22 +16,27 @@ c1=0.1
 c2=-2
 fieldAzimuthalAngle=45
 
+//geometryType=sphere
+//radius=0.28284271247461906
 geometryType=plane
+planePolarAngle=45
+planeAzimuthalAngle=45
 
+// centerX=0.0
+// centerY=0.0
+// centerZ=0.0
 centerX=0.2
 centerY=0.0
 centerZ=0.2
-polarAngle=45
-planeAzimuthalAngle=45
 
 expcpX=0.2
-expcpY=0.0
+expcpY=0
 expcpZ=0.2
+
 expNormalX=0.5
 expNormalY=0.7071067811865476
 expNormalZ=0.5
 
-trackedContactPoint=left
-threads=5
+threads=4
 calculateCurvature=true
 
