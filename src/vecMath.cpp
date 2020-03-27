@@ -52,7 +52,7 @@ double operator* (const Vector& vecA, const Vector& vecB) {
   return vecA[0]*vecB[0] + vecA[1]*vecB[1] + vecA[2]*vecB[2];
 }
 
-Vector operator* (const array<array<double,3>, 3>& matrix, const Vector vec) {
+Vector operator* (const Matrix& matrix, const Vector vec) {
     Vector tempReturn;
     for (int row = 0; row < 3; row++)
 		tempReturn[row] = matrix[row]*vec;
@@ -60,7 +60,7 @@ Vector operator* (const array<array<double,3>, 3>& matrix, const Vector vec) {
     return tempReturn;
 }
 
-Matrix operator* (const array<array<double,3>, 3>& matrixA, const array<array<double,3>, 3>& matrixB) {
+Matrix operator* (const Matrix& matrixA, const Matrix& matrixB) {
     Matrix tempReturn;
     Matrix matrixB_T = transpose(matrixB);
 
