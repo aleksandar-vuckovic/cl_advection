@@ -349,13 +349,16 @@ double LevelSet::getContactAngleInterpolated(int timestep) {
  */
 void LevelSet::referenceNormalExplicitEuler(double dt, int last_timestep, Vector normal_init) {
     Vector &n_sigma = normal_init;
-	Vector deriv = {0, 0, 0};
+	Vector deriv {0, 0, 0};
+    Vector n_sigma_rot = field->rotMatrix.transposed*n_sigma;      // Normal vector in the rotated coordinate system
 	for (int i = 0; i < last_timestep; i++) {
         normalReference[i] = n_sigma;
         angleReference[i] = acos(n_sigma[1])/M_PI*180;
 	    Vector CP = positionReference[i];
-		deriv = -1*transpose(field->gradAt(i*dt, CP[0], CP[1], CP[2]))*n_sigma + ((field->gradAt(i*dt, CP[0], CP[1], CP[2])*n_sigma)*n_sigma)*n_sigma;
-		n_sigma = deriv*dt + n_sigma;
+		deriv = -1*transpose(field->gradAt(i*dt, CP[0], CP[1], CP[2]))*n_sigma_rot 
+                + ((field->gradAt(i*dt, CP[0], CP[1], CP[2])*n_sigma_rot)*n_sigma_rot)*n_sigma_rot;
+		n_sigma_rot = deriv*dt + n_sigma_rot;
+        n_sigma = field->rotMatrix*n_sigma_rot;
 		n_sigma = n_sigma/abs(n_sigma);
 	}
 }
