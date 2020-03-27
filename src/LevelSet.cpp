@@ -409,32 +409,25 @@ void LevelSet::referenceCurvatureExplicitEuler(double dt, int last_timestep, dou
     double curvature = initCurvature;
 
     double v0 = field->getV0();
-    double azimuthalAngle = field->getAzimuthalAngle();
-
-    Vector rotRow1 = { cos(azimuthalAngle), 0, -sin(azimuthalAngle)};
-    Vector rotRow2 = {0, 1, 0};
-    Vector rotRow3 = {sin(azimuthalAngle), 0, cos(azimuthalAngle)};
-
-    array<Vector, 3> rotMatrix = {rotRow1, rotRow2, rotRow3};
 
     for (int i = 0; i < last_timestep; i++) {
         curvatureReference[i] = curvature;
-        Vector CP = positionReference[i];
+        Vector CP = positionReference[i];        
+        Vector CP_t = field->rotMatrix.transposed*CP;
         Vector normal = normalReference[i];
         Vector tau = getTangentialVector(normal);
-
         // temp is the second derivative of v in the tau direction
         Vector temp;
         if (field->getName() == "shearField") {
-            Vector row1 = {v0*M_PI*M_PI*sin(M_PI*CP[0])*cos(M_PI*CP[1])*tau[0] + v0*M_PI*M_PI*cos(M_PI*CP[0])*sin(M_PI*CP[1])*tau[1],
-                                    v0*M_PI*M_PI*cos(M_PI*CP[0])*sin(M_PI*CP[1])*tau[0] + v0*M_PI*M_PI*sin(M_PI*CP[0])*cos(M_PI*CP[1])*tau[1],
+            Vector row1 = {v0*M_PI*M_PI*sin(M_PI*CP_t[0])*cos(M_PI*CP_t[1])*tau[0] + v0*M_PI*M_PI*cos(M_PI*CP_t[0])*sin(M_PI*CP_t[1])*tau[1],
+                                    v0*M_PI*M_PI*cos(M_PI*CP_t[0])*sin(M_PI*CP_t[1])*tau[0] + v0*M_PI*M_PI*sin(M_PI*CP_t[0])*cos(M_PI*CP_t[1])*tau[1],
                                     0};
-            Vector row2 = {-v0*M_PI*M_PI*cos(M_PI*CP[0])*sin(M_PI*CP[1])*tau[0] - v0*M_PI*M_PI*sin(M_PI*CP[0])*cos(M_PI*CP[1])*tau[1],
-                                     -v0*M_PI*M_PI*sin(M_PI*CP[0])*cos(M_PI*CP[1])*tau[0]   -v0*M_PI*M_PI*cos(M_PI*CP[0])*sin(M_PI*CP[1])*tau[1],
+            Vector row2 = {-v0*M_PI*M_PI*cos(M_PI*CP_t[0])*sin(M_PI*CP_t[1])*tau[0] - v0*M_PI*M_PI*sin(M_PI*CP_t[0])*cos(M_PI*CP_t[1])*tau[1],
+                                     -v0*M_PI*M_PI*sin(M_PI*CP_t[0])*cos(M_PI*CP_t[1])*tau[0]   -v0*M_PI*M_PI*cos(M_PI*CP_t[0])*sin(M_PI*CP_t[1])*tau[1],
                                     0};
             Vector row3 = {0, 0, 0};
             Matrix M = {row1, row2, row3};
-            temp = rotMatrix*M*tau;
+            temp = field->rotMatrix*M*tau;
         } else if (field->getName() == "navierField" || field->getName() == "timeDependentNavierField" || field->getName() == "strawberryField") {
             temp = {0, 0, 0};
         }

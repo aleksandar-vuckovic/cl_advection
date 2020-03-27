@@ -27,7 +27,9 @@ using std::array;
 VelocityField::VelocityField(std::string name, double v0, double w0, double x0, double y0, double z0,
                              double c1, double c2, double c3, double c4, double c5, double c6, double tau,
                              double xmin, double xmax, double ymin, double ymax, double zmin, double zmax,
-                             double dx, double dy, double dz, double azimuthalAngle, std::string outputDirectory) {
+                             double dx, double dy, double dz, double azimuthalAngle, std::string outputDirectory) 
+							 : rotMatrix(azimuthalAngle)
+{
 	this->v0 = v0;
     this->w0 = w0;
     this->x0 = x0;
@@ -40,6 +42,7 @@ VelocityField::VelocityField(std::string name, double v0, double w0, double x0, 
     this->c5 = c5;
     this->c6 = c6;
 	this->tau = tau;
+	this->azimuthalAngle = azimuthalAngle;
 
 	this->xmin = xmin;
 	this->xmax = xmax;
@@ -50,16 +53,7 @@ VelocityField::VelocityField(std::string name, double v0, double w0, double x0, 
 	this->dx = dx;
 	this->dy = dy;
 	this->dz = dz;
-    azimuthalAngle = azimuthalAngle/180 * M_PI;
-    this->azimuthalAngle = azimuthalAngle;
     this->outputDirectory = outputDirectory;
-
-    // Matrix for rotation around y-axis
-    array<double, 3> row1 = { cos(azimuthalAngle), 0, -sin(azimuthalAngle)};
-    array<double, 3> row2 = {0, 1, 0};
-    array<double, 3> row3 = {sin(azimuthalAngle), 0, cos(azimuthalAngle)};
-
-    rotMatrix = {row1, row2, row3};
 
 	double maxNormValue = 0, currentVal = 0, x, y, z;
 
@@ -105,7 +99,12 @@ VelocityField::VelocityField(std::string name, double v0, double w0, double x0, 
  * @param x, y, z The coordinates of the point
  * @return The velocity field at the given coordinates
  */
-array<double, 3> VelocityField::at(double t, double x, double y, double z) {
+Vector VelocityField::at(double t, double x, double y, double z) {
+	Vector p = {x, y, z};
+	p = rotMatrix.transposed*p;
+	x = p[0]; 
+	y = p[1]; 
+	z = p[2];
 
 	if (name == "shearField") {
 		return rotMatrix *  shearField(x, y, z, v0);
@@ -129,6 +128,11 @@ array<double, 3> VelocityField::at(double t, double x, double y, double z) {
  * @return The jacobian matrix at the given coordinates
  */
 Matrix VelocityField::gradAt(double t, double x, double y, double z) {
+	Vector p = {x, y, z};
+	p = rotMatrix.transposed*p;
+	x = p[0]; 
+	y = p[1]; 
+	z = p[2];
 
 	if (name == "shearField") {
         return rotMatrix*gradShearField(x, y, z, v0);
@@ -143,6 +147,28 @@ Matrix VelocityField::gradAt(double t, double x, double y, double z) {
     }
 	return {0, 0, 0};
 }
+
+/* Matrix  VelocityField::hessianAt(double t, double x, double y, double z) {
+	Vector p = {x, y, z};
+	p = rotMatrix.transposed*p;
+	x = p[0]; 
+	y = p[1]; 
+	z = p[2];
+
+	if (name == "shearField") {
+		Vector row1 = {v0*M_PI*M_PI*sin(M_PI*CP[0])*cos(M_PI*CP[1]) + v0*M_PI*M_PI*cos(M_PI*CP[0])*sin(M_PI*CP[1]),
+								v0*M_PI*M_PI*cos(M_PI*CP[0])*sin(M_PI*CP[1]) + v0*M_PI*M_PI*sin(M_PI*CP[0])*cos(M_PI*CP[1]),
+								0};
+		Vector row2 = {-v0*M_PI*M_PI*cos(M_PI*CP[0])*sin(M_PI*CP[1]) - v0*M_PI*M_PI*sin(M_PI*CP[0])*cos(M_PI*CP[1]),
+									-v0*M_PI*M_PI*sin(M_PI*CP[0])*cos(M_PI*CP[1]) -v0*M_PI*M_PI*cos(M_PI*CP[0])*sin(M_PI*CP[1]),
+								0};
+		Vector row3 = {0, 0, 0};
+		Matrix M = {row1, row2, row3};
+		return rotMatrix*M;
+	} else {
+		return {0, 0, 0};
+	}
+} */
 
 /**
  * Writes the velocity field at a given time to disk
@@ -168,7 +194,7 @@ void VelocityField::writeToFile(double t) {
 				x = i*dx - xmin;
 				y = j*dy - ymin;
 				z = k*dz - zmin;
-				array<double, 3> temp = this->at(t, x, y, z);
+				Vector temp = this->at(t, x, y, z);
 				fieldValues[index] = temp[0];
 				fieldValues[index + 1] = temp[1];
 				fieldValues[index + 2] = temp[2];
@@ -229,5 +255,5 @@ double VelocityField::getMaxNormValue() {
 }
 
 double VelocityField::getAzimuthalAngle() {
-    return azimuthalAngle;
+	return azimuthalAngle;
 }

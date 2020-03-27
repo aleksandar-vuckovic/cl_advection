@@ -39,4 +39,10 @@ double abs (const Vector vec);
 
 Matrix transpose(const Matrix matrix);
 
+class RotMatrix : public Matrix {
+    public: 
+        Matrix transposed;
+        RotMatrix(double azimuthalAngle);
+};
+
 #endif

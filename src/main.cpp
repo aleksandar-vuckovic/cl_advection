@@ -66,118 +66,124 @@ int main(int argc, char **argv) {
 
     std::string line, varName, value;
 
-    while(std::getline(inFileStream, line)) {
-        std::istringstream linestream(line);
-        if(std::getline(linestream, varName, '=')) {
-            if (std::getline(linestream, value)) {
-                if (varName == "numX")
-                    numX = std::stoi(value);
-                else if (varName == "numY")
-                    numY = std::stoi(value);
-                else if (varName == "numZ")
-                    numZ = std::stoi(value);
-                else if (varName == "lenX")
-                    lenX =  std::stod(value);
-                else if (varName == "lenY")
-                    lenY = std::stod(value);
-                else if (varName == "lenZ")
-                    lenZ = std::stod(value);
-                else if (varName == "time")
-                    time = std::stod(value);
-                else if (varName == "CFL")
-                    CFL = std::stod(value);
-                else if (varName == "writestepsFraction")
-                    writestepsFraction =std::stod(value);
-                else if (varName == "writeField")
-                    std::stringstream(value) >> std::boolalpha >> writeField;
-                else if (varName == "v0")
-                    v0 = std::stod(value);
-                else if (varName == "w0")
-                    w0 = std::stod(value);
-                else if (varName == "c1")
-                    c1 = std::stod(value);
-                else if (varName == "c2")
-                    c2 = std::stod(value);
-                else if (varName == "c3")
-                    c3 = std::stod(value);
-                else if (varName == "c4")
-                    c4 = std::stod(value);
-                else if (varName == "c5")
-                    c5 = std::stod(value);
-                else if (varName == "c6")
-                    c6= std::stod(value);
-                else if (varName == "x0")
-                    x0 = std::stod(value);
-                else if (varName == "y0")
-                    y0 = std::stod(value);
-                else if (varName == "z0")
-                    z0 = std::stod(value);
-                else if (varName == "tau")
-                    tau = std::stod(value);
-                else if (varName == "field")
-                    fieldName = value;
-                else if (varName == "fieldAzimuthalAngle")
-                    fieldAzimuthalAngle = std::stod(value);
-                else if (varName == "geometryType")
-                    geometryType = value;
-                else if (varName == "centerX")
-                    centerX = std::stod(value);
-                else if (varName == "centerY")
-                    centerY = std::stod(value);
-                else if (varName == "centerZ")
-                    centerZ = std::stod(value);
-                else if (varName == "radius") {
-                    if (geometryType == "sphere")
-                        radius = std::stod(value);
+    try {
+        while(std::getline(inFileStream, line)) {
+            std::istringstream linestream(line);
+            if(std::getline(linestream, varName, '=')) {
+                // In case a line is commented out
+                if (varName.substr(0, 2) == "//")
+                    continue;
+
+                if (std::getline(linestream, value)) {
+                    if (varName == "numX")
+                        numX = std::stoi(value);
+                    else if (varName == "numY")
+                        numY = std::stoi(value);
+                    else if (varName == "numZ")
+                        numZ = std::stoi(value);
+                    else if (varName == "lenX")
+                        lenX =  std::stod(value);
+                    else if (varName == "lenY")
+                        lenY = std::stod(value);
+                    else if (varName == "lenZ")
+                        lenZ = std::stod(value);
+                    else if (varName == "time")
+                        time = std::stod(value);
+                    else if (varName == "CFL")
+                        CFL = std::stod(value);
+                    else if (varName == "writestepsFraction")
+                        writestepsFraction =std::stod(value);
+                    else if (varName == "writeField")
+                        std::stringstream(value) >> std::boolalpha >> writeField;
+                    else if (varName == "v0")
+                        v0 = std::stod(value);
+                    else if (varName == "w0")
+                        w0 = std::stod(value);
+                    else if (varName == "c1")
+                        c1 = std::stod(value);
+                    else if (varName == "c2")
+                        c2 = std::stod(value);
+                    else if (varName == "c3")
+                        c3 = std::stod(value);
+                    else if (varName == "c4")
+                        c4 = std::stod(value);
+                    else if (varName == "c5")
+                        c5 = std::stod(value);
+                    else if (varName == "c6")
+                        c6= std::stod(value);
+                    else if (varName == "x0")
+                        x0 = std::stod(value);
+                    else if (varName == "y0")
+                        y0 = std::stod(value);
+                    else if (varName == "z0")
+                        z0 = std::stod(value);
+                    else if (varName == "tau")
+                        tau = std::stod(value);
+                    else if (varName == "field")
+                        fieldName = value;
+                    else if (varName == "fieldAzimuthalAngle")
+                        fieldAzimuthalAngle = std::stod(value);
+                    else if (varName == "geometryType")
+                        geometryType = value;
+                    else if (varName == "centerX")
+                        centerX = std::stod(value);
+                    else if (varName == "centerY")
+                        centerY = std::stod(value);
+                    else if (varName == "centerZ")
+                        centerZ = std::stod(value);
+                    else if (varName == "radius") {
+                        if (geometryType == "sphere")
+                            radius = std::stod(value);
+                        else
+                            throw std::invalid_argument("Given radius while initializing plane.");
+                    }
+                    else if (varName == "planePolarAngle") {
+                        if (geometryType == "plane")
+                            polarAngle = std::stod(value);
+                        else
+                            throw std::invalid_argument("Given plane angle while initializing sphere.");
+                    }
+                    else if (varName == "planeAzimuthalAngle") {
+                        if (geometryType == "plane")
+                            planeAzimuthalAngle = std::stod(value);
+                        else
+                            throw std::invalid_argument("Given plane angle while initializing sphere.");
+                    }
+                    else if (varName == "expcpX")
+                        expcpX = std::stod(value);
+                    else if (varName == "expcpY")
+                        expcpY = std::stod(value);
+                    else if (varName == "expcpZ")
+                        expcpZ = std::stod(value);
+                    else if (varName == "expAngle") {
+                        if (numZ == 1)
+                            expAngle = std::stod(value);
+                        else
+                            throw std::invalid_argument("Input parameter expAngle is not applicable in 3D. Instead define the expected normal vector "
+                                                        "by setting the parameters expNormalX, expNormalY and expNormalZ.");
+                    }
+                    else if (varName == "expNormalX")
+                        expNormalX = std::stod(value);
+                    else if (varName == "expNormalY")
+                        expNormalY = std::stod(value);
+                    else if (varName == "expNormalZ")
+                        expNormalZ = std::stod(value);
+                    else if (varName == "trackedContactPoint")
+                        trackedContactPoint = value;
+                    else if (varName == "calculateCurvature")
+                        std::stringstream(value) >> std::boolalpha >> calculateCurvature;
+                    else if (varName == "threads")
+                        threads = std::stoi(value);
                     else
-                        throw std::invalid_argument("Given radius while initializing plane.");
-                }
-                else if (varName == "polarAngle") {
-                    if (geometryType == "plane")
-                        polarAngle = std::stod(value);
-                    else
-                        throw std::invalid_argument("Given plane angle while initializing sphere.");
-                }
-                else if (varName == "planeAzimuthalAngle") {
-                    if (geometryType == "plane")
-                        planeAzimuthalAngle = std::stod(value);
-                    else
-                        throw std::invalid_argument("Given plane angle while initializing sphere.");
-                }
-                else if (varName == "expcpX")
-                    expcpX = std::stod(value);
-                else if (varName == "expcpY")
-                    expcpY = std::stod(value);
-                else if (varName == "expcpZ")
-                    expcpZ = std::stod(value);
-                else if (varName == "expAngle") {
-                    if (numZ == 1)
-                        expAngle = std::stod(value);
-                    else
-                        throw std::invalid_argument("Input parameter expAngle is not applicable in 3D. Instead define the expected normal vector "
-                                                    "by setting the parameters expNormalX, expNormalY and expNormalZ.");
-                }
-                else if (varName == "expNormalX")
-                    expNormalX = std::stod(value);
-                else if (varName == "expNormalY")
-                    expNormalY = std::stod(value);
-                else if (varName == "expNormalZ")
-                    expNormalZ = std::stod(value);
-                else if (varName == "trackedContactPoint")
-                    trackedContactPoint = value;
-                else if (varName == "calculateCurvature")
-                    std::stringstream(value) >> std::boolalpha >> calculateCurvature;
-                else if (varName == "threads")
-                    threads = std::stoi(value);
+                        throw std::invalid_argument("Input parameter \"" + varName + "\" not recognized.");
+                    }
                 else
-                    throw std::invalid_argument("Input parameter \"" + varName + "\" not recognized");
-                }
-            // In case a line is commented out
-            else if (varName.substr(0, 2) == "//")
-                continue;
-            else
-                throw std::invalid_argument("Input parameter \"" + varName + "\" is not set.");
+                    throw std::invalid_argument("Input parameter \"" + varName + "\" is not set.");
+            }
         }
+    } catch (std::invalid_argument &e) {
+        std::cout << e.what() << std::endl;
+        return 1;
     }
 
     static struct option long_options[] = {
@@ -242,7 +248,7 @@ int main(int argc, char **argv) {
   	omp_set_num_threads(threads);
 
     field = new VelocityField(fieldName, v0, w0, x0, y0, z0, c1, c2, c3, c4, c5, c6,
-                              tau, 0, lenX, 0, lenY, 0, lenZ, lenX/numX,lenY/numY,lenZ/numZ, fieldAzimuthalAngle, outputDirectory);
+                              tau, 0, lenX, 0, lenY, 0, lenZ, lenX/numX,lenY/numY,lenZ/numZ, fieldAzimuthalAngle/180*M_PI, outputDirectory);
 
     double dx = lenX/numX;
     double dy = lenY/numY;
@@ -256,7 +262,7 @@ int main(int argc, char **argv) {
     Vector expNormalVec;
 
     double dt = 0.0;
-    if (numZ == 1) {
+    if (numZ == 1 && (expNormalX == 0) && (expNormalY == 0) && (expNormalZ == 0)) {
       // 2D case
       dt = CFL*std::min(dx,dy)/field->getMaxNormValue();
 

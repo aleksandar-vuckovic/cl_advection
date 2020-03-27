@@ -9,7 +9,7 @@
 #include "vecMath.hpp"
 
 typedef std::array<double, 3> Vector;
-typedef std::array<Vector, 3> Matrix;
+typedef std::array<std::array<double, 3>, 3> Matrix;
 
 Vector operator+ (Vector vecA, Vector vecB){
   return { vecA[0] + vecB[0], vecA[1] + vecB[1], vecA[2] + vecB[2] };
@@ -39,8 +39,8 @@ Vector operator* (const array<int, 3>& vec, double a) {
   return { a*vec[0], a*vec[1], a*vec[2] };
 }
 
-array<Vector, 3> operator* (double a, const array<array<double,3>, 3>& matrix) {
-    array<Vector, 3> tempReturn;
+Matrix operator* (double a, const array<array<double,3>, 3>& matrix) {
+    Matrix tempReturn;
 	for (int row = 0; row < 3; ++row)
 		for (int col = 0; col < 3; ++col)
 			tempReturn[row][col] = a*matrix[row][col];
@@ -75,14 +75,22 @@ Vector operator/ (const Vector& vec, double a) {
   return { vec[0]/a, vec[1]/a, vec[2]/a };
 }
 
-double abs (const Vector vec) {
+double abs(const Vector vec) {
   return sqrt(pow(vec[0], 2) + pow(vec[1], 2) + pow(vec[2], 2));
 }
 
-array<Vector, 3> transpose(array<Vector, 3> matrix) {
+Matrix transpose(Matrix matrix) {
+  Matrix temp {matrix};
 	for (int i = 0; i < 3; i++)
 		for (int j = 0; j < i; j++)
-			std::swap(matrix[i][j], matrix[j][i]);
+			std::swap(temp[i][j], temp[j][i]);
 
-	return matrix;
+	return temp;
+}
+
+RotMatrix::RotMatrix(double azimuthalAngle) {
+    at(0) = { cos(azimuthalAngle), 0, -sin(azimuthalAngle)};
+    at(1) = {0, 1, 0};
+    at(2) = {sin(azimuthalAngle), 0, cos(azimuthalAngle)};
+    transposed = transpose(*this);
 }
