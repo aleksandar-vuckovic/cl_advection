@@ -274,7 +274,7 @@ Vector LevelSet::getNormalVector(array<int, 3> cell, bool useInterpolation /* = 
  * @return
  */
 Vector LevelSet::getNormalVector(int i, int j, int k) const {
-    array<int, 3> cell{i, j, k};
+    array<int, 3> cell {i, j, k};
     return getNormalVector(cell);
 }
 
