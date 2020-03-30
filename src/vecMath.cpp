@@ -87,10 +87,3 @@ Matrix transpose(Matrix matrix) {
 
 	return temp;
 }
-
-RotMatrix::RotMatrix(double azimuthalAngle) {
-    at(0) = { cos(azimuthalAngle), 0, -sin(azimuthalAngle)};
-    at(1) = {0, 1, 0};
-    at(2) = {sin(azimuthalAngle), 0, cos(azimuthalAngle)};
-    transposed = transpose(*this);
-}

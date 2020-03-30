@@ -49,9 +49,11 @@ int main(int argc, char **argv) {
     threads = 1;
     
     double lenX, lenY, lenZ, time, centerX, centerY, centerZ, radius, expcpX, expcpY, expcpZ, expAngle, expNormalX, expNormalY, expNormalZ;
-    double v0, w0, x0, y0, z0, c1, c2, c3, c4, c5, c6, tau, CFL, writestepsFraction, polarAngle, planeAzimuthalAngle, fieldAzimuthalAngle;
-    lenX = lenY = lenZ = time = centerX = centerY = centerZ = radius = expcpX = expcpY = expcpZ = expNormalX = expNormalY = expNormalZ = 0;
-    expAngle = v0 = w0 = x0 = y0 = z0 = c1 = c2 = c3 = c4 = c5 = c6 = tau = CFL = writestepsFraction = polarAngle = planeAzimuthalAngle =  fieldAzimuthalAngle = 0;
+    double v0, w0, x0, y0, z0, c1, c2, c3, c4, c5, c6, tau, CFL, writestepsFraction, polarAngle, planeAzimuthalAngle, fieldAzimuthalAngle, alpha;
+
+    lenX = lenY = lenZ = time = centerX = centerY = centerZ = radius = expcpX = expcpY = expcpZ = expNormalX = expNormalY = expNormalZ
+    = expAngle = v0 = w0 = x0 = y0 = z0 = c1 = c2 = c3 = c4 = c5 = c6 = tau = CFL = writestepsFraction = polarAngle 
+    = planeAzimuthalAngle =  fieldAzimuthalAngle = alpha = 0; 
     
     bool writeField = false, calculateCurvature = false;
     std::string trackedContactPoint = "left", fieldName = "", geometryType = "sphere", outputDirectory = "";
@@ -123,6 +125,8 @@ int main(int argc, char **argv) {
                         fieldName = value;
                     else if (varName == "fieldAzimuthalAngle")
                         fieldAzimuthalAngle = std::stod(value);
+                    else if (varName == "alpha")
+                        alpha = std::stod(value);
                     else if (varName == "geometryType")
                         geometryType = value;
                     else if (varName == "centerX")
@@ -248,7 +252,7 @@ int main(int argc, char **argv) {
   	omp_set_num_threads(threads);
 
     field = new VelocityField(fieldName, v0, w0, x0, y0, z0, c1, c2, c3, c4, c5, c6,
-                              tau, 0, lenX, 0, lenY, 0, lenZ, lenX/numX,lenY/numY,lenZ/numZ, fieldAzimuthalAngle/180*M_PI, outputDirectory);
+                              tau, 0, lenX, 0, lenY, 0, lenZ, lenX/numX,lenY/numY,lenZ/numZ, fieldAzimuthalAngle/180*M_PI, alpha, outputDirectory);
 
     double dx = lenX/numX;
     double dy = lenY/numY;

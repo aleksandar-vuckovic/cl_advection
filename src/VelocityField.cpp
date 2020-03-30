@@ -23,12 +23,14 @@ using std::array;
  * @param tau tau/2 is the period of osciallation of the time dependent navier field.
  * @param xmin, xmax, ymin, ymax, zmin, zmax The space the velocity field is defined on
  * @param dx, dy, dz The width of a cell in each direction
+ * @param azimuthalAngle, alpha Parameters defining the rotation of the velocity field. A rotation introduces a new coordinate system (\f$(\tilde{x}, y)\f$) with
+ * \f$\tilde{x} = (x, 0, z) \cdot \hat{n}_\Gamma. \hat{n}_\Gamma and \hat{n}_y are the unit vectors of the new coordinate system.
  */
 VelocityField::VelocityField(std::string name, double v0, double w0, double x0, double y0, double z0,
                              double c1, double c2, double c3, double c4, double c5, double c6, double tau,
                              double xmin, double xmax, double ymin, double ymax, double zmin, double zmax,
-                             double dx, double dy, double dz, double azimuthalAngle, std::string outputDirectory) 
-							 : rotMatrix(azimuthalAngle)
+                             double dx, double dy, double dz, double azimuthalAngle, double alpha, std::string outputDirectory)
+							 : n_gamma({cos(azimuthalAngle), 0, sin(azimuthalAngle)}), n_y({0, 1, 0})
 {
 	this->v0 = v0;
     this->w0 = w0;
@@ -42,7 +44,6 @@ VelocityField::VelocityField(std::string name, double v0, double w0, double x0, 
     this->c5 = c5;
     this->c6 = c6;
 	this->tau = tau;
-	this->azimuthalAngle = azimuthalAngle;
 
 	this->xmin = xmin;
 	this->xmax = xmax;
@@ -64,18 +65,18 @@ VelocityField::VelocityField(std::string name, double v0, double w0, double x0, 
 				y = j*dy - ymin;
 				z = k*dz - zmin;
 				if (name == "shearField")
-                    currentVal = abs(rotMatrix * shearField(x, y, z, v0));
+                    currentVal = abs(shearField(x, y, z, v0));
 				else if (name == "navierField")
-                    currentVal = abs(rotMatrix * navierField(x, y, z, v0, c1, c2));
+                    currentVal = abs(navierField(x, y, z, v0, c1, c2));
 				else if (name == "timeDependentNavierField") {
 					// Since |cos(x)| <= 1 we assume the worst case and take the maximum absolute value for the norm value of the velocity field
-                    currentVal = abs(rotMatrix * navierField(x, y, z, v0, c1, c2));
+                    currentVal = abs(navierField(x, y, z, v0, c1, c2));
 				}
 				else if (name == "quadraticField") {
-                    currentVal = abs(rotMatrix * quadraticField(x, y, z, v0, c1, c2, c3));
+                    currentVal = abs(quadraticField(x, y, z, v0, c1, c2, c3));
 				}
                 else if (name == "strawberryField") {
-                    currentVal = abs(rotMatrix * strawberryField(x, y, z, v0, w0, x0, y0, z0, c1, c2, c3, c4, c5, c6));
+                    currentVal = abs(strawberryField(x, y, z, v0, w0, x0, y0, z0, c1, c2, c3, c4, c5, c6));
                 }
 				if (currentVal > maxNormValue)
 					maxNormValue = currentVal;
@@ -100,24 +101,21 @@ VelocityField::VelocityField(std::string name, double v0, double w0, double x0, 
  * @return The velocity field at the given coordinates
  */
 Vector VelocityField::at(double t, double x, double y, double z) {
-	Vector p = {x, y, z};
-	p = rotMatrix.transposed*p;
-	x = p[0]; 
-	y = p[1]; 
-	z = p[2];
 
+	double x_tilde = x*n_gamma[0] + z*n_gamma[2] - alpha;
+	Vector vec;
 	if (name == "shearField") {
-		return rotMatrix *  shearField(x, y, z, v0);
+		vec = shearField(x_tilde, y, z, v0);
 	} else if (name == "navierField") {
-		return rotMatrix * navierField(x, y, z, v0, c1, c2);
+		vec = navierField(x_tilde, y, z, v0, c1, c2);
 	} else if (name == "timeDependentNavierField") {
-		return cos(M_PI*t/tau) * rotMatrix * navierField(x, y, z, v0, c1, c2);
+		vec = cos(M_PI*t/tau) * navierField(x_tilde, y, z, v0, c1, c2);
 	} else if (name == "quadraticField") {
-	    return rotMatrix * quadraticField(x, y, z, v0, c1, c2, c3);
+	    vec = quadraticField(x_tilde, y, z, v0, c1, c2, c3);
     } else if (name == "strawberryField") {
-        return rotMatrix*strawberryField(x, y, z, v0, w0, x0, y0, z0, c1, c2, c3, c4, c5, c6);
+        vec = strawberryField(x_tilde, y, z, v0, w0, x0, y0, z0, c1, c2, c3, c4, c5, c6);
     }
-	return {0, 0, 0};
+	return vec[0]*n_gamma + vec[1]*n_y;
 }
 
 /**
@@ -128,24 +126,42 @@ Vector VelocityField::at(double t, double x, double y, double z) {
  * @return The jacobian matrix at the given coordinates
  */
 Matrix VelocityField::gradAt(double t, double x, double y, double z) {
-	Vector p = {x, y, z};
-	p = rotMatrix.transposed*p;
-	x = p[0]; 
-	y = p[1]; 
-	z = p[2];
-
+	
+	double x_tilde = x*n_gamma[0] + z*n_gamma[2] - alpha;
+	Matrix mat;
 	if (name == "shearField") {
-        return rotMatrix*gradShearField(x, y, z, v0);
+        mat = gradShearField(x_tilde, y, z, v0);
 	} else if (name == "navierField") {
-        return rotMatrix*gradNavierField(x, y, z, v0, c1, c2);
+        mat = gradNavierField(x_tilde, y, z, v0, c1, c2);
 	} else if (name == "timeDependentNavierField") {
-        return cos(M_PI*t/tau)*rotMatrix*gradNavierField(x, y, z, v0, c1, c2);
+        mat = cos(M_PI*t/tau)*gradNavierField(x_tilde, y, z, v0, c1, c2);
 	} else if (name == "quadraticField") {
-        return rotMatrix*gradQuadraticField(x, y, z, v0, c1, c2, c3);
+        mat = gradQuadraticField(x_tilde, y, z, v0, c1, c2, c3);
     } else if (name == "strawberryField") {
-        return rotMatrix*gradStrawberryField(x, y, z, v0, w0, x0, y0, z0, c1, c2, c3, c4, c5, c6);
+        mat = gradStrawberryField(x_tilde, y, z, v0, w0, x0, y0, z0, c1, c2, c3, c4, c5, c6);
     }
-	return {0, 0, 0};
+	/* const double c = abs(n_gamma);
+	const Vector Q_0 {n_gamma[0]*n_gamma[0]/(c*c), n_gamma[0]/c, n_gamma[0]*n_gamma[2]/(c*c)};
+	const Vector Q_1 {n_gamma[0]/c, 1, n_gamma[2]/c};
+	const Vector Q_2 {n_gamma[0]*n_gamma[2]/(c*c), n_gamma[2]/c, n_gamma[2]*n_gamma[2]/(c*c)};
+	const Matrix Q {Q_0, Q_1, Q_2};
+	for (int i = 0; i < 3; ++i)
+		for (int j = 0; j < 3; ++j)
+			mat[i][j] *= Q[i][j]; */
+
+	Matrix temp;
+	const double c = abs(n_gamma);
+	temp[0][0] = mat[0][0] * n_gamma[0] * n_gamma[0] / (c*c);
+	temp[0][1] = mat[0][1] * n_gamma[0] / c;
+	temp[0][2] = mat[0][0] * n_gamma[0] * n_gamma[2] / (c*c);
+	temp[1][0] = mat[1][0] * n_gamma[0] / c;
+	temp[1][1] = mat[1][1];
+	temp[1][2] = mat[1][0] * n_gamma[2] / c;
+	temp[2][0] = mat[0][0] * n_gamma[0] * n_gamma[2] / (c*c);
+	temp[2][1] = mat[0][1] * n_gamma[2] / c;
+	temp[2][2] = mat[0][0] * n_gamma[2] * n_gamma[2] / (c*c);
+
+	return temp;
 }
 
 /* Matrix  VelocityField::hessianAt(double t, double x, double y, double z) {
@@ -252,8 +268,4 @@ std::string VelocityField::getName() {
 
 double VelocityField::getMaxNormValue() {
 	return maxAbsoluteValue;
-}
-
-double VelocityField::getAzimuthalAngle() {
-	return azimuthalAngle;
 }
