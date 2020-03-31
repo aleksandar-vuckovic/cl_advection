@@ -56,6 +56,12 @@ VelocityField::VelocityField(std::string name, double v0, double w0, double x0, 
 	this->dz = dz;
     this->outputDirectory = outputDirectory;
 
+    if (name == "shearField" || name == "navierField" || name == "timeDependentNavierField" || name == "quadraticField" || name == "strawberryField") {
+		this->name = name;
+	} else {
+		throw std::invalid_argument("No available field was chosen.");
+	}
+
 	double maxNormValue = 0, currentVal = 0, x, y, z;
 
 	for (int i = 0; i < (xmax - xmin)/dx; i++) {
@@ -64,20 +70,8 @@ VelocityField::VelocityField(std::string name, double v0, double w0, double x0, 
 				x = i*dx - xmin;
 				y = j*dy - ymin;
 				z = k*dz - zmin;
-				if (name == "shearField")
-                    currentVal = abs(shearField(x, y, z, v0));
-				else if (name == "navierField")
-                    currentVal = abs(navierField(x, y, z, v0, c1, c2));
-				else if (name == "timeDependentNavierField") {
-					// Since |cos(x)| <= 1 we assume the worst case and take the maximum absolute value for the norm value of the velocity field
-                    currentVal = abs(navierField(x, y, z, v0, c1, c2));
-				}
-				else if (name == "quadraticField") {
-                    currentVal = abs(quadraticField(x, y, z, v0, c1, c2, c3));
-				}
-                else if (name == "strawberryField") {
-                    currentVal = abs(strawberryField(x, y, z, v0, w0, x0, y0, z0, c1, c2, c3, c4, c5, c6));
-                }
+				
+				currentVal = abs(this->at(0, x, y, z));
 				if (currentVal > maxNormValue)
 					maxNormValue = currentVal;
 			}
@@ -85,12 +79,6 @@ VelocityField::VelocityField(std::string name, double v0, double w0, double x0, 
 	}
 
 	this->maxAbsoluteValue = maxNormValue;
-
-    if (name == "shearField" || name == "navierField" || name == "timeDependentNavierField" || name == "quadraticField" || name == "strawberryField") {
-		this->name = name;
-	} else {
-		throw std::invalid_argument("No available field was chosen.");
-	}
 }
 
 /**
@@ -206,7 +194,7 @@ Vector VelocityField::secondPartial(double t, double x, double y, double z, Vect
 
 	if (name == "shearField") {
         partials = partialsShearField(x_tilde, y, z, v0);
-	} else if (name == "navierField") {
+	} else if (name == "quadraticField") {
         partials = partialsQuadraticField(x_tilde, y, z, v0, c1, c2, c3);
 	} else {
 		partials = {0, 0, 0, 0, 0, 0};
