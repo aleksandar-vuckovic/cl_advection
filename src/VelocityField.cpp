@@ -195,6 +195,68 @@ Matrix VelocityField::gradAt(double t, double x, double y, double z) {
  *
  * @param t The time
  */
+
+Vector VelocityField::secondPartial(double t, double x, double y, double z, Vector tau) {
+
+	double x_tilde = x*n_gamma[0] + z*n_gamma[2] - alpha;
+
+	// Second order partial derivatives of the velocity fields with the structure
+	// {dxdx_vx, dxdy_vx, dydy_vx, dxdx_vy, dxdy_vy, dydy_vy}
+	array<double, 6> partials; 
+
+	if (name == "shearField") {
+        partials = partialsShearField(x_tilde, y, z, v0);
+	} else if (name == "navierField") {
+        partials = partialsQuadraticField(x_tilde, y, z, v0, c1, c2, c3);
+	} else {
+		partials = {0, 0, 0, 0, 0, 0};
+	}
+
+	Matrix temp;
+	double n_x = n_gamma[0];
+	double n_z = n_gamma[2];
+	double c = abs(n_gamma);
+
+	temp[0][0] = pow(n_x/c, 3) * partials[0] * tau[0] 
+			   + pow(n_x/c, 2) * partials[1] * tau[1] 
+			   + pow(n_x, 2) * n_z / pow(c, 3) * partials[0] * tau[2];
+
+	temp[0][1] = pow(n_x/c, 2) * partials[1] * tau[0] 
+	           + n_x/c * partials[2] * tau[1] 
+	           + n_x*n_z/pow(c, 2) * partials[1] * tau[2];
+
+	temp[0][2] = pow(n_x, 2)*n_z/pow(c, 3) * partials[0] * tau[0] 
+	           + n_x*n_z /pow(c, 3) * partials[1] * tau[1] 
+	           + n_x*pow(n_z, 2) / pow(c, 3)* partials[0]*tau[2];
+
+	temp[1][0] = pow(n_x/c, 2) * partials[3] * tau[0] 
+	           + n_x/c * partials[4] * tau[1] 
+	           + n_x*n_z/pow(c, 2) * partials[3] * tau[2];
+
+	temp[1][1] = n_x/c * partials[4] * tau[0] 
+	           + partials[5] * tau[1] 
+	           + n_z/c * partials[4] * tau[2];
+
+	temp[1][2] = n_x*n_z/pow(c, 2) *partials[3] * tau[0] 
+	           + n_z/c * partials[4] * tau[1] 
+	           + pow(n_z/c, 2) * partials[3] * tau[2];
+
+	temp[2][0] = pow(n_x, 2)*n_z/pow(c, 3) * partials[0] * tau[0] 
+	           + n_x*n_z/pow(c, 2)*partials[1] * tau[1] 
+	           + n_x*pow(n_z, 2)/ pow(c, 3) * partials[0] * tau[2];
+
+	temp[2][1] = n_x*n_z/pow(c, 2) * partials[1] * tau[0] 
+	           + n_z/c * partials[2] * tau[1] 
+	           + pow(n_z/c, 2) * partials[1] * tau[2];
+
+	temp[2][2] = n_x*pow(n_z, 2)/pow(c, 3) * partials[0] * tau[0] 
+	           + pow(n_z/c, 2) * partials[1] * tau[1] 
+			   + pow(n_z/c, 3) * partials[0] * tau[2];
+
+	return temp*tau;
+	
+}
+
 void VelocityField::writeToFile(double t) {
     int numX = (xmax - xmin)/dx;
 	int numY = (ymax - ymin)/dy;

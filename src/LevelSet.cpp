@@ -28,12 +28,8 @@ LevelSet::LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz
 		// Calculate reference data
         contactPointExplicitEuler(dt, timesteps, expCP);
         referenceNormalExplicitEuler(dt, timesteps, expNormalVec);
+        referenceCurvatureExplicitEuler(dt, timesteps, initCurvature);
 
-        if (field->getName() == "quadraticField") {
-            referenceCurvatureQuadraticField(dt, timesteps, initCurvature);
-        } else {
-            referenceCurvatureExplicitEuler(dt, timesteps, initCurvature);
-        }
 }
 
 /**
@@ -407,30 +403,15 @@ void LevelSet::referenceAngleLinearField(double dt, int last_timestep, double th
  * @param cell The indices of the contact point
  */
 void LevelSet::referenceCurvatureExplicitEuler(double dt, int last_timestep, double initCurvature) {
+
     double curvature = initCurvature;
-
-    double v0 = field->getV0();
-
     for (int i = 0; i < last_timestep; i++) {
         curvatureReference[i] = curvature;
         Vector CP = positionReference[i];        
         Vector normal = normalReference[i];
         Vector tau = getTangentialVector(normal);
         // temp is the second derivative of v in the tau direction
-        Vector temp;
-        if (field->getName() == "shearField") {
-            Vector row1 = {v0*M_PI*M_PI*sin(M_PI*CP[0])*cos(M_PI*CP[1])*tau[0] + v0*M_PI*M_PI*cos(M_PI*CP[0])*sin(M_PI*CP[1])*tau[1],
-                                    v0*M_PI*M_PI*cos(M_PI*CP[0])*sin(M_PI*CP[1])*tau[0] + v0*M_PI*M_PI*sin(M_PI*CP[0])*cos(M_PI*CP[1])*tau[1],
-                                    0};
-            Vector row2 = {-v0*M_PI*M_PI*cos(M_PI*CP[0])*sin(M_PI*CP[1])*tau[0] - v0*M_PI*M_PI*sin(M_PI*CP[0])*cos(M_PI*CP[1])*tau[1],
-                                     -v0*M_PI*M_PI*sin(M_PI*CP[0])*cos(M_PI*CP[1])*tau[0]   -v0*M_PI*M_PI*cos(M_PI*CP[0])*sin(M_PI*CP[1])*tau[1],
-                                    0};
-            Vector row3 = {0, 0, 0};
-            Matrix M = {row1, row2, row3};
-            temp = M*tau;
-        } else if (field->getName() == "navierField" || field->getName() == "timeDependentNavierField" || field->getName() == "strawberryField") {
-            temp = {0, 0, 0};
-        }
+        Vector temp = field->secondPartial(i*dt, CP[0], CP[1], CP[2], tau);
 
         curvature = curvature + dt*(temp*normal - 3*curvature*(field->gradAt(i*dt, CP[0], CP[1], CP[2])*tau)*tau);
     }

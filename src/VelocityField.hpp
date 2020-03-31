@@ -37,7 +37,7 @@ public:
                              double dx, double dy, double dz, double azimuthalAngle, double alpha, std::string outputDirectory);
     Vector at(double t, double x, double y, double z);
     Matrix gradAt(double t, double x, double y, double z);
-	Matrix hessianAt(double t, double x, double y, double z);
+	Vector secondPartial(double t, double x, double y, double z, Vector tau);
 	void writeToFile(double t);
 	double getXMax();
 	double getYMax();
