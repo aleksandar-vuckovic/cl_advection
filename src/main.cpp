@@ -196,6 +196,7 @@ int main(int argc, char **argv) {
         {"CFL",required_argument , nullptr, 'c'},
         {"output", required_argument, nullptr, 'o'},
         {"threads", required_argument, nullptr, 't'},
+	{"writeField", required_argument, nullptr, 'w'},
         {nullptr, 0, nullptr, 0}
     };
 
@@ -204,7 +205,7 @@ int main(int argc, char **argv) {
     // Parse command line arguments with GNU getopt
     while (true) {
         int option_index;
-        opt = getopt_long(argc, argv, "f:r:c:o:t:", long_options, &option_index);
+        opt = getopt_long(argc, argv, "f:r:c:o:t:w:", long_options, &option_index);
 
         if (opt == -1)      //If there are no more options or arguments left, exit the loop
             break;
@@ -235,6 +236,11 @@ int main(int argc, char **argv) {
             case 't': {
                 threads = std::stoi(optarg);
                 break;
+            }
+
+            case 'w': {
+                std::stringstream(optarg) >> std::boolalpha >> writeField;
+		break;
             }
 
             default:
