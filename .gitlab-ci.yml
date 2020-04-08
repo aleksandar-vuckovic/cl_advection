@@ -7,7 +7,7 @@ stages:
 building_job:
   stage: build
   #image: # Your Docker image for building (e.g. archlinux/base)
-  before_script:
+  #before_script:
     #- # Install any operating system specific packages (e.g. pacman install -Sy which)
   script:
     - make src/Makefile                    # Build the main executable
@@ -21,7 +21,7 @@ execute_job:
   dependencies:
     - building_job
   #image: # Your Docker image for running the experiment (e.g. openfoamplus/of_v1812_centos73)
-  before_script:
+  #before_script:
     - # Commands to be executed to get ready for the execution of the main script (e.g. source /opt/OpenFOAM/OpenFOAM-plus/etc/bashrc)
   script:
     - cd ~/code_pamm19_levelset_advection/src/testcases/3D/curvature/convergenceAnalysis/shear/shear_200
@@ -73,7 +73,7 @@ deploy_job:
     - chmod 400 ~/.ssh/automatic_deployment
  
     # Pull the GitLab Pages repository
-    - cd / && git clone git@git.rwth-aachen.de:aleksandar-vuckovic/cl_advection_pages.git
+    - cd .. && git clone git@git.rwth-aachen.de:aleksandar-vuckovic/cl_advection_pages.git
 
   script:
     # Rename any images by appending commit short hash, so there are no conflicts between commits.
