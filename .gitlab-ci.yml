@@ -1,8 +1,8 @@
 stages:
   - build
   - execute
-  - deploy
   - test
+  - deploy
  
 building_job:
   stage: build
@@ -60,7 +60,8 @@ execute_job:
     - $toplevel/src/cl_advection -t 4 -w false -f navierField -r 0.25 -o  $toplevel/src/testcases/2D/curvature/paper_examples/navier/navier_25         
   artifacts:
     paths:
-      - bla
+      - src/testcases
+      - src/testcaseScripts
  
 deploy_job:
   stage: deploy
@@ -71,23 +72,23 @@ deploy_job:
     #- mkdir ~/.ssh/ # Create a folder for the SSH keys.
      
     # Move the RSA environment variables keys to files.
-    - echo "$automatic_deployment" > ~/.ssh/automatic_deployment
-    - echo "$automatic_deployment" > ~/.ssh/automatic_deployment.pub
-    - echo "$known_hosts_auto" > ~/.ssh/known_hosts_auto
-    - chmod 400 ~/.ssh/automatic_deployment.pub
-    - chmod 400 ~/.ssh/automatic_deployment
+    #- echo "$automatic_deployment" > ~/.ssh/automatic_deployment
+    #- echo "$automatic_deployment" > ~/.ssh/automatic_deployment.pub
+    #- echo "$known_hosts_auto" > ~/.ssh/known_hosts_auto
+    #- chmod 400 ~/.ssh/automatic_deployment.pub
+    #- chmod 400 ~/.ssh/automatic_deployment
  
     # Pull the GitLab Pages repository
-    - cd .. && git clone git@git.rwth-aachen.de:aleksandar-vuckovic/cl_advection_pages.git
+    #- cd .. && git clone git@git.rwth-aachen.de:aleksandar-vuckovic/cl_advection_pages.git
 
   script:
     # Rename any images by appending commit short hash, so there are no conflicts between commits.
     #- mv <NAME_OF_RESULT_IMAGE>.png <NAME_OF_RESULT_IMAGE>-$CI_COMMIT_SHA.png
     # Insert specific meta-data need by Jekyll to display as a post.
-    - sed -i '1i ---\nlayout= post\ntitle= <NAME_OF_EXPERIMENT_RUN> commit '"$CI_COMMIT_SHORT_SHA"'\ndate= '"`date "+%Y-%m-%d %H:%M:%S %z"`"'\ntags= '"$CI_COMMIT_SHA"'\n---\n' ../<NAME_OF_RESULT_FILE>.md
+    #- sed -i '1i ---\nlayout= post\ntitle= <NAME_OF_EXPERIMENT_RUN> commit '"$CI_COMMIT_SHORT_SHA"'\ndate= '"`date "+%Y-%m-%d %H:%M:%S %z"`"'\ntags= '"$CI_COMMIT_SHA"'\n---\n' ../<NAME_OF_RESULT_FILE>.md
  
     # YAML cannot escape double-colon in previous command so replacement happens here.
-    - sed -i 's/\=/:/g' ../<NAME_OF_RESULT_FILE>.md
+    #- sed -i 's/\=/:/g' ../<NAME_OF_RESULT_FILE>.md
  
     # Change references to images inside the Markdown/HTML file, so images can be displayed.
     #- sed -i 's/<PREVIOUS_PATH_TO_IMAGE>/\/<PATH_TO_GITLAB_PAGE_REPO>/assets/images/<NAME_OF_RESULT_IMAGE>-'"$CI_COMMIT_SHA"'/g' ../<NAME_OF_FILE_CONTAINING_THE_IMAGE_REFERENCES>.md
@@ -105,6 +106,10 @@ deploy_job:
     # - git add . && git commit -m "New experiment run" && git push origin master
   dependencies:
     #- # Need of files that were created at some previous job of the (e.g. my_execute_job)
+
+artifacts:
+    paths:
+      - bla
   
 shear_2D_test:
   stage: test
