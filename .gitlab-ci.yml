@@ -57,7 +57,8 @@ execute_job:
     - $toplevel/src/cl_advection -t 4 -w false -f navierField -r 2 -o  $toplevel/src/testcases/2D/curvature/paper_examples/navier/navier_200		
     - $toplevel/src/cl_advection -t 4 -w false -f navierField -r 1 -o  $toplevel/src/testcases/2D/curvature/paper_examples/navier/navier_100		
     - $toplevel/src/cl_advection -t 4 -w false -f navierField -r 0.5 -o  $toplevel/src/testcases/2D/curvature/paper_examples/navier/navier_50		       
-    - $toplevel/src/cl_advection -t 4 -w false -f navierField -r 0.25 -o  $toplevel/src/testcases/2D/curvature/paper_examples/navier/navier_25         
+    - $toplevel/src/cl_advection -t 4 -w false -f navierField -r 0.25 -o  $toplevel/src/testcases/2D/curvature/paper_examples/navier/navier_25
+    - cd $toplevel
   artifacts:
     paths:
       - src/testcases
