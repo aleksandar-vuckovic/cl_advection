@@ -30,34 +30,34 @@ execute_job:
   script:
     - toplevel=$PWD
     - cd $toplevel/src/testcases/2D/curvature/convergenceAnalysis/shear/shear_200
-    - $toplevel/src/cl_advection -t 4 -w false -o $toplevel/src/testcases/2D/curvature/shear/shear_200
-    - $toplevel/src/cl_advection -t 4 -w false -r 0.5 -o  $toplevel/src/testcases/2D/curvature/shear/shear_100
-    - $toplevel/src/cl_advection -t 4 -w false -r 0.25 -o  $toplevel/src/testcases/2D/curvature/shear/shear_50
-    - $toplevel/src/cl_advection -t 4 -w false -r 0.125 -o  $toplevel/src/testcases/2D/curvature/shear/shear_25
+    - $toplevel/src/cl_advection -t 4 -w false -o $toplevel/src/testcases/2D/curvature/convergenceAnalysis/shear/shear_200
+    - $toplevel/src/cl_advection -t 4 -w false -r 0.5 -o  $toplevel/src/testcases/2D/curvature/convergenceAnalysis/shear/shear_100
+    - $toplevel/src/cl_advection -t 4 -w false -r 0.25 -o  $toplevel/src/testcases/2D/curvature/convergenceAnalysis/shear/shear_50
+    - $toplevel/src/cl_advection -t 4 -w false -r 0.125 -o  $toplevel/src/testcases/2D/curvature/convergenceAnalysis/shear/shear_25
 
     - cd $toplevel/src/testcases/2D/curvature/convergenceAnalysis/shear/shear_200											
-    - $toplevel/src/cl_advection -t 4 -w false -f navierField -o  $toplevel/src/testcases/2D/curvature/navier/navier_200					
-    - $toplevel/src/cl_advection -t 4 -w false -f navierField -r 0.5 -o  $toplevel/src/testcases/2D/curvature/navier/navier_100				
-    - $toplevel/src/cl_advection -t 4 -w false -f navierField -r 0.25 -o  $toplevel/src/testcases/2D/curvature/navier/navier_50			      
-    - $toplevel/src/cl_advection -t 4 -w false -f navierField -r 0.125 -o  $toplevel/src/testcases/2D/curvature/navier/navier_25				
+    - $toplevel/src/cl_advection -t 4 -w false -f navierField -o  $toplevel/src/testcases/2D/curvature/convergenceAnalysis/navier/navier_200					
+    - $toplevel/src/cl_advection -t 4 -w false -f navierField -r 0.5 -o  $toplevel/src/testcases/2D/curvature/convergenceAnalysis/navier/navier_100				
+    - $toplevel/src/cl_advection -t 4 -w false -f navierField -r 0.25 -o  $toplevel/src/testcases/2D/curvature/convergenceAnalysis/navier/navier_50			      
+    - $toplevel/src/cl_advection -t 4 -w false -f navierField -r 0.125 -o  $toplevel/src/testcases/2D/curvature/convergenceAnalysis/navier/navier_25				
 
     - cd $toplevel/src/testcases/2D/curvature/convergenceAnalysis/shear/shear_200											
-    - $toplevel/src/cl_advection -t 4 -w false -f strawberryField -r 0.125 -o  $toplevel/src/testcases/2D/curvature/strawberry/strawberry_200			
-    - $toplevel/src/cl_advection -t 4 -w false -f strawberryField -r 0.0625 -o  $toplevel/src/testcases/2D/curvature/strawberry/strawberry_100		       
-    - $toplevel/src/cl_advection -t 4 -w false -f strawberryField -r 0.03125 -o  $toplevel/src/testcases/2D/curvature/strawberry/strawberry_50			
-    - $toplevel/src/cl_advection -t 4 -w false -f strawberryField -r 0.015625 -o  $toplevel/src/testcases/2D/curvature/strawberry/strawberry_25			
+    - $toplevel/src/cl_advection -t 4 -w false -f strawberryField -r 0.125 -o  $toplevel/src/testcases/2D/curvature/convergenceAnalysis/strawberry/strawberry_200			
+    - $toplevel/src/cl_advection -t 4 -w false -f strawberryField -r 0.0625 -o  $toplevel/src/testcases/2D/curvature/convergenceAnalysis/strawberry/strawberry_100		       
+    - $toplevel/src/cl_advection -t 4 -w false -f strawberryField -r 0.03125 -o  $toplevel/src/testcases/2D/curvature/convergenceAnalysis/strawberry/strawberry_50			
+    - $toplevel/src/cl_advection -t 4 -w false -f strawberryField -r 0.015625 -o  $toplevel/src/testcases/2D/curvature/convergenceAnalysis/strawberry/strawberry_25			
 
     - cd $toplevel/src/testcases/2D/curvature/convergenceAnalysis/paper_examples/quadratic_100										
-    - $toplevel/src/cl_advection -t 4 -w false -f quadraticField -r 2 -o  $toplevel/src/testcases/2D/curvature/paper_examples/quadratic/quadratic_200	
-    - $toplevel/src/cl_advection -t 4 -w false -f quadraticField -r 1 -o  $toplevel/src/testcases/2D/curvature/paper_examples/quadratic/quadratic_100	
-    - $toplevel/src/cl_advection -t 4 -w false -f quadraticField -r 0.5 -o  $toplevel/src/testcases/2D/curvature/paper_examples/quadratic/quadratic_50		
-    - $toplevel/src/cl_advection -t 4 -w false -f quadraticField -r 0.25 -o  $toplevel/src/testcases/2D/curvature/paper_examples/quadratic/quadratic_25	
+    - $toplevel/src/cl_advection -t 4 -w false -f quadraticField -r 2 -o  $toplevel/src/testcases/2D/curvature/convergenceAnalysis/paper_examples/quadratic/quadratic_200	
+    - $toplevel/src/cl_advection -t 4 -w false -f quadraticField -r 1 -o  $toplevel/src/testcases/2D/curvature/convergenceAnalysis/paper_examples/quadratic/quadratic_100	
+    - $toplevel/src/cl_advection -t 4 -w false -f quadraticField -r 0.5 -o  $toplevel/src/testcases/2D/curvature/convergenceAnalysis/paper_examples/quadratic/quadratic_50		
+    - $toplevel/src/cl_advection -t 4 -w false -f quadraticField -r 0.25 -o  $toplevel/src/testcases/2D/curvature/convergenceAnalysis/paper_examples/quadratic/quadratic_25	
 
     - cd $toplevel/src/testcases/2D/curvature/convergenceAnalysis/paper_examples/navier_100										
-    - $toplevel/src/cl_advection -t 4 -w false -f navierField -r 2 -o  $toplevel/src/testcases/2D/curvature/paper_examples/navier/navier_200		
-    - $toplevel/src/cl_advection -t 4 -w false -f navierField -r 1 -o  $toplevel/src/testcases/2D/curvature/paper_examples/navier/navier_100		
-    - $toplevel/src/cl_advection -t 4 -w false -f navierField -r 0.5 -o  $toplevel/src/testcases/2D/curvature/paper_examples/navier/navier_50		       
-    - $toplevel/src/cl_advection -t 4 -w false -f navierField -r 0.25 -o  $toplevel/src/testcases/2D/curvature/paper_examples/navier/navier_25
+    - $toplevel/src/cl_advection -t 4 -w false -f navierField -r 2 -o  $toplevel/src/testcases/2D/curvature/convergenceAnalysis/paper_examples/navier/navier_200		
+    - $toplevel/src/cl_advection -t 4 -w false -f navierField -r 1 -o  $toplevel/src/testcases/2D/curvature/convergenceAnalysis/paper_examples/navier/navier_100		
+    - $toplevel/src/cl_advection -t 4 -w false -f navierField -r 0.5 -o  $toplevel/src/testcases/2D/curvature/convergenceAnalysis/paper_examples/navier/navier_50		       
+    - $toplevel/src/cl_advection -t 4 -w false -f navierField -r 0.25 -o  $toplevel/src/testcases/2D/curvature/convergenceAnalysis/paper_examples/navier/navier_25
     - cd $toplevel
   artifacts:
     paths:

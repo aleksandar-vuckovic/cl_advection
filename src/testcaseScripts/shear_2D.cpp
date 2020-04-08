@@ -12,10 +12,10 @@ int main() {
   Data curvatureData_100 = read_csv(path + "shear_100/curvature.csv");
   Data curvatureData_200 = read_csv(path + "shear_200/curvature.csv");
 
-  Data angleData_25 = read_csv(path + "shear_25/contactAnglecsv");
-  Data angleData_50 = read_csv(path + "shear_50/contactAnglecsv");
-  Data angleData_100 = read_csv(path + "shear_100/contactAnglecsv");
-  Data angleData_200 = read_csv(path + "shear_200/contactAnglecsv");
+  Data angleData_25 = read_csv(path + "shear_25/contactAngle.csv");
+  Data angleData_50 = read_csv(path + "shear_50/contactAngle.csv");
+  Data angleData_100 = read_csv(path + "shear_100/contactAngle.csv");
+  Data angleData_200 = read_csv(path + "shear_200/contactAngle.csv");
 
   bool success_curvature_25 = verify(curvatureData_25, 5, time_tolerance, 0.15, value_tolerance);
 
