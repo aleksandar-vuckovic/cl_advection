@@ -9,8 +9,7 @@ building_job:
   #image: # Your Docker image for building (e.g. archlinux/base)
   #before_script:
     #- # Install any operating system specific packages (e.g. pacman install -Sy which)
-  script:
-    - toplevel=$PWD	
+  script:	
     - make src/Makefile                    # Build the main executable
     - make src/testcaseScripts/Makefile    # Build the testcase scripts
   artifacts:
@@ -25,6 +24,7 @@ execute_job:
   #before_script:
     #- # Commands to be executed to get ready for the execution of the main script (e.g. source /opt/OpenFOAM/OpenFOAM-plus/etc/bashrc)
   script:
+    - toplevel=$PWD
     - cd $toplevel/src/testcases/3D/curvature/convergenceAnalysis/shear/shear_200
     - $toplevel/src/cl_advection -t 4 -w false -o $toplevel/src/testcases/3D/curvature/shear/shear_200
     - $toplevel/src/cl_advection -t 4 -w false -r 0.5 -o  $toplevel/src/testcases/3D/curvature/shear/shear_100
