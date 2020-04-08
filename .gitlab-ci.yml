@@ -18,11 +18,11 @@ building_job:
  
 execute_job:
   stage: execute
-  dependencies:
+  dependencies: 
     - building_job
   #image: # Your Docker image for running the experiment (e.g. openfoamplus/of_v1812_centos73)
   #before_script:
-    - # Commands to be executed to get ready for the execution of the main script (e.g. source /opt/OpenFOAM/OpenFOAM-plus/etc/bashrc)
+    #- # Commands to be executed to get ready for the execution of the main script (e.g. source /opt/OpenFOAM/OpenFOAM-plus/etc/bashrc)
   script:
     - cd ~/code_pamm19_levelset_advection/src/testcases/3D/curvature/convergenceAnalysis/shear/shear_200
     - ~/code_pamm19_levelset_advection/src/cl_advection -t 4 -w false -o ~/code_pamm19_levelset_advection/src/testcases/3D/curvature/shear/shear_200
@@ -99,7 +99,7 @@ deploy_job:
     # - git config --global user.email '<>'
     # - git add . && git commit -m "New experiment run" && git push origin master
   dependencies:
-    - # Need of files that were created at some previous job of the (e.g. my_execute_job)
+    #- # Need of files that were created at some previous job of the (e.g. my_execute_job)
   
 shear_2D_test:
   stage: test
@@ -107,4 +107,4 @@ shear_2D_test:
   script:
     - src/testcaseScripts/shear_2D
   dependencies:
-      execute_job
+    - execute_job
