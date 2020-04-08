@@ -1,0 +1,110 @@
+stages:
+  - build
+  - execute
+  - deploy
+  - test
+ 
+building_job:
+  stage: build
+  #image: # Your Docker image for building (e.g. archlinux/base)
+  before_script:
+    - # Install any operating system specific packages (e.g. pacman install -Sy which)
+  script:
+    - make src/Makefile                    # Build the main executable
+    - make src/testcaseScripts/Makefile    # Build the testcase scripts
+  artifacts:
+    paths:
+    - cl_advection
+ 
+execute_job:
+  stage: execute
+  dependencies:
+    - building_job
+  #image: # Your Docker image for running the experiment (e.g. openfoamplus/of_v1812_centos73)
+  before_script:
+    - # Commands to be executed to get ready for the execution of the main script (e.g. source /opt/OpenFOAM/OpenFOAM-plus/etc/bashrc)
+  script:
+    - cd ~/code_pamm19_levelset_advection/src/testcases/3D/curvature/convergenceAnalysis/shear/shear_200
+    - ~/code_pamm19_levelset_advection/src/cl_advection -t 4 -w false -o ~/code_pamm19_levelset_advection/src/testcases/3D/curvature/shear/shear_200
+    - ~/code_pamm19_levelset_advection/src/cl_advection -t 4 -w false -r 0.5 -o  ~/code_pamm19_levelset_advection/src/testcases/3D/curvature/shear/shear_100
+    - ~/code_pamm19_levelset_advection/src/cl_advection -t 4 -w false -r 0.25 -o  ~/code_pamm19_levelset_advection/src/testcases/3D/curvature/shear/shear_50
+    - ~/code_pamm19_levelset_advection/src/cl_advection -t 4 -w false -r 0.125 -o  ~/code_pamm19_levelset_advection/src/testcases/3D/curvature/shear/shear_25
+
+    - cd ~/code_pamm19_levelset_advection/src/testcases/3D/curvature/convergenceAnalysis/shear/shear_200											
+    - ~/code_pamm19_levelset_advection/src/cl_advection -t 4 -w false -f navierField -o  ~/code_pamm19_levelset_advection/src/testcases/3D/curvature/navier/navier_200					
+    - ~/code_pamm19_levelset_advection/src/cl_advection -t 4 -w false -f navierField -r 0.5 -o  ~/code_pamm19_levelset_advection/src/testcases/3D/curvature/navier/navier_100				
+    - ~/code_pamm19_levelset_advection/src/cl_advection -t 4 -w false -f navierField -r 0.25 -o  ~/code_pamm19_levelset_advection/src/testcases/3D/curvature/navier/navier_50			      
+    - ~/code_pamm19_levelset_advection/src/cl_advection -t 4 -w false -f navierField -r 0.125 -o  ~/code_pamm19_levelset_advection/src/testcases/3D/curvature/navier/navier_25				
+
+    - cd ~/code_pamm19_levelset_advection/src/testcases/3D/curvature/convergenceAnalysis/shear/shear_200											
+    - ~/code_pamm19_levelset_advection/src/cl_advection -t 4 -w false -f strawberryField -r 0.125 -o  ~/code_pamm19_levelset_advection/src/testcases/3D/curvature/strawberry/strawberry_200			
+    - ~/code_pamm19_levelset_advection/src/cl_advection -t 4 -w false -f strawberryField -r 0.0625 -o  ~/code_pamm19_levelset_advection/src/testcases/3D/curvature/strawberry/strawberry_100		       
+    - ~/code_pamm19_levelset_advection/src/cl_advection -t 4 -w false -f strawberryField -r 0.03125 -o  ~/code_pamm19_levelset_advection/src/testcases/3D/curvature/strawberry/strawberry_50			
+    - ~/code_pamm19_levelset_advection/src/cl_advection -t 4 -w false -f strawberryField -r 0.015625 -o  ~/code_pamm19_levelset_advection/src/testcases/3D/curvature/strawberry/strawberry_25			
+
+    - cd ~/code_pamm19_levelset_advection/src/testcases/3D/curvature/convergenceAnalysis/paper_examples/quadratic_100										
+    - ~/code_pamm19_levelset_advection/src/cl_advection -t 4 -w false -f quadraticField -r 2 -o  ~/code_pamm19_levelset_advection/src/testcases/3D/curvature/paper_examples/quadratic/quadratic_200	
+    - ~/code_pamm19_levelset_advection/src/cl_advection -t 4 -w false -f quadraticField -r 1 -o  ~/code_pamm19_levelset_advection/src/testcases/3D/curvature/paper_examples/quadratic/quadratic_100	
+    - ~/code_pamm19_levelset_advection/src/cl_advection -t 4 -w false -f quadraticField -r 0.5 -o  ~/code_pamm19_levelset_advection/src/testcases/3D/curvature/paper_examples/quadratic/quadratic_50		
+    - ~/code_pamm19_levelset_advection/src/cl_advection -t 4 -w false -f quadraticField -r 0.25 -o  ~/code_pamm19_levelset_advection/src/testcases/3D/curvature/paper_examples/quadratic/quadratic_25	
+
+    - cd ~/code_pamm19_levelset_advection/src/testcases/3D/curvature/convergenceAnalysis/paper_examples/navier_100										
+    - ~/code_pamm19_levelset_advection/src/cl_advection -t 4 -w false -f navierField -r 2 -o  ~/code_pamm19_levelset_advection/src/testcases/3D/curvature/paper_examples/navier/navier_200		
+    - ~/code_pamm19_levelset_advection/src/cl_advection -t 4 -w false -f navierField -r 1 -o  ~/code_pamm19_levelset_advection/src/testcases/3D/curvature/paper_examples/navier/navier_100		
+    - ~/code_pamm19_levelset_advection/src/cl_advection -t 4 -w false -f navierField -r 0.5 -o  ~/code_pamm19_levelset_advection/src/testcases/3D/curvature/paper_examples/navier/navier_50		       
+    - ~/code_pamm19_levelset_advection/src/cl_advection -t 4 -w false -f navierField -r 0.25 -o  ~/code_pamm19_levelset_advection/src/testcases/3D/curvature/paper_examples/navier/navier_25         
+  artifacts:
+    paths:
+      - bla
+ 
+deploy_job:
+  stage: deploy
+  image: alpine:latest # Docker image name for deploying the results
+  before_script:
+    #- apk update
+    #- apk add git openssh # Install git and openssh packages.
+    #- mkdir ~/.ssh/ # Create a folder for the SSH keys.
+     
+    # Move the RSA environment variables keys to files.
+    - echo "$automatic_deployment" > ~/.ssh/automatic_deployment
+    - echo "$automatic_deployment" > ~/.ssh/automatic_deployment.pub
+    - echo "$known_hosts_auto" > ~/.ssh/known_hosts_auto
+    - chmod 400 ~/.ssh/automatic_deployment.pub
+    - chmod 400 ~/.ssh/automatic_deployment
+ 
+    # Pull the GitLab Pages repository
+    - cd / && git clone git@git.rwth-aachen.de:aleksandar-vuckovic/cl_advection_pages.git
+
+  script:
+    # Rename any images by appending commit short hash, so there are no conflicts between commits.
+    #- mv <NAME_OF_RESULT_IMAGE>.png <NAME_OF_RESULT_IMAGE>-$CI_COMMIT_SHA.png
+    # Insert specific meta-data need by Jekyll to display as a post.
+    - sed -i '1i ---\nlayout= post\ntitle= <NAME_OF_EXPERIMENT_RUN> commit '"$CI_COMMIT_SHORT_SHA"'\ndate= '"`date "+%Y-%m-%d %H:%M:%S %z"`"'\ntags= '"$CI_COMMIT_SHA"'\n---\n' ../<NAME_OF_RESULT_FILE>.md
+ 
+    # YAML cannot escape double-colon in previous command so replacement happens here.
+    - sed -i 's/\=/:/g' ../<NAME_OF_RESULT_FILE>.md
+ 
+    # Change references to images inside the Markdown/HTML file, so images can be displayed.
+    #- sed -i 's/<PREVIOUS_PATH_TO_IMAGE>/\/<PATH_TO_GITLAB_PAGE_REPO>/assets/images/<NAME_OF_RESULT_IMAGE>-'"$CI_COMMIT_SHA"'/g' ../<NAME_OF_FILE_CONTAINING_THE_IMAGE_REFERENCES>.md
+ 
+    # Rename file in format need by Jekyll, by appending current date.
+    #- mv ../<NAME_OF_RESULT_FILE>.md ../$(date +%Y-%m-%d)-<NAME_OF_RESULT_FILE>-$CI_COMMIT_SHORT_SHA.md
+ 
+    # Move files to GitLab Page local repository.
+    #- mv <NAME_OF_PROJECT_REPOSITORY_CONTAINING_IMAGES> /<NAME_OF_GITLAB_PAGES_REPOSITORY>/assets/images/
+    #- mv <NAME_OF_PROJECT_REPOSITORY_CONTAINING_MARKDOWN_OR_HTML> /<NAME_OF_GITLAB_PAGES_REPOSITORY>/_posts/
+    #- cd /<NAME_OF_GITLAB_PAGES_REPOSITORY>/
+  
+    # Push changes upstream.
+    # - git config --global user.email '<>'
+    # - git add . && git commit -m "New experiment run" && git push origin master
+  dependencies:
+    - # Need of files that were created at some previous job of the (e.g. my_execute_job)
+  
+shear_2D_test:
+  stage: test
+  #image: # Docker image name for testing the results.
+  script:
+    - src/testcaseScripts/shear_2D
+  dependencies:
+      execute_job
