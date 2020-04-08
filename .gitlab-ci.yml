@@ -8,7 +8,7 @@ building_job:
   stage: build
   #image: # Your Docker image for building (e.g. archlinux/base)
   before_script:
-    - # Install any operating system specific packages (e.g. pacman install -Sy which)
+    #- # Install any operating system specific packages (e.g. pacman install -Sy which)
   script:
     - make src/Makefile                    # Build the main executable
     - make src/testcaseScripts/Makefile    # Build the testcase scripts
