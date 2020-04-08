@@ -63,10 +63,10 @@ execute_job:
       - src/testcases
       - src/testcaseScripts
  
-deploy_job:
-  stage: deploy
-  image: alpine:latest # Docker image name for deploying the results
-  before_script:
+#deploy_job:
+  #stage: deploy
+  #image: alpine:latest # Docker image name for deploying the results
+  #before_script:
     #- apk update
     #- apk add git openssh # Install git and openssh packages.
     #- mkdir ~/.ssh/ # Create a folder for the SSH keys.
@@ -81,7 +81,7 @@ deploy_job:
     # Pull the GitLab Pages repository
     #- cd .. && git clone git@git.rwth-aachen.de:aleksandar-vuckovic/cl_advection_pages.git
 
-  script:
+  #script:
     # Rename any images by appending commit short hash, so there are no conflicts between commits.
     #- mv <NAME_OF_RESULT_IMAGE>.png <NAME_OF_RESULT_IMAGE>-$CI_COMMIT_SHA.png
     # Insert specific meta-data need by Jekyll to display as a post.
@@ -104,12 +104,12 @@ deploy_job:
     # Push changes upstream.
     # - git config --global user.email '<>'
     # - git add . && git commit -m "New experiment run" && git push origin master
-  dependencies:
+  #dependencies:
     #- # Need of files that were created at some previous job of the (e.g. my_execute_job)
 
-artifacts:
-    paths:
-      - bla
+ # artifacts:
+   #   paths:
+    #    - bla
   
 shear_2D_test:
   stage: test
