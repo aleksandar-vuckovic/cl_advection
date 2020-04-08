@@ -17,7 +17,8 @@ building_job:
     - cd ../../
   artifacts:
     paths:
-    - cl_advection
+    - src/cl_advection
+    - src/testcaseScripts
  
 execute_job:
   stage: execute
