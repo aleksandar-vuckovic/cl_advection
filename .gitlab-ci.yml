@@ -116,6 +116,7 @@ shear_2D_test:
   stage: test
   #image: # Docker image name for testing the results.
   script:
-    - src/testcaseScripts/shear_2D
+    - cd src/testcaseScripts/
+    - ./shear_2D
   dependencies:
     - execute_job
