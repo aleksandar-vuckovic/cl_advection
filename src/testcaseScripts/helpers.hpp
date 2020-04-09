@@ -12,6 +12,10 @@ typedef std::vector<std::vector<double>> Data;
 Data read_csv(std::string path) {
 
   std::ifstream stream(path);
+
+  if (!stream.good())
+    throw std::invalid_argument("File at given path does not exist or is empty.");
+  
   std::string line;
   Data tempReturn;
 
