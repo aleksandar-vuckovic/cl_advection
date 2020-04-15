@@ -206,8 +206,8 @@ Vector VelocityField::secondPartial(double t, double x, double y, double z, Vect
 	double c = abs(n_gamma);
 
 	temp[0][0] = pow(n_x/c, 3) * partials[0] * tau[0] 
-			   + pow(n_x/c, 2) * partials[1] * tau[1] 
-			   + pow(n_x, 2) * n_z / pow(c, 3) * partials[0] * tau[2];
+                   + pow(n_x/c, 2) * partials[1] * tau[1]
+                   + pow(n_x, 2) * n_z / pow(c, 3) * partials[0] * tau[2];
 
 	temp[0][1] = pow(n_x/c, 2) * partials[1] * tau[0] 
 	           + n_x/c * partials[2] * tau[1] 
@@ -239,7 +239,7 @@ Vector VelocityField::secondPartial(double t, double x, double y, double z, Vect
 
 	temp[2][2] = n_x*pow(n_z, 2)/pow(c, 3) * partials[0] * tau[0] 
 	           + pow(n_z/c, 2) * partials[1] * tau[1] 
-			   + pow(n_z/c, 3) * partials[0] * tau[2];
+                   + pow(n_z/c, 3) * partials[0] * tau[2];
 
 	return temp*tau;
 	

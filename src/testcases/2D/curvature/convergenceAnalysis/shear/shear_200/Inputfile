@@ -12,7 +12,11 @@ writeField=true
 
 v0=0.1
 c1=0.1
-c2=0.0
+c2=0.1
+c3=-0.1
+c4=-0.2
+c5=0.2
+c6=-0.1
 field=shearField
 
 centerX=1.0
