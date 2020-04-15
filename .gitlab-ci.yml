@@ -51,7 +51,7 @@ execute_job:
     - $toplevel/src/cl_advection -t 4 -w false -f strawberryField -o $toplevel/src/testcases/3D/curvature/convergenceAnalysis/strawberry/strawberry_200
     - $toplevel/src/cl_advection -t 4 -w false -f strawberryField -r 0.5 -o $toplevel/src/testcases/3D/curvature/convergenceAnalysis/strawberry/strawberry_100
     - $toplevel/src/cl_advection -t 4 -w true -f strawberryField -r 0.25 -o $toplevel/src/testcases/3D/curvature/convergenceAnalysis/strawberry/strawberry_50
-    -$toplevel/src/cl_advection -t 4 -w false -f strawberryField -r 0.125 -o $toplevel/src/testcases/3D/curvature/convergenceAnalysis/strawberry/strawberry_25
+    - $toplevel/src/cl_advection -t 4 -w false -f strawberryField -r 0.125 -o $toplevel/src/testcases/3D/curvature/convergenceAnalysis/strawberry/strawberry_25
     
     - cd $toplevel
     
