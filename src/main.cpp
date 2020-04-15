@@ -121,10 +121,18 @@ int main(int argc, char **argv) {
                         z0 = std::stod(value);
                     else if (varName == "tau")
                         tau = std::stod(value);
-                    else if (varName == "field")
+                    else if (varName == "field") {
                         fieldName = value;
-                    else if (varName == "fieldAzimuthalAngle")
+                        if (fieldName == "strawberryField" && fieldAzimuthalAngle != 0)
+                            throw std::invalid_argument("Error: field is strawberryField and fieldAzimuthalAngle != 0. "
+                                                        "It is currently not possible to rotate the strawberry field.");
+                    }
+                    else if (varName == "fieldAzimuthalAngle") {
                         fieldAzimuthalAngle = std::stod(value);
+                        if (fieldName == "strawberryField" && fieldAzimuthalAngle != 0)
+                            throw std::invalid_argument("Error: field is strawberryField and fieldAzimuthalAngle != 0. "
+                                                        "It is currently not possible to rotate the strawberry field.");
+                    }
                     else if (varName == "alpha")
                         alpha = std::stod(value);
                     else if (varName == "geometryType")

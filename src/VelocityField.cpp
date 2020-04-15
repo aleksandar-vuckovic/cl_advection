@@ -94,16 +94,20 @@ Vector VelocityField::at(double t, double x, double y, double z) {
 	Vector vec;
 	if (name == "shearField") {
 		vec = shearField(x_tilde, y, z, v0);
+        vec = vec[0]*n_gamma + vec[1]*n_y;
 	} else if (name == "navierField") {
 		vec = navierField(x_tilde, y, z, v0, c1, c2);
+        vec = vec[0]*n_gamma + vec[1]*n_y;
 	} else if (name == "timeDependentNavierField") {
 		vec = cos(M_PI*t/tau) * navierField(x_tilde, y, z, v0, c1, c2);
+        vec = vec[0]*n_gamma + vec[1]*n_y;
 	} else if (name == "quadraticField") {
 	    vec = quadraticField(x_tilde, y, z, v0, c1, c2, c3);
+        vec = vec[0]*n_gamma + vec[1]*n_y;
     } else if (name == "strawberryField") {
         vec = strawberryField(x_tilde, y, z, v0, w0, x0, y0, z0, c1, c2, c3, c4, c5, c6);
     }
-	return vec[0]*n_gamma + vec[1]*n_y;
+    return vec;
 }
 
 /**
@@ -126,7 +130,7 @@ Matrix VelocityField::gradAt(double t, double x, double y, double z) {
 	} else if (name == "quadraticField") {
         mat = gradQuadraticField(x_tilde, y, z, v0, c1, c2, c3);
     } else if (name == "strawberryField") {
-        mat = gradStrawberryField(x_tilde, y, z, v0, w0, x0, y0, z0, c1, c2, c3, c4, c5, c6);
+        return gradStrawberryField(x_tilde, y, z, v0, w0, x0, y0, z0, c1, c2, c3, c4, c5, c6);
     }
 	/* const double c = abs(n_gamma);
 	const Vector Q_0 {n_gamma[0]*n_gamma[0]/(c*c), n_gamma[0]/c, n_gamma[0]*n_gamma[2]/(c*c)};

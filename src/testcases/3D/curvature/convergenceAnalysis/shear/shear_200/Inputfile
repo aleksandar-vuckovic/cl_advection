@@ -6,7 +6,7 @@ lenY=1.0
 lenZ=1.0
 
 time=1.0
-CFL=0.2
+CFL=0.4
 writestepsFraction=0.1
 writeField=true
 

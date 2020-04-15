@@ -122,3 +122,30 @@ shear_2D_test:
     - ./shear_2D
   dependencies:
     - execute_job
+
+navier_2D_test:
+  stage: test
+  #image: # Docker image name for testing the results.
+  script:
+    - cd src/testcaseScripts/
+    - ./navier_2D
+  dependencies:
+    - execute_job
+
+shear_3D_test:
+  stage: test
+  #image: # Docker image name for testing the results.
+  script:
+    - cd src/testcaseScripts/
+    - ./shear_3D
+  dependencies:
+    - execute_job
+
+strawberry_3D_test:
+  stage: test
+  #image: # Docker image name for testing the results.
+  script:
+    - cd src/testcaseScripts/
+    - ./strawberry_3D
+  dependencies:
+    - execute_job
