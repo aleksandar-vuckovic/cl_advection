@@ -104,7 +104,9 @@ execute_job:
   
     # Push changes upstream.
     # - git config --global user.email '<>'
-    # - git add . && git commit -m "New experiment run" && git push origin master
+    # - git add .
+    # - git commit -m "New experiment run"
+    # - ssh -i automatic_deployment git push origin master
   #dependencies:
     #- # Need of files that were created at some previous job of the (e.g. my_execute_job)
 
