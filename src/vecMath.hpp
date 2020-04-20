@@ -39,6 +39,8 @@ double abs (const Vector vec);
 
 Matrix transpose(const Matrix matrix);
 
+Vector cross(const Vector& a, const Vector& b);
+
 class RotMatrix : public Matrix {
     public: 
         Matrix transposed;

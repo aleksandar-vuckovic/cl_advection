@@ -87,3 +87,11 @@ Matrix transpose(Matrix matrix) {
 
 	return temp;
 }
+
+Vector cross(const Vector& a, const Vector& b) {
+    double r0 = a[1]*b[2] - a[2]*b[1];
+    double r1 = a[2]*b[0] - a[0]*b[2];
+    double r2 = a[0]*b[1] - a[1]*b[0];
+
+    return {r0, r1, r2};
+}

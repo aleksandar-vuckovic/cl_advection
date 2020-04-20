@@ -204,7 +204,7 @@ int main(int argc, char **argv) {
         {"CFL",required_argument , nullptr, 'c'},
         {"output", required_argument, nullptr, 'o'},
         {"threads", required_argument, nullptr, 't'},
-	{"writeField", required_argument, nullptr, 'w'},
+        {"writeField", required_argument, nullptr, 'w'},
         {nullptr, 0, nullptr, 0}
     };
 
@@ -331,11 +331,11 @@ int main(int argc, char **argv) {
     positionFile.precision(16);
     std::ofstream angleFile(outputDirectory + "contactAngle.csv");
     angleFile.precision(16);
-    std::ofstream curvatureFile;
-    if (calculateCurvature) {
-        curvatureFile = std::ofstream(outputDirectory + "curvature.csv");
-        curvatureFile.precision(16);
-    }
+    std::ofstream curvatureFile(outputDirectory + "curvature.csv");
+    curvatureFile.precision(16);
+    std::ofstream curvatureDerivativeFile(outputDirectory + "curvatureDerivative.csv");
+    curvatureDerivativeFile.precision(16);
+
     double sumAtStart = Phi.sumLevelSet();
 
     // XMF file for Paraview
@@ -414,9 +414,16 @@ int main(int argc, char **argv) {
 
         positionFile.flush();
         angleFile.flush();
-        if (calculateCurvature)
-            curvatureFile.flush();
+        curvatureFile.flush();
+        curvatureDerivativeFile.flush();
     }
+
+    if (numZ > 1) {
+        curvatureDerivativeFile << "0, "
+                                << std::to_string((curvatureActualDivergence[1] - curvatureActualDivergence[0]) / dt) + ", "
+                                << std::to_string(Phi.referenceCurvatureDeriv3D(initCurvature)) + "\n";
+    }
+
     // Add closing line to the XMF files
     MainXmfFile << "</Grid>\n</Domain>\n</Xdmf>" << std::endl;
     tauXmfFile << "</Grid>\n</Domain>\n</Xdmf>" << std::endl;

@@ -13,7 +13,7 @@
 class LevelSet : Field<double> {
 private:
     // A pointer to the VelocityField acting on the LevelSet field.
-    VelocityField *field;
+    VelocityField* field;
 
     // Decides which contact point to track. Only applicable in 2D.
     std::string trackedCP, outputDirectory;
@@ -44,7 +44,8 @@ public:
     Vector getNormalVector(int i, int j, int k) const;
     Vector getTangentialVector(Vector normal) const;
     double getContactAngleInterpolated(int timestep);
-    void referenceCurvatureExplicitEuler(double dt, int timestep, double initCurvature);
+    void referenceCurvatureExplicitEuler2D(double dt, int timestep, double initCurvature);
+    double referenceCurvatureDeriv3D(double initCurvature);
     void referenceCurvatureLinearField(double dt, int timesteps, double initCurvature);
     void referenceCurvatureQuadraticField(double dt, int timesteps, double initCurvature);
     double getCurvature(array<int, 3> cell) const;

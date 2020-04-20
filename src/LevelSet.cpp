@@ -28,7 +28,7 @@ LevelSet::LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz
 		// Calculate reference data
         contactPointExplicitEuler(dt, timesteps, expCP);
         referenceNormalExplicitEuler(dt, timesteps, expNormalVec);
-        referenceCurvatureExplicitEuler(dt, timesteps, initCurvature);
+        referenceCurvatureExplicitEuler2D(dt, timesteps, initCurvature);
 
 }
 
@@ -402,7 +402,7 @@ void LevelSet::referenceAngleLinearField(double dt, int last_timestep, double th
  * @param CP The coordinates of the contact point
  * @param cell The indices of the contact point
  */
-void LevelSet::referenceCurvatureExplicitEuler(double dt, int last_timestep, double initCurvature) {
+void LevelSet::referenceCurvatureExplicitEuler2D(double dt, int last_timestep, double initCurvature) {
 
     double curvature = initCurvature;
     for (int i = 0; i < last_timestep; i++) {
@@ -412,9 +412,24 @@ void LevelSet::referenceCurvatureExplicitEuler(double dt, int last_timestep, dou
         Vector tau = getTangentialVector(normal);
         // temp is the second derivative of v in the tau direction
         Vector temp = field->secondPartial(i*dt, CP[0], CP[1], CP[2], tau);
-
         curvature = curvature + dt*(temp*normal - 3*curvature*(field->gradAt(i*dt, CP[0], CP[1], CP[2])*tau)*tau);
     }
+}
+
+/**
+ * @brief LevelSet::referenceCurvatureDeriv3D Calculate the curvature derivative at time t = 0 of a spherical cap in 3D.
+ * @param initCurvature The initial curvature. (= -1/R)
+ */
+double LevelSet::referenceCurvatureDeriv3D(double initCurvature) {
+    Vector CP = positionReference[0];
+    Vector normal = normalReference[0];
+    Vector tau1 = getTangentialVector(normal);
+    Vector tau2 = cross(tau1, normal);
+
+    double k1 = field->secondPartial(0, CP[0], CP[1], CP[2], tau1)*normal - 2 * initCurvature * (tau1 * (field->gradAt(0,CP[0], CP[1], CP[2])* tau1));
+    double k2 = field->secondPartial(0, CP[0], CP[1], CP[2], tau2)*normal - 2 * initCurvature * (tau2 * (field->gradAt(0,CP[0], CP[1], CP[2])* tau2));
+
+    return k1 + k2;
 }
 
 /**
