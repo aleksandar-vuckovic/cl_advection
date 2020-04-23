@@ -272,8 +272,13 @@ int main(int argc, char **argv) {
     double dy = lenY/numY;
     double dz = lenZ/numZ;
     double initCurvature = 0;
-    if (geometryType == "sphere")
-        initCurvature = -1/radius;
+    if (geometryType == "sphere") {
+        if (numZ == 1) {
+            initCurvature = -1/radius;
+        } else {
+            initCurvature = -2/radius;
+        }
+    }
     else if (geometryType == "plane")
         initCurvature = 0;
     

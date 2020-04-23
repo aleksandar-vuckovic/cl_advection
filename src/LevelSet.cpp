@@ -591,7 +591,8 @@ double LevelSet::getCurvature(array<int, 3> cell) const {
     }
 
     Vector normal = localField.at(local, 0, sidelengthZ/2);
-    Vector tau = getTangentialVector(normal);
+    Vector tau1 = getTangentialVector(normal);
+    Vector tau2 = cross(normal, tau1);
 
     Vector row1 = {dnx_dx, dnx_dy, dnx_dz};
     Vector row2 = {dny_dx, dny_dy, dny_dz};
@@ -599,7 +600,7 @@ double LevelSet::getCurvature(array<int, 3> cell) const {
 
     Matrix gradNormal = {row1, row2, row3};
 
-    double kappa = -1*(gradNormal*tau)*tau;
+    double kappa = -1*(gradNormal*tau1)*tau1 - 1*(gradNormal*tau2)*tau2;
 
     return kappa;
 }
