@@ -30,7 +30,7 @@ VelocityField::VelocityField(std::string name, double v0, double w0, double x0, 
                              double c1, double c2, double c3, double c4, double c5, double c6, double tau,
                              double xmin, double xmax, double ymin, double ymax, double zmin, double zmax,
                              double dx, double dy, double dz, double azimuthalAngle, double alpha, std::string outputDirectory)
-							 : n_gamma({cos(azimuthalAngle), 0, sin(azimuthalAngle)}), n_y({0, 1, 0})
+                             : alpha(alpha), n_gamma({cos(azimuthalAngle), 0, sin(azimuthalAngle)}), n_y({0, 1, 0})
 {
 	this->v0 = v0;
     this->w0 = w0;

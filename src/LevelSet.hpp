@@ -62,7 +62,7 @@ public:
 
     std::vector<Vector> getPositionReference() const;
     std::vector<double> getAngleReference() const;
-    std::vector<double> getCurvatureReference() const;
+    const std::vector<double>& getCurvatureReference() const;
 };
 
 Vector normalVector2D(double initAngle, std::string trackedCP);

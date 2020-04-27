@@ -309,11 +309,10 @@ int main(int argc, char **argv) {
     Vector expCP = {expcpX, expcpY, expcpZ};
 
     LevelSet Phi(numX, numY, numZ, dx, dy, dz, field, trackedContactPoint, dt, timesteps, expCP, expNormalVec, expAngle, initCurvature, outputDirectory);
-    Streamlines streamlines(numX, numY, numZ, dx, dy, dz, field, dt, outputDirectory);
 
     std::vector<Vector> positionTheoretical = Phi.getPositionReference();
     std::vector<double> angleTheoretical = Phi.getAngleReference();
-    std::vector<double> curvatureTheoretical = Phi.getCurvatureReference();
+    const std::vector<double>& curvatureTheoretical = Phi.getCurvatureReference();
     std::vector<double> angleActual(timesteps);
     std::vector<double> curvatureActualDivergence(timesteps);
 
@@ -354,8 +353,6 @@ int main(int argc, char **argv) {
         std::cout << "Step " << i << std::endl;
         //Write field to file
         if (writeField && i % (int)ceil((double)timesteps/writesteps) == 0) {
-            if (i == 0)
-                streamlines.writeToFile();
             Phi.writeToFile(dt, i, timesteps, writesteps, &MainXmfFile, &tauXmfFile);
         }
 

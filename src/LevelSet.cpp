@@ -948,9 +948,9 @@ void LevelSet::calculateNextTimestep(double dt, int timestep) {
 #pragma omp parallel shared(tempPhi)
     {
 #pragma omp for collapse(3)
-    for (int x = 0; x < numX; x++) {
+    for (int z = 0; z < numZ; z++) {
         for (int y = 0; y < numY; y++) {
-            for (int z = 0; z < numZ; z++) {
+            for (int x = 0; x < numX; x++) {
 
                 //Calculate the flux of phi over the cell faces
                 double flux = 0;
@@ -1040,6 +1040,6 @@ std::vector<double> LevelSet::getAngleReference() const {
     return angleReference;
 }
 
-std::vector<double> LevelSet::getCurvatureReference() const {
+const std::vector<double>& LevelSet::getCurvatureReference() const {
     return curvatureReference;
 }
