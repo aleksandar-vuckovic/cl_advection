@@ -18,7 +18,6 @@
 #include <getopt.h>   // GNU getopt
 #include "LevelSet.hpp"
 #include "VelocityField.hpp"
-#include "Streamlines.hpp"
 
 #define _USE_MATH_DEFINES
 #include <cmath>
@@ -50,6 +49,7 @@ int main(int argc, char **argv) {
     
     double lenX, lenY, lenZ, time, centerX, centerY, centerZ, radius, expcpX, expcpY, expcpZ, expAngle, expNormalX, expNormalY, expNormalZ;
     double v0, w0, x0, y0, z0, c1, c2, c3, c4, c5, c6, tau, CFL, writestepsFraction, polarAngle, planeAzimuthalAngle, fieldAzimuthalAngle, alpha;
+    double paraboloidStretchX, paraboloidStretchY, paraboloidHeightMinimum = 0;
 
     lenX = lenY = lenZ = time = centerX = centerY = centerZ = radius = expcpX = expcpY = expcpZ = expNormalX = expNormalY = expNormalZ
     = expAngle = v0 = w0 = x0 = y0 = z0 = c1 = c2 = c3 = c4 = c5 = c6 = tau = CFL = writestepsFraction = polarAngle 
@@ -135,8 +135,12 @@ int main(int argc, char **argv) {
                     }
                     else if (varName == "alpha")
                         alpha = std::stod(value);
-                    else if (varName == "geometryType")
-                        geometryType = value;
+                    else if (varName == "geometryType") {
+                        if (value == "sphere" || value == "plane" || value == "paraboloid")
+                            geometryType = value;
+                        else
+                            throw std::invalid_argument("No valid initialization shape chosen. Please choose either sphere, plane or paraboloid.");
+                    }
                     else if (varName == "centerX")
                         centerX = std::stod(value);
                     else if (varName == "centerY")
@@ -146,21 +150,27 @@ int main(int argc, char **argv) {
                     else if (varName == "radius") {
                         if (geometryType == "sphere")
                             radius = std::stod(value);
-                        else
+                        else if (geometryType == "plane")
                             throw std::invalid_argument("Given radius while initializing plane.");
                     }
                     else if (varName == "planePolarAngle") {
                         if (geometryType == "plane")
                             polarAngle = std::stod(value);
-                        else
+                        else if (geometryType == "sphere")
                             throw std::invalid_argument("Given plane angle while initializing sphere.");
                     }
                     else if (varName == "planeAzimuthalAngle") {
                         if (geometryType == "plane")
                             planeAzimuthalAngle = std::stod(value);
-                        else
+                        else if (geometryType == "sphere")
                             throw std::invalid_argument("Given plane angle while initializing sphere.");
                     }
+                    else if (varName == "paraboloidStretchX")
+                        paraboloidStretchX = std::stod(value);
+                    else if (varName == "paraboloidStretchY")
+                        paraboloidStretchY = std::stod(value);
+                    else if (varName == "paraboloidHeightMinimum")
+                        paraboloidHeightMinimum = std::stod(value);
                     else if (varName == "expcpX")
                         expcpX = std::stod(value);
                     else if (varName == "expcpY")
@@ -320,6 +330,8 @@ int main(int argc, char **argv) {
         Phi.initDroplet(center, radius);
     else if (geometryType == "plane") 
         Phi.initPlane(center, polarAngle, planeAzimuthalAngle);
+    else if (geometryType == "paraboloid")
+        Phi.initParaboloid(center, paraboloidStretchX, paraboloidStretchY, paraboloidHeightMinimum);
 
     std::string temp = "mkdir -p " + outputDirectory;
     int sysRet;

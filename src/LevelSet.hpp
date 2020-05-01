@@ -55,7 +55,8 @@ public:
     void writeTangentialVectorToFile(double dt, int timestep);
     double sumLevelSet();
     void initDroplet(Vector center, double radius);
-    void initPlane(Vector refPoint, double angleA, double angleB);
+    void initPlane(Vector refPoint, double polarAngle, double azimuthalAngle);
+    void initParaboloid(Vector refPoint, double stretchX, double stretchY, double heightMinimum);
     Vector normalVector2D(double initAngle);
     static Vector normalVector2D(double initAngle, std::string trackedCP);
     void calculateNextTimestep(double dt, int timestep);

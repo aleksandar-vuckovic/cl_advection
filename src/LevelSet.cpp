@@ -426,10 +426,10 @@ double LevelSet::referenceCurvatureDeriv3D(double initCurvature) {
     Vector tau1 = getTangentialVector(normal);
     Vector tau2 = cross(tau1, normal);
 
-    double k1 = field->secondPartial(0, CP[0], CP[1], CP[2], tau1)*normal - 2 * initCurvature * (tau1 * (field->gradAt(0,CP[0], CP[1], CP[2])* tau1));
-    double k2 = field->secondPartial(0, CP[0], CP[1], CP[2], tau2)*normal - 2 * initCurvature * (tau2 * (field->gradAt(0,CP[0], CP[1], CP[2])* tau2));
+    double i1 = field->secondPartial(0, CP[0], CP[1], CP[2], tau1)*normal - 2 * (tau1 * (field->gradAt(0,CP[0], CP[1], CP[2])* tau1));
+    double i2 = field->secondPartial(0, CP[0], CP[1], CP[2], tau2)*normal - 2 * initCurvature * (tau2 * (field->gradAt(0,CP[0], CP[1], CP[2])* tau2));
 
-    return k1 + k2;
+    return i1 + i2;
 }
 
 /**
@@ -749,7 +749,6 @@ void LevelSet::writeToFile(double dt, int timestep, int total_timesteps, int tot
         fieldFile = fopen(temp.data(), "wb");
         fwrite(pointCoordinates, sizeof(double), Npoints*3, fieldFile);
         fclose(fieldFile);
-
     }
 
     FILE *PhiFile;
@@ -785,11 +784,6 @@ void LevelSet::writeToFile(double dt, int timestep, int total_timesteps, int tot
     }
 
         *xmfFile << "</DataItem></Attribute>\n"
-
-                 << "<Attribute Name =\"Streamlines\" AttributeType=\"Scalar\" Center=\"Node\">\n"
-                 << "<DataItem Format=\"Binary\" NumberType=\"Int\" Precision=\"4\" Endian=\"Little\" Dimensions=\"&numZ; &numY; &numX;\">\n"
-                 << "stream.bin\n"
-                 << "</DataItem></Attribute>\n"
                  << "</Grid>\n";
 
     *tauXmfFile  << "<Grid>\n"
@@ -832,7 +826,7 @@ void LevelSet::writeTangentialVectorToFile(double dt, int timestep) {
     Vector tangential = getTangentialVector(normal);
 
     std::string filenameTau = outputDirectory + "data/Tau_t=" + std::to_string(dt*timestep) + ".bin";
-    std::string filenameFieldTau = outputDirectory + "data/CP_reference_t=" + std::to_string(timestep*dt) +".bin";
+    std::string filenameFieldTau = outputDirectory + "data/CP_reference_t=" + std::to_string(dt*timestep) +".bin";
     FILE *tauFile;
     FILE *fieldTauFile;
     tauFile = fopen(filenameTau.data(), "wb");
@@ -869,10 +863,10 @@ double LevelSet::sumLevelSet() {
  * @param radius The radius of the droplet
  */
 void LevelSet::initDroplet(Vector center, double radius) {
-    for (int x = 0; x < this->numX; x++)
-        for (int y = 0; y < this->numY; y++)
-            for (int z = 0; z < this->numZ; z++)
-                this->at(x, y, z) = pow(x*dx - center[0], 2) + pow(y*dy - center[1], 2) + pow(z*dz - center[2], 2) - pow(radius, 2);
+    for (int k = 0; k < numZ; k++)
+        for (int j = 0; j < numY; j++)
+            for (int i = 0; i < numX; i++)
+                at(i, j, k) = pow(i*dx - center[0], 2) + pow(j*dy - center[1], 2) + pow(k*dz - center[2], 2) - pow(radius, 2);
 }
 
 /** Initialize a plane.
@@ -886,12 +880,26 @@ void LevelSet::initPlane(Vector refPoint, double polarAngle, double azimuthalAng
     azimuthalAngle = azimuthalAngle/180*M_PI;
     Vector normal = {sin(polarAngle) * cos(azimuthalAngle), cos(polarAngle), sin(polarAngle)* sin(azimuthalAngle)};
     
-    for (int x = 0; x < numX; x++)
-        for (int y = 0; y < numY; y++)
-            for (int z = 0; z < numZ; z++) 
-                this->at(x, y, z) = normal * (Vector({x*dx, y*dy, z*dz}) - refPoint);
+    for (int k = 0; k < numZ; k++)
+        for (int j = 0; j < numY; j++)
+            for (int i = 0; i < numX; i++)
+                at(i, j, k) = normal * (Vector({i*dx, j*dy, k*dz}) - refPoint);
             
 }
+
+/** Initialize a paraboloid.
+ * @param refPoint
+ */
+void LevelSet::initParaboloid(Vector refPoint, double stretchX, double stretchY, double heightMinimum) {
+    double x_0 = refPoint[0];
+    double z_0 = refPoint[2];
+
+    for (int k = 0; k < numZ; k++)
+        for (int j = 0; j < numY; j++)
+            for (int i = 0; i < numX; i++)
+                at(i, j, k) = stretchX * pow(i*dx - x_0, 2)  + stretchY * pow(k*dz - z_0, 2) + j*dy - heightMinimum;
+}
+
 
 /**
  * Given the contact angle, calculate the normal vector.
