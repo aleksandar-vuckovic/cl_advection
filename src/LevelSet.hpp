@@ -7,6 +7,7 @@
 #include "Field.hpp"
 #include "vecMath.hpp"
 #include "VelocityField.hpp"
+#include "enums.hpp"
 
 #include <omp.h>
 
@@ -45,7 +46,7 @@ public:
     Vector getTangentialVector(Vector normal) const;
     double getContactAngleInterpolated(int timestep);
     void referenceCurvatureExplicitEuler2D(double dt, int timestep, double initCurvature);
-    double referenceCurvatureDeriv3D(double initCurvature);
+    double referenceCurvatureDeriv3D(double initCurvature, Matrix expNormalVectorGradient);
     void referenceCurvatureLinearField(double dt, int timesteps, double initCurvature);
     void referenceCurvatureQuadraticField(double dt, int timesteps, double initCurvature);
     double getCurvature(array<int, 3> cell) const;
@@ -54,9 +55,11 @@ public:
     void writeToFile(double dt, int timestep, int total_timesteps, int total_writesteps, std::ofstream *mainXmfFile, std::ofstream *tauXmfFile);
     void writeTangentialVectorToFile(double dt, int timestep);
     double sumLevelSet();
-    void initDroplet(Vector center, double radius);
+    void initSphere(Vector center, double radius);
     void initPlane(Vector refPoint, double polarAngle, double azimuthalAngle);
     void initParaboloid(Vector refPoint, double stretchX, double stretchY, double heightMinimum);
+    static Vector expectedNormalVector(Vector contactPoint, InitShape shape, Vector refPoint, std::vector<double> params);
+    static Matrix expectedNormalVectorGradient(Vector contactPoint, InitShape shape, Vector refPoint, std::vector<double> params);
     Vector normalVector2D(double initAngle);
     static Vector normalVector2D(double initAngle, std::string trackedCP);
     void calculateNextTimestep(double dt, int timestep);

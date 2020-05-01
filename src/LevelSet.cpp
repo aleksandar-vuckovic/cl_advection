@@ -417,19 +417,26 @@ void LevelSet::referenceCurvatureExplicitEuler2D(double dt, int last_timestep, d
 }
 
 /**
- * @brief LevelSet::referenceCurvatureDeriv3D Calculate the curvature derivative at time t = 0 of a spherical cap in 3D.
+ * @brief LevelSet::referenceCurvatureDeriv3D Calculate the curvature derivative at time t = 0 in 3D.
  * @param initCurvature The initial curvature. (= -1/R)
  */
-double LevelSet::referenceCurvatureDeriv3D(double initCurvature) {
+double LevelSet::referenceCurvatureDeriv3D(double initCurvature, Matrix expNormalVectorGrad) {
     Vector CP = positionReference[0];
     Vector normal = normalReference[0];
-    Vector tau1 = getTangentialVector(normal);
-    Vector tau2 = cross(tau1, normal);
+    Vector tau0 = getTangentialVector(normal);
+    Vector tau1 = cross(tau0, normal);
+    std::array<Vector, 2> tau = {tau0, tau1};
 
-    double i1 = field->secondPartial(0, CP[0], CP[1], CP[2], tau1)*normal - 2 * (tau1 * (field->gradAt(0,CP[0], CP[1], CP[2])* tau1));
-    double i2 = field->secondPartial(0, CP[0], CP[1], CP[2], tau2)*normal - 2 * initCurvature * (tau2 * (field->gradAt(0,CP[0], CP[1], CP[2])* tau2));
+    double ret = 0;
+    for (int i = 0; i < 2; i++) {
+        ret += field->secondPartial(0, CP[0], CP[1], CP[2], tau[i])*normal;
+        for (int j = 0; j < 2; j++)
+            ret += 2 * (tau[j] * (field->gradAt(0, CP[0], CP[1], CP[2])* tau[i])) * (tau[j] * (expNormalVectorGrad * tau[i]));
+    }
 
-    return i1 + i2;
+    ret += initCurvature * (transpose(field->gradAt(0, CP[0], CP[1], CP[2]))*normal) * normal;
+
+    return ret;
 }
 
 /**
@@ -862,7 +869,7 @@ double LevelSet::sumLevelSet() {
  * @param center The center of the droplet
  * @param radius The radius of the droplet
  */
-void LevelSet::initDroplet(Vector center, double radius) {
+void LevelSet::initSphere(Vector center, double radius) {
     for (int k = 0; k < numZ; k++)
         for (int j = 0; j < numY; j++)
             for (int i = 0; i < numX; i++)
@@ -898,6 +905,46 @@ void LevelSet::initParaboloid(Vector refPoint, double stretchX, double stretchY,
         for (int j = 0; j < numY; j++)
             for (int i = 0; i < numX; i++)
                 at(i, j, k) = stretchX * pow(i*dx - x_0, 2)  + stretchY * pow(k*dz - z_0, 2) + j*dy - heightMinimum;
+}
+
+Vector LevelSet::expectedNormalVector(Vector contactPoint, InitShape shape, Vector refPoint, std::vector<double> params) {
+
+    Vector normal = {0, 0, 0};
+
+    if (shape == InitShape::sphere) {
+        normal = {contactPoint[0] - refPoint[0], contactPoint[1] - refPoint[1], contactPoint[2] - refPoint[2]};
+    } else if (shape == InitShape::plane) {
+        double polarAngle = params.at(0);
+        double azimuthalAngle = params.at(1);
+        normal =  {sin(polarAngle) * cos(azimuthalAngle), cos(polarAngle), sin(polarAngle)* sin(azimuthalAngle)};
+    } else if (shape == InitShape::paraboloid){
+        double stretchX = params.at(0);
+        double stretchZ = params.at(1);
+        normal = {2*stretchX* (contactPoint[0] - refPoint[0]), 1, 2*stretchZ*(contactPoint[2] - refPoint[2]) };
+    }
+    return normal/abs(normal);
+}
+
+Matrix LevelSet::expectedNormalVectorGradient(Vector contactPoint, InitShape shape, Vector refPoint, std::vector<double> params) {
+    Vector vec0;
+    Vector vec1;
+    Vector vec2;
+
+    if (shape == InitShape::sphere) {
+        vec0 = {2, 0, 0};
+        vec1 = {0, 2, 0};
+        vec2 = {0, 0, 2};
+    } else if (shape == InitShape::plane) {
+        vec0 = vec1 = vec2 = {0, 0, 0};
+    } else if (shape == InitShape::paraboloid) {
+        double stretchX = params.at(0);
+        double stretchZ = params.at(1);
+        vec0 = {2*stretchX, 0, 0};
+        vec1 = {0, 0, 0};
+        vec2 = {0, 0, 2*stretchZ};
+    }
+    Matrix ret = {vec0, vec1, vec2};
+    return ret;
 }
 
 

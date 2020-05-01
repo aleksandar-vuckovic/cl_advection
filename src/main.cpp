@@ -18,6 +18,7 @@
 #include <getopt.h>   // GNU getopt
 #include "LevelSet.hpp"
 #include "VelocityField.hpp"
+#include "enums.hpp"
 
 #define _USE_MATH_DEFINES
 #include <cmath>
@@ -47,16 +48,17 @@ int main(int argc, char **argv) {
     numX = numY = numZ = 0;
     threads = 1;
     
-    double lenX, lenY, lenZ, time, centerX, centerY, centerZ, radius, expcpX, expcpY, expcpZ, expAngle, expNormalX, expNormalY, expNormalZ;
-    double v0, w0, x0, y0, z0, c1, c2, c3, c4, c5, c6, tau, CFL, writestepsFraction, polarAngle, planeAzimuthalAngle, fieldAzimuthalAngle, alpha;
-    double paraboloidStretchX, paraboloidStretchY, paraboloidHeightMinimum = 0;
+    double lenX, lenY, lenZ, time, centerX, centerY, centerZ, radius, expcpX, expcpY, expcpZ, expAngle, expNormalX, expNormalY, expNormalZ, initCurvature;
+    double v0, w0, x0, y0, z0, c1, c2, c3, c4, c5, c6, tau, CFL, writestepsFraction, planePolarAngle, planeAzimuthalAngle, fieldAzimuthalAngle, alpha;
+    double paraboloidStretchX, paraboloidStretchZ, paraboloidHeightMinimum;
 
-    lenX = lenY = lenZ = time = centerX = centerY = centerZ = radius = expcpX = expcpY = expcpZ = expNormalX = expNormalY = expNormalZ
-    = expAngle = v0 = w0 = x0 = y0 = z0 = c1 = c2 = c3 = c4 = c5 = c6 = tau = CFL = writestepsFraction = polarAngle 
-    = planeAzimuthalAngle =  fieldAzimuthalAngle = alpha = 0; 
+    lenX = lenY = lenZ = time = centerX = centerY = centerZ = radius = expcpX = expcpY = expcpZ = expNormalX = expNormalY = expNormalZ = initCurvature
+    = expAngle = v0 = w0 = x0 = y0 = z0 = c1 = c2 = c3 = c4 = c5 = c6 = tau = CFL = writestepsFraction = planePolarAngle
+    = planeAzimuthalAngle =  fieldAzimuthalAngle = alpha = paraboloidStretchX = paraboloidStretchZ = paraboloidHeightMinimum = 0;
     
     bool writeField = false, calculateCurvature = false;
-    std::string trackedContactPoint = "left", fieldName = "", geometryType = "sphere", outputDirectory = "";
+    std::string trackedContactPoint = "left", fieldName = "", outputDirectory = "";
+    InitShape initShape = InitShape::sphere;
     VelocityField *field = nullptr;
 
     // Read data from Inputfile
@@ -66,7 +68,7 @@ int main(int argc, char **argv) {
         exit(-1);
     }
 
-    std::string line, varName, value;
+    std::string line, varName, value, endMessage;
 
     try {
         while(std::getline(inFileStream, line)) {
@@ -135,9 +137,13 @@ int main(int argc, char **argv) {
                     }
                     else if (varName == "alpha")
                         alpha = std::stod(value);
-                    else if (varName == "geometryType") {
-                        if (value == "sphere" || value == "plane" || value == "paraboloid")
-                            geometryType = value;
+                    else if (varName == "geometryType" || varName == "initShape") {
+                        if (value == "sphere")
+                            initShape = InitShape::sphere;
+                        else if (value == "plane")
+                            initShape = InitShape::plane;
+                        else if (value == "paraboloid")
+                            initShape = InitShape::paraboloid;
                         else
                             throw std::invalid_argument("No valid initialization shape chosen. Please choose either sphere, plane or paraboloid.");
                     }
@@ -148,27 +154,31 @@ int main(int argc, char **argv) {
                     else if (varName == "centerZ")
                         centerZ = std::stod(value);
                     else if (varName == "radius") {
-                        if (geometryType == "sphere")
+
+                        if (initShape == InitShape::sphere) {
                             radius = std::stod(value);
-                        else if (geometryType == "plane")
+                        } else if (initShape == InitShape::plane) {
                             throw std::invalid_argument("Given radius while initializing plane.");
+                        }
                     }
                     else if (varName == "planePolarAngle") {
-                        if (geometryType == "plane")
-                            polarAngle = std::stod(value);
-                        else if (geometryType == "sphere")
+                        if (initShape == InitShape::plane) {
+                            planePolarAngle = std::stod(value);
+                        } else if (initShape == InitShape::sphere) {
                             throw std::invalid_argument("Given plane angle while initializing sphere.");
+                        }
                     }
                     else if (varName == "planeAzimuthalAngle") {
-                        if (geometryType == "plane")
+                        if (initShape == InitShape::plane) {
                             planeAzimuthalAngle = std::stod(value);
-                        else if (geometryType == "sphere")
+                        } else if (initShape == InitShape::sphere) {
                             throw std::invalid_argument("Given plane angle while initializing sphere.");
+                        }
                     }
                     else if (varName == "paraboloidStretchX")
                         paraboloidStretchX = std::stod(value);
-                    else if (varName == "paraboloidStretchY")
-                        paraboloidStretchY = std::stod(value);
+                    else if (varName == "paraboloidStretchZ")
+                        paraboloidStretchZ = std::stod(value);
                     else if (varName == "paraboloidHeightMinimum")
                         paraboloidHeightMinimum = std::stod(value);
                     else if (varName == "expcpX")
@@ -184,14 +194,14 @@ int main(int argc, char **argv) {
                             throw std::invalid_argument("Input parameter expAngle is not applicable in 3D. Instead define the expected normal vector "
                                                         "by setting the parameters expNormalX, expNormalY and expNormalZ.");
                     }
-                    else if (varName == "expNormalX")
-                        expNormalX = std::stod(value);
-                    else if (varName == "expNormalY")
-                        expNormalY = std::stod(value);
-                    else if (varName == "expNormalZ")
-                        expNormalZ = std::stod(value);
+                    else if (varName == "expNormalX" || varName == "expNormalY" || varName == "expNormalZ") {
+                        endMessage = "WARNING: Parameters expNormalX / expNormalY / expNormalZ are deprecated.\n In 3D, the expected normal vector "
+                                      "is instead calculated from the given contact point and the shape arguments. In 2D, expAngle is still used.";
+                    }
                     else if (varName == "trackedContactPoint")
                         trackedContactPoint = value;
+                    else if (varName == "initCurvature")
+                        initCurvature = std::stod(value);
                     else if (varName == "calculateCurvature")
                         std::stringstream(value) >> std::boolalpha >> calculateCurvature;
                     else if (varName == "threads")
@@ -281,18 +291,36 @@ int main(int argc, char **argv) {
     double dx = lenX/numX;
     double dy = lenY/numY;
     double dz = lenZ/numZ;
-    double initCurvature = 0;
-    if (geometryType == "sphere") {
-        if (numZ == 1) {
-            initCurvature = -1/radius;
-        } else {
-            initCurvature = -2/radius;
+
+    std::vector<double> expectedNormalVectorParams;  // This will be populated below, depending on the chosen inital shape and used in LevelSet::expectedNormalVector
+
+    try {
+        if (initShape == InitShape::sphere) {
+            if (initCurvature != 0)
+                throw std::invalid_argument("Given initCurvature when initializing a sphere. This is not necessary as it can be calculated form the radius.");
+            if (numZ == 1) {
+                initCurvature = -1/radius;
+            } else {
+                initCurvature = -2/radius;
+            }
+            expectedNormalVectorParams = {};    // No parameters needed for the sphere
+        } else if (initShape == InitShape::plane) {
+            if (initCurvature != 0)
+                throw std::invalid_argument("Given initCurvature when initializing a plane.");
+            initCurvature = 0;
+            expectedNormalVectorParams = {planePolarAngle, planeAzimuthalAngle};
+        } else if (initShape == InitShape::paraboloid) {
+            expectedNormalVectorParams = {paraboloidStretchX, paraboloidStretchZ};
         }
+    }  catch (std::invalid_argument& e) {
+        std::cout << e.what() << std::endl;
     }
-    else if (geometryType == "plane")
-        initCurvature = 0;
-    
+
+    Vector center = {centerX, centerY, centerZ};
+    Vector expCP = {expcpX, expcpY, expcpZ};
+
     Vector expNormalVec;
+    Matrix expNormalVecGrad; // This will be used to calculate the curvature derivative at t = 0
 
     double dt = 0.0;
     if (numZ == 1 && (expNormalX == 0) && (expNormalY == 0) && (expNormalZ == 0)) {
@@ -308,30 +336,27 @@ int main(int argc, char **argv) {
     else {
       // 3D case
       dt = CFL*std::min(std::min(dx,dy),dz)/field->getMaxNormValue();
-      expNormalVec = {expNormalX, expNormalY, expNormalZ};
-      expNormalVec = expNormalVec/abs(expNormalVec);
+      expNormalVec = LevelSet::expectedNormalVector(expCP, initShape, center, expectedNormalVectorParams);
+      expNormalVecGrad = LevelSet::expectedNormalVectorGradient(expCP, initShape, center, expectedNormalVectorParams);
     } 
 
     int timesteps = time/dt;
     int writesteps = ceil(writestepsFraction*timesteps);
 
-    Vector center = {centerX, centerY, centerZ};
-    Vector expCP = {expcpX, expcpY, expcpZ};
-
     LevelSet Phi(numX, numY, numZ, dx, dy, dz, field, trackedContactPoint, dt, timesteps, expCP, expNormalVec, expAngle, initCurvature, outputDirectory);
 
     std::vector<Vector> positionTheoretical = Phi.getPositionReference();
     std::vector<double> angleTheoretical = Phi.getAngleReference();
-    const std::vector<double>& curvatureTheoretical = Phi.getCurvatureReference();
+    std::vector<double> curvatureTheoretical = Phi.getCurvatureReference();
     std::vector<double> angleActual(timesteps);
     std::vector<double> curvatureActualDivergence(timesteps);
 
-    if (geometryType == "sphere")
-        Phi.initDroplet(center, radius);
-    else if (geometryType == "plane") 
-        Phi.initPlane(center, polarAngle, planeAzimuthalAngle);
-    else if (geometryType == "paraboloid")
-        Phi.initParaboloid(center, paraboloidStretchX, paraboloidStretchY, paraboloidHeightMinimum);
+    if (initShape == InitShape::sphere)
+        Phi.initSphere(center, radius);
+    else if (initShape == InitShape::plane)
+        Phi.initPlane(center, planePolarAngle, planeAzimuthalAngle);
+    else if (initShape == InitShape::paraboloid)
+        Phi.initParaboloid(center, paraboloidStretchX, paraboloidStretchZ, paraboloidHeightMinimum);
 
     std::string temp = "mkdir -p " + outputDirectory;
     int sysRet;
@@ -435,7 +460,7 @@ int main(int argc, char **argv) {
     if (numZ > 1) {
         curvatureDerivativeFile << "0, "
                                 << std::to_string((curvatureActualDivergence[1] - curvatureActualDivergence[0]) / dt) + ", "
-                                << std::to_string(Phi.referenceCurvatureDeriv3D(initCurvature)) + "\n";
+                                << std::to_string(Phi.referenceCurvatureDeriv3D(initCurvature, expNormalVecGrad)) + "\n";
     }
 
     // Add closing line to the XMF files
@@ -449,6 +474,7 @@ int main(int argc, char **argv) {
     auto end = std::chrono::system_clock::now();
     std::chrono::duration<double> duration = end - start;
     std::cout << "Total runtime: " << duration.count() << "s" << std::endl;
+    std::cout << endMessage;
 
 
     return 0;
