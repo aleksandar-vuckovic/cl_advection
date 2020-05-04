@@ -897,14 +897,14 @@ void LevelSet::initPlane(Vector refPoint, double polarAngle, double azimuthalAng
 /** Initialize a paraboloid.
  * @param refPoint
  */
-void LevelSet::initParaboloid(Vector refPoint, double stretchX, double stretchY, double heightMinimum) {
+void LevelSet::initParaboloid(Vector refPoint, double stretchX, double stretchZ, double heightMinimum) {
     double x_0 = refPoint[0];
     double z_0 = refPoint[2];
 
     for (int k = 0; k < numZ; k++)
         for (int j = 0; j < numY; j++)
             for (int i = 0; i < numX; i++)
-                at(i, j, k) = stretchX * pow(i*dx - x_0, 2)  + stretchY * pow(k*dz - z_0, 2) + j*dy - heightMinimum;
+                at(i, j, k) = 0.5*stretchX * pow(i*dx - x_0, 2)  + 0.5*stretchZ* pow(k*dz - z_0, 2) + j*dy - heightMinimum;
 }
 
 Vector LevelSet::expectedNormalVector(Vector contactPoint, InitShape shape, Vector refPoint, std::vector<double> params) {
@@ -917,10 +917,10 @@ Vector LevelSet::expectedNormalVector(Vector contactPoint, InitShape shape, Vect
         double polarAngle = params.at(0);
         double azimuthalAngle = params.at(1);
         normal =  {sin(polarAngle) * cos(azimuthalAngle), cos(polarAngle), sin(polarAngle)* sin(azimuthalAngle)};
-    } else if (shape == InitShape::paraboloid){
+    } else if (shape == InitShape::paraboloid) {
         double stretchX = params.at(0);
         double stretchZ = params.at(1);
-        normal = {2*stretchX* (contactPoint[0] - refPoint[0]), 1, 2*stretchZ*(contactPoint[2] - refPoint[2]) };
+        normal = {stretchX* (contactPoint[0] - refPoint[0]), 1, stretchZ*(contactPoint[2] - refPoint[2]) };
     }
     return normal/abs(normal);
 }
@@ -930,6 +930,7 @@ Matrix LevelSet::expectedNormalVectorGradient(Vector contactPoint, InitShape sha
     Vector vec1;
     Vector vec2;
 
+
     if (shape == InitShape::sphere) {
         vec0 = {2, 0, 0};
         vec1 = {0, 2, 0};
@@ -937,11 +938,17 @@ Matrix LevelSet::expectedNormalVectorGradient(Vector contactPoint, InitShape sha
     } else if (shape == InitShape::plane) {
         vec0 = vec1 = vec2 = {0, 0, 0};
     } else if (shape == InitShape::paraboloid) {
+        double x = contactPoint[0];
+        double z = contactPoint[2];
+        double x0 = refPoint[0];
+        double z0 = refPoint[2];
         double stretchX = params.at(0);
         double stretchZ = params.at(1);
-        vec0 = {2*stretchX, 0, 0};
-        vec1 = {0, 0, 0};
-        vec2 = {0, 0, 2*stretchZ};
+        double n_abs = sqrt(pow(stretchX * (x - x0), 2) + 1 + pow(stretchZ * (z - z0), 2));
+
+        vec0 = {stretchX / n_abs - pow(stretchX, 3) * pow(x - x0, 2) / pow(n_abs, 3), 0, - stretchX * pow(stretchZ, 2) *(x-x0) * (z-z0)/pow(n_abs, 3)};
+        vec1 = {-pow(stretchX, 2) * (x - x0) / pow(n_abs, 3), 0, -pow(stretchZ, 2) * (z - z0)/pow(n_abs, 3)};
+        vec2 = {-pow(stretchX, 2) * stretchZ * (x - x0) * (z - z0)/pow(n_abs, 3), 0, stretchZ / n_abs - pow(stretchZ, 3) * pow(z - z0, 2) / pow(n_abs, 3)};
     }
     Matrix ret = {vec0, vec1, vec2};
     return ret;
