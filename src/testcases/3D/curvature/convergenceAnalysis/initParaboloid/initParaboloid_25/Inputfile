@@ -25,6 +25,8 @@ centerY=0.0
 centerZ=0.2
 paraboloidStretchX=8
 paraboloidStretchZ=4
+paraboloidHeightMinimum=0.1
+
 
 expcpX=0.3
 expcpY=0.0
