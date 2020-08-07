@@ -30,10 +30,6 @@ paraboloidStretchZ=2
 expcpX=0.3
 expcpY=0.0
 expcpZ=0.37320508075688774	
-expNormalX=0.8
-expNormalY=1
-expNormalZ=0.6928203230275509
-
 
 trackedContactPoint=left
 threads=4
