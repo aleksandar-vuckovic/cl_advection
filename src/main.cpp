@@ -56,7 +56,7 @@ int main(int argc, char **argv) {
     = expAngle = v0 = w0 = x0 = y0 = z0 = c1 = c2 = c3 = c4 = c5 = c6 = tau = CFL = writestepsFraction = planePolarAngle
     = planeAzimuthalAngle =  fieldAzimuthalAngle = alpha = paraboloidStretchX = paraboloidStretchZ = paraboloidHeightMinimum = 0;
     
-    bool writeField = false, calculateCurvature = false;
+    bool writeField = false, calculateCurvature = true;
     std::string trackedContactPoint = "left", fieldName = "", outputDirectory = "";
     InitShape initShape = InitShape::sphere;
     VelocityField *field = nullptr;
