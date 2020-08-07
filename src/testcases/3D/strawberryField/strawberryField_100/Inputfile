@@ -19,7 +19,7 @@ c4=0.1
 c5=0.2
 c6=0.1
 field=strawberryField
-fieldAzimuthalAngle=50
+fieldAzimuthalAngle=0
 
 geometryType=sphere
 centerX=0.0
@@ -30,10 +30,6 @@ radius=0.6
 expcpX=0.4
 expcpY=0.0
 expcpZ=0.4
-// The vector is normalized internally.
-expNormalX=0.4
-expNormalY=0.2
-expNormalZ=0.4
 
 trackedContactPoint=left
 threads=7
