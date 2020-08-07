@@ -666,14 +666,12 @@ double LevelSet::getCurvatureInterpolated(int timestep) const {
 
             curvature = alpha * getCurvature(cell) + (1 - alpha) * getCurvature({cell[0] + 1, cell[1], cell[2]});
         }
-    // In the 3D case, use the reference contact point with the built-in interpolation of the Field<T> class
     } else {
         Vector contactPoint = positionReference[timestep];
         double x = contactPoint[0];
-        double y = contactPoint[1];
         double z = contactPoint[2];
         int i = floor(x/dx);
-        int j = ceil(y/dy);
+        int j = 0;
         int k = floor(z/dz);
 
         double lambda = x/dx - i;
