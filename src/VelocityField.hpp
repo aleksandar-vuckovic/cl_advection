@@ -3,6 +3,7 @@
 
 #include <string>
 #include <array>
+#include <stdexcept>
 #include "velocityFields.hpp"
 
 using std::array;
