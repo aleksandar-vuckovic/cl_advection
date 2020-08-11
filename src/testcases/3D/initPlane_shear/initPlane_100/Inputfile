@@ -27,9 +27,6 @@ planeAzimuthalAngle=45
 expcpX=0.2
 expcpY=0.0
 expcpZ=0.2
-expNormalX=0.5
-expNormalY=0.7071067811865476
-expNormalZ=0.5
 
 trackedContactPoint=left
 threads=5
