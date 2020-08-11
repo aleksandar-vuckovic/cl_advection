@@ -25,10 +25,6 @@ radius=0.6
 expcpX=0.4
 expcpY=0.0
 expcpZ=0.4
-// The vector is normalized internally.
-expNormalX=0.4
-expNormalY=0.2
-expNormalZ=0.4
 
 trackedContactPoint=left
 threads=7
