@@ -303,12 +303,12 @@ int main(int argc, char **argv) {
             } else {
                 initCurvature = -2/radius;
             }
-            expectedNormalVectorParams = {};    // No parameters needed for the sphere
+            expectedNormalVectorParams = {};    // No additional parameters needed for the sphere
         } else if (initShape == InitShape::plane) {
             if (initCurvature != 0)
-                throw std::invalid_argument("Given initCurvature when initializing a plane.");
+                throw std::invalid_argument("Given non-zero initCurvature when initializing a plane.");
             initCurvature = 0;
-            expectedNormalVectorParams = {planePolarAngle, planeAzimuthalAngle};
+            expectedNormalVectorParams = {planePolarAngle / 180 * M_PI, planeAzimuthalAngle / 180 * M_PI};
         } else if (initShape == InitShape::paraboloid) {
             expectedNormalVectorParams = {paraboloidStretchX, paraboloidStretchZ};
         }
