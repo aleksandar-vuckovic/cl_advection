@@ -393,12 +393,8 @@ int main(int argc, char **argv) {
             Phi.writeToFile(dt, i, timesteps, writesteps, &MainXmfFile, &tauXmfFile);
         }
 
-	// Calculate the reference position of the contact point
-        Vector newCPReference;
-        if (numZ == 1 && (field->getName() == "navierField" || field->getName() == "timeDependentNavierField"))
-        	newCPReference = Phi.contactPointLinearField(dt*i, c1, expcpX, v0);
-        else
-            newCPReference = positionTheoretical[i];
+	    // Calculate the reference position of the contact point
+        Vector newCPReference = positionTheoretical[i];
 
         // Get the the new contact point
         Vector newCPActual;

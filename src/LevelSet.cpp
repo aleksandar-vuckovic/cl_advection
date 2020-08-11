@@ -26,7 +26,11 @@ LevelSet::LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz
         expAngle = expAngle/180*M_PI;
 
 		// Calculate reference data
-        contactPointExplicitEuler(dt, timesteps, expCP);
+        if (numZ == 1 && ( field->getName() == "navierField" || field->getName() == "timeDependentNavierField") )
+            contactPointLinearField(dt, timesteps, field->getC1(), expCP[0], field->getV0());
+        else 
+            contactPointExplicitEuler(dt, timesteps, expCP);
+            
         referenceNormalExplicitEuler(dt, timesteps, expNormalVec);
         referenceCurvatureExplicitEuler2D(dt, timesteps, initCurvature);
 
@@ -69,7 +73,6 @@ void LevelSet::contactPointExplicitEuler(double dt, int last_timestep, Vector in
     int factor = 100;
     dt = dt / factor;
     for (int i = 0; i < factor * last_timestep; i++) {
-
         if (i % factor == 0)
             positionReference[i/factor] = temp;
         temp = temp + dt*field->at(i*dt, temp[0], temp[1], temp[2]);
@@ -77,7 +80,7 @@ void LevelSet::contactPointExplicitEuler(double dt, int last_timestep, Vector in
 }
 
 /**
- * Calculate the contact point position for the 15navier field using the analytic solution.
+ * Calculate the contact point position for the navier field using the analytic solution.
  *
  * @param t The time at which to calculate the contact point position
  * @param c1 A parameter of the navier field
@@ -85,15 +88,19 @@ void LevelSet::contactPointExplicitEuler(double dt, int last_timestep, Vector in
  * @param v0 A parameter of the navier field
  * @return The position of the contact point in arbitrary units
  */
-Vector LevelSet::contactPointLinearField(double t, double c1, double x0, double v0) {
-	if (field->getName() == "navierField") {
-		return {x0 * exp(c1 * t) + v0/c1 * (exp(c1 * t) - 1), 0, 0};
-	} else if (field->getName() == "timeDependentNavierField") {
-		double tau = field->getTau();
-		return {x0 *exp(c1/M_PI * tau*sin(M_PI*t/tau)) + v0/c1 * (exp(c1/M_PI * tau*sin(M_PI*t/tau)) -1), 0, 0};
-	} else {
-		throw std::invalid_argument("Please choose either navierField or timeDependentNavierField if analyzing linear fields.");
-	}
+void LevelSet::contactPointLinearField(double dt, int last_timestep, double c1, double x0, double v0) {
+    double t = 0;  
+    for (int i = 0; i < last_timestep; i++) {
+        t = i*dt;
+        if (field->getName() == "navierField") {
+            positionReference[i] = {x0 * exp(c1 * t) + v0/c1 * (exp(c1 * t) - 1), 0, 0};
+        } else if (field->getName() == "timeDependentNavierField") {
+            double tau = field->getTau();
+            positionReference[i] =  {x0 * exp(c1/M_PI * tau*sin(M_PI*t/tau)) + v0/c1 * (exp(c1/M_PI * tau*sin(M_PI*t/tau)) -1), 0, 0};
+        } else {
+            throw std::invalid_argument("Please choose either navierField or timeDependentNavierField if analyzing linear fields.");
+        }
+    }
 }
 
 /**

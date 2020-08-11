@@ -35,12 +35,12 @@ public:
             double initCurvature, std::string outputDirectory);
 
     Vector getInitCP(Vector expcp, double epsilon);
-    void contactPointExplicitEuler(double dt, int timestep, Vector initCP);
-    Vector contactPointLinearField(double t, double c1, double x0, double v0);
+    void contactPointExplicitEuler(double dt, int timesteps, Vector initCP);
+    void contactPointLinearField(double dt, int timesteps, double c1, double x0, double v0);
     Vector getContactPoint(int timestep, bool indexOnly = false) const;
     array<int, 3> getContactPointIndices(int timestep) const;
     void referenceNormalExplicitEuler(double dt, int timestep, Vector n_sigma_init);
-    void referenceAngleLinearField(double dt, int last_timestep, double theta0);
+    void referenceAngleLinearField(double dt, int timesteps, double theta0);
     Vector getNormalVector(array<int, 3> cell,  bool useInterpolation = true) const;
     Vector getNormalVector(int i, int j, int k) const;
     Vector getTangentialVector(Vector normal) const;
