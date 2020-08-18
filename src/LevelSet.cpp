@@ -120,6 +120,10 @@ Vector LevelSet::getContactPoint(int timestep, bool indexOnly /* = false */) con
     if (numZ == 1) {
         if (trackedCP == "left") {
             double initSign = this->at(0, 0, 0)/std::abs(this->at(0, 0, 0));
+            
+            if (initSign < 0)
+                throw std::runtime_error("CP_Exit_Simulation_Plane");
+
             for (int i = 0; i < numX; i++) {
                 if (this->at(i, 0, 0)*initSign < 0) {
                     
@@ -136,6 +140,10 @@ Vector LevelSet::getContactPoint(int timestep, bool indexOnly /* = false */) con
             }
         } else {
             double initSign = this->at(numX - 1, 0, 0)/std::abs(this->at(numX - 1, 0, 0));
+
+            if (initSign < 0)
+                throw std::runtime_error("CP_Exit_Simulation_Plane");
+
             for (int i = numX - 1; i >= 0; i--) {
                 if (this->at(i, 0, 0)*initSign < 0) {
 
@@ -261,9 +269,8 @@ Vector LevelSet::getNormalVector(array<int, 3> cell, bool useInterpolation /* = 
         }
     }
 
-    array<double ,3> normal = {normalX, normalY, normalZ};
+    Vector normal = {normalX, normalY, normalZ};
     normal = normal/abs(normal);
-    
     return normal;
 }
 
