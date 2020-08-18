@@ -2,7 +2,7 @@
 #define ENUMS_HPP
 
 enum class InitShape {
-    sphere, plane, paraboloid
+    sphere, plane, paraboloid, ellipsoid
 };
 
 

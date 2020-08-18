@@ -908,15 +908,33 @@ void LevelSet::initPlane(Vector refPoint, double polarAngle, double azimuthalAng
 
 /** Initialize a paraboloid.
  * @param refPoint
+ * @param stretchX Stretching factor in x-direction.
+ * @param stretchZ Stretching factor in z-direction
+ * @param heightMaximum Height of the maximum above the xz-plane.
  */
-void LevelSet::initParaboloid(Vector refPoint, double stretchX, double stretchZ, double heightMinimum) {
+void LevelSet::initParaboloid(Vector refPoint, double stretchX, double stretchZ, double heightMaximum) {
     double x_0 = refPoint[0];
     double z_0 = refPoint[2];
 
     for (int k = 0; k < numZ; k++)
         for (int j = 0; j < numY; j++)
             for (int i = 0; i < numX; i++)
-                at(i, j, k) = 0.5*stretchX * pow(i*dx - x_0, 2)  + 0.5*stretchZ* pow(k*dz - z_0, 2) + j*dy - heightMinimum;
+                at(i, j, k) = 0.5*stretchX * pow(i*dx - x_0, 2)  + 0.5*stretchZ* pow(k*dz - z_0, 2) + j*dy - heightMaximum;
+}
+
+/** Initialize an ellipsoid.
+ * @param refPoint The reference point
+ * @
+ */
+void LevelSet::initEllipsoid(Vector refPoint, double stretchX, double stretchY, double stretchZ) {
+    double x_0 = refPoint[0];
+    double y_0 = refPoint[1];
+    double z_0 = refPoint[2];
+
+    for (int k = 0; k < numZ; k++)
+        for (int j = 0; j < numY; j++)
+            for (int i = 0; i < numX; i++)
+                at(i, j, k) = 0.5*stretchX * pow(i*dx - x_0, 2) + 0.5*stretchY * pow(j*dy - y_0, 2) + 0.5*stretchZ * pow(k*dz - z_0, 2) - 1;
 }
 
 Vector LevelSet::expectedNormalVector(Vector contactPoint, InitShape shape, Vector refPoint, std::vector<double> params) {
@@ -924,16 +942,22 @@ Vector LevelSet::expectedNormalVector(Vector contactPoint, InitShape shape, Vect
     Vector normal = {0, 0, 0};
 
     if (shape == InitShape::sphere) {
-        normal = {contactPoint[0] - refPoint[0], contactPoint[1] - refPoint[1], contactPoint[2] - refPoint[2]};
+        normal = { contactPoint[0] - refPoint[0], contactPoint[1] - refPoint[1], contactPoint[2] - refPoint[2] };
     } else if (shape == InitShape::plane) {
         double polarAngle = params.at(0);
         double azimuthalAngle = params.at(1);
-        normal =  {sin(polarAngle) * cos(azimuthalAngle), cos(polarAngle), sin(polarAngle)* sin(azimuthalAngle)};
+        normal =  { sin(polarAngle) * cos(azimuthalAngle), cos(polarAngle), sin(polarAngle)* sin(azimuthalAngle) };
     } else if (shape == InitShape::paraboloid) {
         double stretchX = params.at(0);
         double stretchZ = params.at(1);
-        normal = {stretchX* (contactPoint[0] - refPoint[0]), 1, stretchZ*(contactPoint[2] - refPoint[2]) };
+        normal = { stretchX * (contactPoint[0] - refPoint[0]), 1, stretchZ * (contactPoint[2] - refPoint[2]) };
+    } else if (shape == InitShape::ellipsoid) {
+        double stretchX = params.at(0);
+        double stretchY = params.at(1);
+        double stretchZ = params.at(2);
+        normal = { stretchX * (contactPoint[0] - refPoint[0]), stretchY * (contactPoint[1] - refPoint[1]), stretchZ * (contactPoint[2] - refPoint[2]) };
     }
+    
     return normal/abs(normal);
 }
 
@@ -961,7 +985,29 @@ Matrix LevelSet::expectedNormalVectorGradient(Vector contactPoint, InitShape sha
         vec0 = {stretchX / n_abs - pow(stretchX, 3) * pow(x - x0, 2) / pow(n_abs, 3), 0, - stretchX * pow(stretchZ, 2) *(x-x0) * (z-z0)/pow(n_abs, 3)};
         vec1 = {-pow(stretchX, 2) * (x - x0) / pow(n_abs, 3), 0, -pow(stretchZ, 2) * (z - z0)/pow(n_abs, 3)};
         vec2 = {-pow(stretchX, 2) * stretchZ * (x - x0) * (z - z0)/pow(n_abs, 3), 0, stretchZ / n_abs - pow(stretchZ, 3) * pow(z - z0, 2) / pow(n_abs, 3)};
+    } else if (shape == InitShape::ellipsoid) {
+        double x = contactPoint[0];
+        double y = 0;
+        double z = contactPoint[2];
+        double x0 = refPoint[0];
+        double y0 = refPoint[1];
+        double z0 = refPoint[2];
+        double stretchX = params.at(0);
+        double stretchY = params.at(1);
+        double stretchZ = params.at(2);
+        double n_abs = sqrt(pow(stretchX * (x - x0), 2) + pow(stretchY * (y - y0), 2) + pow(stretchZ * (z - z0), 2));
+
+        vec0 = { stretchX / n_abs - pow(stretchX, 3) * pow(x - x0, 2) / pow(n_abs, 3), 
+                 stretchX * pow(stretchY, 2) * (x - x0) * (y - y0) / pow(n_abs, 3), 
+                 stretchX * pow(stretchZ, 2) * (x - x0) * (z - z0) / pow(n_abs, 3) };
+        vec1 = { -pow(stretchX, 2) * stretchY * (x - x0) * (y - y0) / pow(n_abs, 3),
+                 stretchY / n_abs - pow(stretchY, 3) * pow(y - y0, 2) / pow(n_abs, 3),
+                 -stretchY * pow(stretchZ, 2) * (y - y0) * (z - z0) / pow(n_abs, 3)};
+        vec2 = { -pow(stretchX, 2) * stretchZ * (x - x0) * (z - z0) / pow(n_abs, 3),
+                 -pow(stretchY, 2) * stretchZ * (y - y0) * (z - z0) / pow(n_abs, 3),
+                 stretchZ / n_abs - pow(stretchZ, 3) * pow(z - z0, 2) / pow(n_abs, 3)};
     }
+
     Matrix ret = {vec0, vec1, vec2};
     return ret;
 }

@@ -51,10 +51,12 @@ int main(int argc, char **argv) {
     double lenX, lenY, lenZ, time, centerX, centerY, centerZ, radius, expcpX, expcpY, expcpZ, expAngle, expNormalX, expNormalY, expNormalZ, initCurvature;
     double v0, w0, x0, y0, z0, c1, c2, c3, c4, c5, c6, tau, CFL, writestepsFraction, planePolarAngle, planeAzimuthalAngle, fieldAzimuthalAngle, alpha;
     double paraboloidStretchX, paraboloidStretchZ, paraboloidHeightMinimum;
+    double ellipsoidStretchX, ellipsoidStretchY, ellipsoidStretchZ;
 
     lenX = lenY = lenZ = time = centerX = centerY = centerZ = radius = expcpX = expcpY = expcpZ = expNormalX = expNormalY = expNormalZ = initCurvature
     = expAngle = v0 = w0 = x0 = y0 = z0 = c1 = c2 = c3 = c4 = c5 = c6 = tau = CFL = writestepsFraction = planePolarAngle
-    = planeAzimuthalAngle =  fieldAzimuthalAngle = alpha = paraboloidStretchX = paraboloidStretchZ = paraboloidHeightMinimum = 0;
+    = planeAzimuthalAngle =  fieldAzimuthalAngle = alpha = paraboloidStretchX = paraboloidStretchZ = paraboloidHeightMinimum 
+    = ellipsoidStretchX = ellipsoidStretchY = ellipsoidStretchZ = 0;
     
     bool writeField = false, calculateCurvature = true;
     std::string trackedContactPoint = "left", fieldName = "", outputDirectory = "";
@@ -144,8 +146,10 @@ int main(int argc, char **argv) {
                             initShape = InitShape::plane;
                         else if (value == "paraboloid")
                             initShape = InitShape::paraboloid;
+                        else if (value == "ellipsoid")
+                            initShape = InitShape::ellipsoid;
                         else
-                            throw std::invalid_argument("No valid initialization shape chosen. Please choose either sphere, plane or paraboloid.");
+                            throw std::invalid_argument("No valid initialization shape chosen. Please choose either sphere, plane, paraboloid or ellipsoid.");
                     }
                     else if (varName == "centerX")
                         centerX = std::stod(value);
@@ -157,22 +161,22 @@ int main(int argc, char **argv) {
 
                         if (initShape == InitShape::sphere) {
                             radius = std::stod(value);
-                        } else if (initShape == InitShape::plane) {
-                            throw std::invalid_argument("Given radius while initializing plane.");
+                        } else {
+                            throw std::invalid_argument("Given radius while not initializing sphere.");
                         }
                     }
                     else if (varName == "planePolarAngle") {
                         if (initShape == InitShape::plane) {
                             planePolarAngle = std::stod(value);
-                        } else if (initShape == InitShape::sphere) {
-                            throw std::invalid_argument("Given plane angle while initializing sphere.");
+                        } else {
+                            throw std::invalid_argument("Given plane angle while not initializing plane.");
                         }
                     }
                     else if (varName == "planeAzimuthalAngle") {
                         if (initShape == InitShape::plane) {
                             planeAzimuthalAngle = std::stod(value);
-                        } else if (initShape == InitShape::sphere) {
-                            throw std::invalid_argument("Given plane angle while initializing sphere.");
+                        } else {
+                            throw std::invalid_argument("Given plane angle while not initializing plane.");
                         }
                     }
                     else if (varName == "paraboloidStretchX")
@@ -181,6 +185,12 @@ int main(int argc, char **argv) {
                         paraboloidStretchZ = std::stod(value);
                     else if (varName == "paraboloidHeightMinimum")
                         paraboloidHeightMinimum = std::stod(value);
+                    else if (varName == "ellipsoidStretchX")
+                        ellipsoidStretchX = std::stod(value);
+                    else if (varName == "ellipsoidStretchY")
+                        ellipsoidStretchY = std::stod(value);
+                    else if (varName == "ellipsoidStretchZ")
+                        ellipsoidStretchZ = std::stod(value);
                     else if (varName == "expcpX")
                         expcpX = std::stod(value);
                     else if (varName == "expcpY")
@@ -311,6 +321,8 @@ int main(int argc, char **argv) {
             expectedNormalVectorParams = {planePolarAngle / 180 * M_PI, planeAzimuthalAngle / 180 * M_PI};
         } else if (initShape == InitShape::paraboloid) {
             expectedNormalVectorParams = {paraboloidStretchX, paraboloidStretchZ};
+        } else if (initShape == InitShape::ellipsoid) {
+            expectedNormalVectorParams = {ellipsoidStretchX, ellipsoidStretchY, ellipsoidStretchZ};
         }
     }  catch (std::invalid_argument& e) {
         std::cout << e.what() << std::endl;
@@ -357,6 +369,8 @@ int main(int argc, char **argv) {
         Phi.initPlane(center, planePolarAngle, planeAzimuthalAngle);
     else if (initShape == InitShape::paraboloid)
         Phi.initParaboloid(center, paraboloidStretchX, paraboloidStretchZ, paraboloidHeightMinimum);
+    else if (initShape == InitShape::ellipsoid)
+        Phi.initEllipsoid(center, ellipsoidStretchX, ellipsoidStretchY, ellipsoidStretchZ);
 
     std::string temp = "mkdir -p " + outputDirectory;
     int sysRet;

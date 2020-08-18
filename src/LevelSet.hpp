@@ -58,6 +58,7 @@ public:
     void initSphere(Vector center, double radius);
     void initPlane(Vector refPoint, double polarAngle, double azimuthalAngle);
     void initParaboloid(Vector refPoint, double stretchX, double stretchY, double heightMinimum);
+    void initEllipsoid(Vector refPoint, double stretchX, double stretchY, double stretchZ);
     static Vector expectedNormalVector(Vector contactPoint, InitShape shape, Vector refPoint, std::vector<double> params);
     static Matrix expectedNormalVectorGradient(Vector contactPoint, InitShape shape, Vector refPoint, std::vector<double> params);
     Vector normalVector2D(double initAngle);
