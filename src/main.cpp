@@ -335,22 +335,17 @@ int main(int argc, char **argv) {
     Matrix expNormalVecGrad; // This will be used to calculate the curvature derivative at t = 0
 
     double dt = 0.0;
-    if (numZ == 1 && (expNormalX == 0) && (expNormalY == 0) && (expNormalZ == 0)) {
+    if ( numZ == 1 && expNormalX == 0 && expNormalY == 0 && expNormalZ == 0 ) {
       // 2D case
       dt = CFL*std::min(dx,dy)/field->getMaxNormValue();
-
-      if (trackedContactPoint == "left") {
-          expNormalVec = { -sin(expAngle/180*M_PI), cos(expAngle/180*M_PI), 0};
-      } else {
-          expNormalVec = {sin(expAngle/180*M_PI), cos(expAngle/180*M_PI), 0};
-      }
     }
     else {
       // 3D case
       dt = CFL*std::min(std::min(dx,dy),dz)/field->getMaxNormValue();
-      expNormalVec = LevelSet::expectedNormalVector(expCP, initShape, center, expectedNormalVectorParams);
-      expNormalVecGrad = LevelSet::expectedNormalVectorGradient(expCP, initShape, center, expectedNormalVectorParams);
     } 
+    
+    expNormalVec = LevelSet::expectedNormalVector(expCP, initShape, center, expectedNormalVectorParams);
+    expNormalVecGrad = LevelSet::expectedNormalVectorGradient(expCP, initShape, center, expectedNormalVectorParams);
 
     int timesteps = time/dt;
     int writesteps = ceil(writestepsFraction*timesteps);
