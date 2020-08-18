@@ -298,7 +298,7 @@ Vector LevelSet::getNormalVector(int i, int j, int k) const {
 Vector LevelSet::getTangentialVector(Vector normal) const {
     double tau1, tau2, tau3;
 
-    if (normal[1] > 1e-12) {
+    if ( std::abs(normal[1]) > 1e-12 ) {
         tau1 = 1;
         tau2 = -(normal[2]*normal[2] / (normal[0]*normal[1]) + normal[0]/normal[1]);
         tau3 = normal[2] / normal[0];
