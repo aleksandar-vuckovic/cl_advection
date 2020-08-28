@@ -1,12 +1,12 @@
-numX=200
+numX=400
 numY=200
-numZ=200
-lenX=0.5
+numZ=400
+lenX=1.0
 lenY=0.5
-lenZ=0.5
+lenZ=1.0
 
 time=0.3
-CFL=0.9
+CFL=0.5
 writestepsFraction=0.1
 writeField=true
 
@@ -15,7 +15,7 @@ v0=-1
 c1=1
 c2=-2
 c3=2
-fieldAzimuthalAngle=45
+fieldAzimuthalAngle=225
 
 geometryType=paraboloid
 initCurvature=-5.960927
@@ -23,7 +23,7 @@ initCurvature=-5.960927
 
 centerX=0.2
 centerY=0.0
-centerZ=0.2
+centerZ=0.3
 
 paraboloidStretchX=8
 paraboloidStretchZ=4
@@ -31,9 +31,9 @@ paraboloidHeightMinimum=0.1
 
 expcpX=0.3
 expcpY=0.0
-expcpZ=0.37320508075688774	
+expcpZ=0.47320508075688774	
 
-trackedContactPoint=left
+
 threads=5
-calculateCurvature=true
+
 
