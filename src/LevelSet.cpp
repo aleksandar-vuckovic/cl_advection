@@ -965,19 +965,24 @@ Matrix LevelSet::expectedNormalVectorGradient(Vector contactPoint, InitShape sha
     Vector vec0;
     Vector vec1;
     Vector vec2;
+    
+    double x = contactPoint[0];
+    double y = 0;
+    double z = contactPoint[2];
+    double x0 = refPoint[0];
+    double y0 = refPoint[1];
+    double z0 = refPoint[2];
 
 
     if (shape == InitShape::sphere) {
-        vec0 = {2, 0, 0};
-        vec1 = {0, 2, 0};
-        vec2 = {0, 0, 2};
+        double n_abs = sqrt(pow(x - x0, 2) + pow(y - y0, 2) + pow(z - z0, 2));
+        double n_abs_3 = pow(n_abs, 3);
+        vec0 = { (pow(y - y0, 2) + pow(z - z0, 2)) / n_abs_3, -(x - x0) * (y - y0) / n_abs_3, - (x - x0) * (z - z0) / n_abs_3 };
+        vec1 = { -(x - x0) * (y - y0) / n_abs_3, (pow(x - x0, 2) + pow(z - z0, 2)) / n_abs_3, - (y - y0) * (z - z0) / n_abs_3 };
+        vec2 = { -(x - x0) * (z - z0) / n_abs_3, - (y - y0) * (z - z0) / n_abs_3, (pow(x - x0, 2) + pow(y - y0, 2)) / n_abs_3 };
     } else if (shape == InitShape::plane) {
         vec0 = vec1 = vec2 = {0, 0, 0};
     } else if (shape == InitShape::paraboloid) {
-        double x = contactPoint[0];
-        double z = contactPoint[2];
-        double x0 = refPoint[0];
-        double z0 = refPoint[2];
         double stretchX = params.at(0);
         double stretchZ = params.at(1);
         double n_abs = sqrt(pow(stretchX * (x - x0), 2) + 1 + pow(stretchZ * (z - z0), 2));
@@ -986,12 +991,6 @@ Matrix LevelSet::expectedNormalVectorGradient(Vector contactPoint, InitShape sha
         vec1 = {-pow(stretchX, 2) * (x - x0) / pow(n_abs, 3), 0, -pow(stretchZ, 2) * (z - z0)/pow(n_abs, 3)};
         vec2 = {-pow(stretchX, 2) * stretchZ * (x - x0) * (z - z0)/pow(n_abs, 3), 0, stretchZ / n_abs - pow(stretchZ, 3) * pow(z - z0, 2) / pow(n_abs, 3)};
     } else if (shape == InitShape::ellipsoid) {
-        double x = contactPoint[0];
-        double y = 0;
-        double z = contactPoint[2];
-        double x0 = refPoint[0];
-        double y0 = refPoint[1];
-        double z0 = refPoint[2];
         double stretchX = params.at(0);
         double stretchY = params.at(1);
         double stretchZ = params.at(2);
