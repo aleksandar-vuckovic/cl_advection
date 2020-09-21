@@ -331,7 +331,6 @@ int main(int argc, char **argv) {
     Vector center = {centerX, centerY, centerZ};
     Vector expCP = {expcpX, expcpY, expcpZ};
 
-    Vector expNormalVec;
     Matrix expNormalVecGrad; // This will be used to calculate the curvature derivative at t = 0
 
     double dt = 0.0;

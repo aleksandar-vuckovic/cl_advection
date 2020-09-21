@@ -18,7 +18,7 @@
 LevelSet::LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz, VelocityField *field,
         std::string trackedCP, double dt, int timesteps, Vector expCP, double expAngle,
         double initCurvature, InitShape shape, std::vector<double> shapeParams, Vector initCenter, std::string outputDirectory)
-        : Field<double>(numX, numY, numZ, dx, dy, dz),
+        : Field<double>(numX, numY, numZ, dx, dy, dz), 
           positionReference(timesteps), normalReference(timesteps), angleReference(timesteps), curvatureReference(timesteps),
           shape(shape), shapeParams(shapeParams), initCenter(initCenter) {
 		this->field = field;
@@ -390,7 +390,7 @@ Vector LevelSet::referenceNormalExplicitEulerSingle(double dt, int last_timestep
     Vector n_sigma = expectedNormalVector(backwardsPoints[backwardsPoints.size() - 1]);
 	Vector deriv {0, 0, 0};
 	for (int i = 0; i < last_timestep; i++) {
-	    Vector CP = backwardsPoints[backwardsPoints.size() - i];
+	    Vector CP = backwardsPoints[backwardsPoints.size() - i - 1];
 		deriv = -1*transpose(field->gradAt(i*dt, CP[0], CP[1], CP[2]))*n_sigma 
                 + ((field->gradAt(i*dt, CP[0], CP[1], CP[2])*n_sigma)*n_sigma)*n_sigma;
 		n_sigma = deriv*dt + n_sigma;

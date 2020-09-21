@@ -16,10 +16,6 @@ private:
     // A pointer to the VelocityField acting on the LevelSet field.
     VelocityField* field;
 
-    InitShape shape;
-    std::vector<double> shapeParams;
-    Vector initCenter;
-
     // Decides which contact point to track. Only applicable in 2D.
     std::string trackedCP, outputDirectory;
 
@@ -32,6 +28,10 @@ private:
     std::vector<Vector> normalReference;
     std::vector<double> angleReference;
     std::vector<double> curvatureReference;
+    
+    InitShape shape;
+    std::vector<double> shapeParams;
+    Vector initCenter;
 
 public:
     LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz, VelocityField *field,
