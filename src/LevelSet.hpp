@@ -16,6 +16,10 @@ private:
     // A pointer to the VelocityField acting on the LevelSet field.
     VelocityField* field;
 
+    InitShape shape;
+    std::vector<double> shapeParams;
+    Vector initCenter;
+
     // Decides which contact point to track. Only applicable in 2D.
     std::string trackedCP, outputDirectory;
 
@@ -31,15 +35,17 @@ private:
 
 public:
     LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz, VelocityField *field,
-            std::string trackedCP, double dt, int timesteps, Vector expCP, Vector expNormalVec, double expAngle,
-            double initCurvature, std::string outputDirectory);
+            std::string trackedCP, double dt, int timesteps, Vector expCP, double expAngle,
+            double initCurvature, InitShape shape, std::vector<double> shapeParams, Vector initCenter, std::string outputDirectory);
 
     Vector getInitCP(Vector expcp, double epsilon);
-    void contactPointExplicitEuler(double dt, int timesteps, Vector initCP);
+    void referenceContactPointExplicitEuler(double dt, int timesteps, Vector initCP);
+    std::vector<Vector> referenceContactPointBackwards(double dt, int last_timestep, Vector point);
     void contactPointLinearField(double dt, int timesteps, double c1, double x0, double v0);
     Vector getContactPoint(int timestep, bool indexOnly = false) const;
     array<int, 3> getContactPointIndices(int timestep) const;
     void referenceNormalExplicitEuler(double dt, int timestep, Vector n_sigma_init);
+    Vector referenceNormalExplicitEulerSingle(double dt, int last_timestep, std::vector<Vector> backwardsPoints);
     void referenceAngleLinearField(double dt, int timesteps, double theta0);
     Vector getNormalVector(array<int, 3> cell,  bool useInterpolation = true) const;
     Vector getNormalVector(int i, int j, int k) const;
@@ -59,8 +65,8 @@ public:
     void initPlane(Vector refPoint, double polarAngle, double azimuthalAngle);
     void initParaboloid(Vector refPoint, double stretchX, double stretchY, double heightMinimum);
     void initEllipsoid(Vector refPoint, double stretchX, double stretchY, double stretchZ);
-    static Vector expectedNormalVector(Vector contactPoint, InitShape shape, Vector refPoint, std::vector<double> params);
-    static Matrix expectedNormalVectorGradient(Vector contactPoint, InitShape shape, Vector refPoint, std::vector<double> params);
+    Vector expectedNormalVector(Vector contactPoint);
+    Matrix expectedNormalVectorGradient(Vector contactPoint);
     Vector normalVector2D(double initAngle);
     static Vector normalVector2D(double initAngle, std::string trackedCP);
     void calculateNextTimestep(double dt, int timestep);

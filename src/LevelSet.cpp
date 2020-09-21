@@ -16,20 +16,22 @@
  * @param trackedCP Which contact point to track. Only applicable in 2D.
  */
 LevelSet::LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz, VelocityField *field,
-        std::string trackedCP, double dt, int timesteps, Vector expCP, Vector expNormalVec, double expAngle,
-        double initCurvature, std::string outputDirectory)
+        std::string trackedCP, double dt, int timesteps, Vector expCP, double expAngle,
+        double initCurvature, InitShape shape, std::vector<double> shapeParams, Vector initCenter, std::string outputDirectory)
         : Field<double>(numX, numY, numZ, dx, dy, dz),
-          positionReference(timesteps), normalReference(timesteps), angleReference(timesteps), curvatureReference(timesteps) {
+          positionReference(timesteps), normalReference(timesteps), angleReference(timesteps), curvatureReference(timesteps),
+          shape(shape), shapeParams(shapeParams), initCenter(initCenter) {
 		this->field = field;
 		this->trackedCP = trackedCP;
         this->outputDirectory = outputDirectory;
         expAngle = expAngle/180*M_PI;
+        Vector expNormalVec = expectedNormalVector(expCP);
 
 		// Calculate reference data
         if (numZ == 1 && ( field->getName() == "navierField" || field->getName() == "timeDependentNavierField") )
             contactPointLinearField(dt, timesteps, field->getC1(), expCP[0], field->getV0());
         else 
-            contactPointExplicitEuler(dt, timesteps, expCP);
+            referenceContactPointExplicitEuler(dt, timesteps, expCP);
             
         referenceNormalExplicitEuler(dt, timesteps, expNormalVec);
         referenceCurvatureExplicitEuler2D(dt, timesteps, initCurvature);
@@ -68,7 +70,7 @@ Vector LevelSet::getInitCP(Vector expcp, double epsilon) {
  * @param timestep The index of the timestep
  * @param initCP The position of the contact point at timestep 0
  */
-void LevelSet::contactPointExplicitEuler(double dt, int last_timestep, Vector initCP) {
+void LevelSet::referenceContactPointExplicitEuler(double dt, int last_timestep, Vector initCP) {
     Vector &temp = initCP;
     int factor = 100;
     dt = dt / factor;
@@ -77,6 +79,19 @@ void LevelSet::contactPointExplicitEuler(double dt, int last_timestep, Vector in
             positionReference[i/factor] = temp;
         temp = temp + dt*field->at(i*dt, temp[0], temp[1], temp[2]);
     }
+}
+
+std::vector<Vector> LevelSet::referenceContactPointBackwards(double dt, int last_timestep, Vector point) {
+    Vector &temp = point;
+    std::vector<Vector> tempReturn;
+    int factor = 100;
+    dt = dt / factor;
+    tempReturn.push_back(temp);
+    for (int i = factor * last_timestep; i > 0; i--) {
+        temp = temp - dt*field->at((i-1)*dt, temp[0], temp[1], temp[2]);
+        tempReturn.push_back(temp);
+    }
+    return tempReturn;
 }
 
 /**
@@ -371,6 +386,20 @@ void LevelSet::referenceNormalExplicitEuler(double dt, int last_timestep, Vector
 	}
 }
 
+Vector LevelSet::referenceNormalExplicitEulerSingle(double dt, int last_timestep, std::vector<Vector> backwardsPoints) {
+    Vector n_sigma = expectedNormalVector(backwardsPoints[backwardsPoints.size() - 1]);
+	Vector deriv {0, 0, 0};
+	for (int i = 0; i < last_timestep; i++) {
+	    Vector CP = backwardsPoints[backwardsPoints.size() - i];
+		deriv = -1*transpose(field->gradAt(i*dt, CP[0], CP[1], CP[2]))*n_sigma 
+                + ((field->gradAt(i*dt, CP[0], CP[1], CP[2])*n_sigma)*n_sigma)*n_sigma;
+		n_sigma = deriv*dt + n_sigma;
+		n_sigma = n_sigma/abs(n_sigma);
+	}
+    return n_sigma;
+}
+
+
 /**
  * Calculate the contact angle at a given time for the navier field using the analytic solution.
  *
@@ -418,15 +447,151 @@ void LevelSet::referenceAngleLinearField(double dt, int last_timestep, double th
  */
 void LevelSet::referenceCurvatureExplicitEuler2D(double dt, int last_timestep, double initCurvature) {
 
-    double curvature = initCurvature;
-    for (int i = 0; i < last_timestep; i++) {
-        curvatureReference[i] = curvature;
-        Vector CP = positionReference[i];        
-        Vector normal = normalReference[i];
-        Vector tau = getTangentialVector(normal);
-        // temp is the second derivative of v in the tau direction
-        Vector temp = field->secondPartial(i*dt, CP[0], CP[1], CP[2], tau);
-        curvature = curvature + dt*(temp*normal - 3*curvature*(field->gradAt(i*dt, CP[0], CP[1], CP[2])*tau)*tau);
+    if (numZ == 1) {
+        double curvature = initCurvature;
+        for (int i = 0; i < last_timestep; i++) {
+            curvatureReference[i] = curvature;
+            Vector CP = positionReference[i];        
+            Vector normal = normalReference[i];
+            Vector tau = getTangentialVector(normal);
+            // temp is the second derivative of v in the tau direction
+            Vector temp = field->secondPartial(i*dt, CP[0], CP[1], CP[2], tau);
+            curvature = curvature + dt*(temp*normal - 3*curvature*(field->gradAt(i*dt, CP[0], CP[1], CP[2])*tau)*tau);
+        }
+    } else {
+        double d = std::min(std::min(dx, dy), dz);
+
+        for (int i = 0; i < last_timestep; i++) {
+            Vector CP = positionReference[i];
+            int local = 2;
+            int sidelengthZ;
+            if (numZ > 1)
+                sidelengthZ = 2*local + 1;
+            else
+                sidelengthZ = 1;
+
+            // Declare a field of normal vectors
+            Field<Vector> localField(2*local + 1, local + 1, sidelengthZ, dx, dy, dz);
+
+            for (int x = -local; x <= local; x++)
+                for (int y = 0; y <= local; y++)
+                    for (int z = -sidelengthZ/2; z <= sidelengthZ/2; z++) {
+                        Vector temp = CP + Vector({d*x, d*y, d*z}); 
+
+                        if (temp[0] < 0 || temp[0] > numX*dx || temp[1] < 0 || temp[1] > numY*dy || temp[2] < 0 || temp[2] > numZ*dz)
+                            continue;
+
+                        std::vector<Vector> backwardsPoints = referenceContactPointBackwards(dt, i, temp);   // Backwards in time - Cha
+                        Vector normal = referenceNormalExplicitEulerSingle(dt, i, backwardsPoints); // Forwards in time - Cha.  Cha-Cha!
+
+                        if (this->numZ > 1)
+                            localField.at(x+local, y, z+local) = normal;
+                        else
+                            localField.at(x+local, y, 0) = normal;
+                    }
+
+            // Calculate divergence of localField at cell, which by definition
+            // is in the "middle" of localField
+            double dnx_dx, dnx_dy, dnx_dz, dny_dx, dny_dy, dny_dz, dnz_dx, dnz_dy, dnz_dz;
+            dnx_dx = dnx_dy = dnx_dz = dny_dx = dny_dy = dny_dz = dnz_dx = dnz_dy = dnz_dz = 0;
+
+
+            //TODO : FIXME
+            std::array<int, 3> cell = {numX/2, numY/2, numZ/2 };
+
+            if (cell[0] == 0) {
+                dnx_dx = (-localField.at(local + 2, 0, sidelengthZ/2)[0]
+                        + 4.0*localField.at(local + 1, 0, sidelengthZ/2)[0]
+                        - 3.0*localField.at(local, 0, sidelengthZ/2)[0] ) / (2*d);
+
+                dny_dx = (-localField.at(local + 2, 0, sidelengthZ/2)[1]
+                        + 4.0*localField.at(local + 1, 0, sidelengthZ/2)[1]
+                        - 3.0*localField.at(local, 0, sidelengthZ/2)[1] ) / (2*d);
+
+                if (numZ > 1) {
+                    dnz_dx = (-localField.at(local + 2, 0, sidelengthZ/2)[2]
+                            + 4.0*localField.at(local + 1, 0, sidelengthZ/2)[2]
+                            - 3.0*localField.at(local, 0, sidelengthZ/2)[2] ) / (2*d);
+                }
+
+            } else if (cell[0] == numX - 1) {
+                dnx_dx = (localField.at(local - 2, 0, sidelengthZ/2)[0]
+                        - 4.0*localField.at(local - 1, 0, sidelengthZ/2)[0]
+                        + 3.0*localField.at(local, 0, sidelengthZ/2)[0] ) / (2*d);
+
+                dny_dx = (localField.at(local - 2, 0, sidelengthZ/2)[1]
+                        - 4.0*localField.at(local - 1, 0, sidelengthZ/2)[1]
+                        + 3.0*localField.at(local, 0, sidelengthZ/2)[1] ) / (2*d);
+
+                if (numZ > 1) {
+                    dnz_dx = (localField.at(local - 2, 0, sidelengthZ/2)[2]
+                            - 4.0*localField.at(local - 1, 0, sidelengthZ/2)[2]
+                            + 3.0*localField.at(local, 0, sidelengthZ/2)[2] ) / (2*d);
+                }
+            } else {
+                dnx_dx = (localField.at(local + 1, 0, sidelengthZ/2)[0] - localField.at(local - 1, 0, sidelengthZ/2)[0]) / (2*d);
+                dny_dx = (localField.at(local + 1, 0, sidelengthZ/2)[1] - localField.at(local - 1, 0, sidelengthZ/2)[1]) / (2*d);
+                dnz_dx = (localField.at(local + 1, 0, sidelengthZ/2)[2] - localField.at(local - 1, 0, sidelengthZ/2)[2]) / (2*d);
+            }
+
+            dnx_dy = (-localField.at(local, 2, sidelengthZ/2)[0]
+                    + 4.0*localField.at(local, 1, sidelengthZ/2)[0]
+                    - 3.0*localField.at(local, 0, sidelengthZ/2)[0] ) / (2*d);
+
+
+            dny_dy = (-localField.at(local, 2, sidelengthZ/2)[1]
+                    + 4.0*localField.at(local, 1, sidelengthZ/2)[1]
+                    - 3.0*localField.at(local, 0, sidelengthZ/2)[1] ) / (2*d);
+
+
+
+            if (numZ > 1) {
+
+                if (cell[2] == 0) {
+                    dnx_dz = (-localField.at(local, 0, sidelengthZ/2 + 2)[0]
+                            + 4.0*localField.at(local, 0, sidelengthZ/2 + 1)[0]
+                            - 3.0*localField.at(local, 0, sidelengthZ/2)[0] ) / (2*d);
+                    dny_dz = (-localField.at(local, 0, sidelengthZ/2 + 2)[1]
+                            + 4.0*localField.at(local, 0, sidelengthZ/2 + 1)[1]
+                            - 3.0*localField.at(local, 0, sidelengthZ/2)[1] ) / (2*d);
+                    dnz_dz = (-localField.at(local, 0, sidelengthZ/2 + 2)[2]
+                            + 4.0*localField.at(local, 0, sidelengthZ/2 + 1)[2]
+                            - 3.0*localField.at(local, 0, sidelengthZ/2)[2] ) / (2*d);
+                } else if (cell[2] == numZ - 1) {
+                    dnx_dz = (localField.at(local, 0, sidelengthZ/2 - 2)[0]
+                            - 4.0*localField.at(local, 0, sidelengthZ/2 - 1)[0]
+                            + 3.0*localField.at(local, 0, sidelengthZ/2)[0] ) / (2*d);
+                    dny_dz = (localField.at(local, 0, sidelengthZ/2 - 2)[1]
+                            - 4.0*localField.at(local, 0, sidelengthZ/2 - 1)[1]
+                            + 3.0*localField.at(local, 0, sidelengthZ/2)[1] ) / (2*d);
+                    dnz_dz = (localField.at(local, 0, sidelengthZ/2 - 2)[2]
+                            - 4.0*localField.at(local, 0, sidelengthZ/2 - 1)[2]
+                            + 3.0*localField.at(local, 0, sidelengthZ/2)[2] ) / (2*d);
+                } else {
+                    dnx_dz = (localField.at(local, 0, sidelengthZ/2 + 1)[0] - localField.at(local, 0, sidelengthZ/2 - 1)[0]) / (2*d);
+                    dny_dz = (localField.at(local, 0, sidelengthZ/2 + 1)[1] - localField.at(local, 0, sidelengthZ/2 - 1)[1]) / (2*d);
+                    dnz_dz = (localField.at(local, 0, sidelengthZ/2 + 1)[2] - localField.at(local, 0, sidelengthZ/2 - 1)[2]) / (2*d);
+                }
+
+                dnz_dy = (-localField.at(local, 2, sidelengthZ/2)[2]
+                            + 4.0*localField.at(local, 1, sidelengthZ/2)[2]
+                            - 3.0*localField.at(local, 0, sidelengthZ/2)[2] ) / (2*d);
+            }
+
+            Vector normal = localField.at(local, 0, sidelengthZ/2);
+            Vector tau1 = getTangentialVector(normal);
+            Vector tau2 = cross(normal, tau1);
+
+            Vector row1 = {dnx_dx, dnx_dy, dnx_dz};
+            Vector row2 = {dny_dx, dny_dy, dny_dz};
+            Vector row3 = {dnz_dx, dnz_dy, dnz_dz};
+
+            Matrix gradNormal = {row1, row2, row3};
+
+            double kappa = -1*(gradNormal*tau1)*tau1 - 1*(gradNormal*tau2)*tau2;
+
+            curvatureReference[i] = kappa;
+        }
     }
 }
 
@@ -937,8 +1102,10 @@ void LevelSet::initEllipsoid(Vector refPoint, double stretchX, double stretchY, 
                 at(i, j, k) = 0.5*stretchX * pow(i*dx - x_0, 2) + 0.5*stretchY * pow(j*dy - y_0, 2) + 0.5*stretchZ * pow(k*dz - z_0, 2) - 1;
 }
 
-Vector LevelSet::expectedNormalVector(Vector contactPoint, InitShape shape, Vector refPoint, std::vector<double> params) {
-
+Vector LevelSet::expectedNormalVector(Vector contactPoint) {
+     std::vector<double>& params = shapeParams;
+     Vector& refPoint = initCenter;
+ 
     Vector normal = {0, 0, 0};
 
     if (shape == InitShape::sphere) {
@@ -961,7 +1128,8 @@ Vector LevelSet::expectedNormalVector(Vector contactPoint, InitShape shape, Vect
     return normal/abs(normal);
 }
 
-Matrix LevelSet::expectedNormalVectorGradient(Vector contactPoint, InitShape shape, Vector refPoint, std::vector<double> params) {
+Matrix LevelSet::expectedNormalVectorGradient(Vector contactPoint) {
+    std::vector<double>& params = shapeParams;
     Vector vec0;
     Vector vec1;
     Vector vec2;
@@ -969,9 +1137,9 @@ Matrix LevelSet::expectedNormalVectorGradient(Vector contactPoint, InitShape sha
     double x = contactPoint[0];
     double y = 0;
     double z = contactPoint[2];
-    double x0 = refPoint[0];
-    double y0 = refPoint[1];
-    double z0 = refPoint[2];
+    double x0 = initCenter[0];
+    double y0 = initCenter[1];
+    double z0 = initCenter[2];
 
 
     if (shape == InitShape::sphere) {

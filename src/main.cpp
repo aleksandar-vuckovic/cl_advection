@@ -302,7 +302,7 @@ int main(int argc, char **argv) {
     double dy = lenY/numY;
     double dz = lenZ/numZ;
 
-    std::vector<double> expectedNormalVectorParams;  // This will be populated below, depending on the chosen inital shape and used in LevelSet::expectedNormalVector
+    std::vector<double> shapeParams;  // This will be populated below, depending on the chosen inital shape and used in LevelSet::expectedNormalVector
 
     try {
         if (initShape == InitShape::sphere) {
@@ -313,16 +313,16 @@ int main(int argc, char **argv) {
             } else {
                 initCurvature = -2/radius;
             }
-            expectedNormalVectorParams = {};    // No additional parameters needed for the sphere
+            shapeParams = {};    // No additional parameters needed for the sphere
         } else if (initShape == InitShape::plane) {
             if (initCurvature != 0)
                 throw std::invalid_argument("Given non-zero initCurvature when initializing a plane.");
             initCurvature = 0;
-            expectedNormalVectorParams = {planePolarAngle / 180 * M_PI, planeAzimuthalAngle / 180 * M_PI};
+            shapeParams = {planePolarAngle / 180 * M_PI, planeAzimuthalAngle / 180 * M_PI};
         } else if (initShape == InitShape::paraboloid) {
-            expectedNormalVectorParams = {paraboloidStretchX, paraboloidStretchZ};
+            shapeParams = {paraboloidStretchX, paraboloidStretchZ};
         } else if (initShape == InitShape::ellipsoid) {
-            expectedNormalVectorParams = {ellipsoidStretchX, ellipsoidStretchY, ellipsoidStretchZ};
+            shapeParams = {ellipsoidStretchX, ellipsoidStretchY, ellipsoidStretchZ};
         }
     }  catch (std::invalid_argument& e) {
         std::cout << e.what() << std::endl;
@@ -343,14 +343,14 @@ int main(int argc, char **argv) {
       // 3D case
       dt = CFL*std::min(std::min(dx,dy),dz)/field->getMaxNormValue();
     } 
-    
-    expNormalVec = LevelSet::expectedNormalVector(expCP, initShape, center, expectedNormalVectorParams);
-    expNormalVecGrad = LevelSet::expectedNormalVectorGradient(expCP, initShape, center, expectedNormalVectorParams);
 
     int timesteps = time/dt;
     int writesteps = ceil(writestepsFraction*timesteps);
 
-    LevelSet Phi(numX, numY, numZ, dx, dy, dz, field, trackedContactPoint, dt, timesteps, expCP, expNormalVec, expAngle, initCurvature, outputDirectory);
+    LevelSet Phi(numX, numY, numZ, dx, dy, dz, field, trackedContactPoint, dt, timesteps, 
+    expCP, expAngle, initCurvature, initShape, shapeParams, center, outputDirectory);
+
+    expNormalVecGrad = Phi.expectedNormalVectorGradient(expCP);
 
     std::vector<Vector> positionTheoretical = Phi.getPositionReference();
     std::vector<double> angleTheoretical = Phi.getAngleReference();
