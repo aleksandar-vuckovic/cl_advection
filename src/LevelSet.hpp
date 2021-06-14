@@ -26,6 +26,8 @@ private:
     **/
     std::vector<Vector> positionReference;
     std::vector<Vector> normalReference;
+    std::vector<Vector> tangentAReference;
+    std::vector<Vector> tangentBReference;
     std::vector<double> angleReference;
     std::vector<double> curvatureReference;
     
@@ -51,7 +53,7 @@ public:
     Vector getNormalVector(int i, int j, int k) const;
     Vector getTangentialVector(Vector normal) const;
     double getContactAngleInterpolated(int timestep);
-    void referenceCurvatureExplicitEuler2D(double dt, int timestep, double initCurvature);
+    void referenceCurvatureExplicitEuler(double dt, int last_timestep, double initCurvature, std::string reference3D);
     double referenceCurvatureDeriv3D(double initCurvature, Matrix expNormalVectorGradient);
     void referenceCurvatureLinearField(double dt, int timesteps, double initCurvature);
     void referenceCurvatureQuadraticField(double dt, int timesteps, double initCurvature);
@@ -74,6 +76,8 @@ public:
     std::vector<Vector> getPositionReference() const;
     std::vector<double> getAngleReference() const;
     const std::vector<double>& getCurvatureReference() const;
+
+    void referenceTangentExplicitEuler(double dt, int last_timestep, Vector tangent_init);
 };
 
 Vector normalVector2D(double initAngle, std::string trackedCP);

@@ -19,7 +19,8 @@ LevelSet::LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz
         std::string trackedCP, double dt, int timesteps, Vector expCP, double expAngle,
         double initCurvature, InitShape shape, std::vector<double> shapeParams, Vector initCenter, std::string outputDirectory)
         : Field<double>(numX, numY, numZ, dx, dy, dz), 
-          positionReference(timesteps), normalReference(timesteps), angleReference(timesteps), curvatureReference(timesteps),
+          positionReference(timesteps), normalReference(timesteps), tangentAReference(timesteps),tangentBReference(timesteps),
+          angleReference(timesteps), curvatureReference(timesteps),
           shape(shape), shapeParams(shapeParams), initCenter(initCenter) {
 		this->field = field;
 		this->trackedCP = trackedCP;
@@ -34,8 +35,8 @@ LevelSet::LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz
             referenceContactPointExplicitEuler(dt, timesteps, expCP);
             
         referenceNormalExplicitEuler(dt, timesteps, expNormalVec);
-        referenceCurvatureExplicitEuler2D(dt, timesteps, initCurvature);
-
+        referenceTangentExplicitEuler(dt, timesteps, expNormalVec);
+        referenceCurvatureExplicitEuler(dt, timesteps, initCurvature, "sectionalCurvature");
 }
 
 /**
@@ -306,7 +307,7 @@ Vector LevelSet::getNormalVector(int i, int j, int k) const {
 /**
  * Calculate the tangential vector \f$\tau\f$.
  *
- * This function calculates \f$\tau\f$, where \f$\tau\f$ where and the normal vector \f$\n_{\Sigma}\f$ define a plane perpendicular to the x-z plane.
+ * This function calculates \f$\tau\f$, where \f$\tau\f$ and the normal vector \f$\n_{\Sigma}\f$ define a plane perpendicular to the x-z plane.
  * @param normal The corresponding normal vector
  * @return The tangential vector
  */
@@ -379,7 +380,7 @@ void LevelSet::referenceNormalExplicitEuler(double dt, int last_timestep, Vector
         normalReference[i] = n_sigma;
         angleReference[i] = acos(n_sigma[1])/M_PI*180;
 	    Vector CP = positionReference[i];
-		deriv = -1*transpose(field->gradAt(i*dt, CP[0], CP[1], CP[2]))*n_sigma 
+		deriv = -1*transpose(field->gradAt(i*dt, CP[0], CP[1], CP[2]))*n_sigma
                 + ((field->gradAt(i*dt, CP[0], CP[1], CP[2])*n_sigma)*n_sigma)*n_sigma;
 		n_sigma = deriv*dt + n_sigma;
 		n_sigma = n_sigma/abs(n_sigma);
@@ -391,7 +392,7 @@ Vector LevelSet::referenceNormalExplicitEulerSingle(double dt, int last_timestep
 	Vector deriv {0, 0, 0};
 	for (int i = 0; i < last_timestep; i++) {
 	    Vector CP = backwardsPoints[backwardsPoints.size() - i - 1];
-		deriv = -1*transpose(field->gradAt(i*dt, CP[0], CP[1], CP[2]))*n_sigma 
+		deriv = -1*transpose(field->gradAt(i*dt, CP[0], CP[1], CP[2]))*n_sigma
                 + ((field->gradAt(i*dt, CP[0], CP[1], CP[2])*n_sigma)*n_sigma)*n_sigma;
 		n_sigma = deriv*dt + n_sigma;
 		n_sigma = n_sigma/abs(n_sigma);
@@ -438,6 +439,8 @@ void LevelSet::referenceAngleLinearField(double dt, int last_timestep, double th
 
 /**
  * Calculate the reference curvature at the contact point with the explicit Euler method at a given time.
+ * Currently, there are two different implementations in the 3D case: One based on the field-formulation of the normal vector,
+ * and another (newer) based on sectional curvatures. TODO: Test both and decide which to keep.
  *
  * @param dt The length of a timestep
  * @param last_timestep The index of the last timestep.
@@ -445,7 +448,8 @@ void LevelSet::referenceAngleLinearField(double dt, int last_timestep, double th
  * @param CP The coordinates of the contact point
  * @param cell The indices of the contact point
  */
-void LevelSet::referenceCurvatureExplicitEuler2D(double dt, int last_timestep, double initCurvature) {
+void
+LevelSet::referenceCurvatureExplicitEuler(double dt, int last_timestep, double initCurvature, std::string reference3D) {
 
     if (numZ == 1) {
         double curvature = initCurvature;
@@ -458,7 +462,7 @@ void LevelSet::referenceCurvatureExplicitEuler2D(double dt, int last_timestep, d
             Vector temp = field->secondPartial(i*dt, CP[0], CP[1], CP[2], tau);
             curvature = curvature + dt*(temp*normal - 3*curvature*(field->gradAt(i*dt, CP[0], CP[1], CP[2])*tau)*tau);
         }
-    } else {
+    } else if (reference3D == "fieldFormulation") {
         double d = std::min(std::min(dx, dy), dz);
 
         for (int i = 0; i < last_timestep; i++) {
@@ -592,8 +596,59 @@ void LevelSet::referenceCurvatureExplicitEuler2D(double dt, int last_timestep, d
 
             curvatureReference[i] = kappa;
         }
+    } else if (reference3D == "sectionalCurvature") {
+        double curvature = initCurvature;
+        std::vector<double> sectionalCurvatureA(last_timestep);
+        double secCurvA = 0.5*curvature;
+        std::vector<double> sectionalCurvatureB(last_timestep);
+        double secCurvB = 0.5*curvature;
+        for (int i = 0; i < last_timestep; i++) {
+            curvatureReference[i] = curvature;
+            sectionalCurvatureA[i] = secCurvA;
+            sectionalCurvatureB[i] = secCurvB;
+            Vector CP = positionReference[i];
+            Vector normal = normalReference[i];
+            Vector tangentA = tangentAReference[i];
+            Vector tangentB = tangentBReference[i];
+            // temp is the second derivative of v in the tau direction
+            Vector tempA = field->secondPartial(i*dt, CP[0], CP[1], CP[2], tangentA);
+//            curvature = curvature + dt*(temp*normal - 3*curvature*(field->gradAt(i*dt, CP[0], CP[1], CP[2])*tau)*tau);
+            secCurvA = secCurvA + dt * (tempA*normal + secCurvA * ((field->gradAt(i*dt, CP[0], CP[1], CP[2]))*normal)*normal
+                    - 2*curvature*(field->gradAt(i*dt, CP[0], CP[1], CP[2])*tangentA)*tangentA);
+
+            Vector tempB = field->secondPartial(i*dt, CP[0], CP[1], CP[2], tangentB);
+            secCurvB = secCurvB + dt * (tempB*normal + secCurvB * ((field->gradAt(i*dt, CP[0], CP[1], CP[2]))*normal)*normal
+                    - 2*curvature*(field->gradAt(i*dt, CP[0], CP[1], CP[2])*tangentB)*tangentB);
+
+            curvature = secCurvA + secCurvB;
+        }
+    } else {
+        throw std::invalid_argument("No valid curvature 3D reference selected.\n");
     }
 }
+
+void LevelSet::referenceTangentExplicitEuler(double dt, int last_timestep, Vector normal_init) {
+    Vector tangentA = getTangentialVector(normal_init);
+    Vector tangentB = cross(normal_init, tangentA);
+    Vector derivA {0, 0, 0};
+    Vector derivB {0, 0, 0};
+    for (int i = 0; i < last_timestep; i++) {
+        tangentAReference[i] = tangentA;
+        tangentBReference[i] = tangentB;
+        Vector CP = positionReference[i];
+        // This is the formula copied from the normal reference. TODO: Delete later.
+//        deriv = -1 * transpose(field->gradAt(i*dt, CP[0], CP[1], CP[2])) * tangent
+//                + ((field->gradAt(i*dt, CP[0], CP[1], CP[2]) * tangent) * tangent) * tangent;
+        derivA = field->gradAt(i*dt, CP[0], CP[1], CP[2])*tangentA
+                - ((field->gradAt(i*dt, CP[0], CP[1], CP[2])*tangentA)*tangentA)*tangentA;
+        derivB = field->gradAt(i*dt, CP[0], CP[1], CP[2])*tangentB
+                 - ((field->gradAt(i*dt, CP[0], CP[1], CP[2])*tangentB)*tangentB)*tangentB;
+
+        tangentA = derivA * dt + tangentA;
+        tangentA = tangentA / abs(tangentA);
+    }
+}
+
 
 /**
  * @brief LevelSet::referenceCurvatureDeriv3D Calculate the curvature derivative at time t = 0 in 3D.
