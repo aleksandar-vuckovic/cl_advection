@@ -30,6 +30,8 @@ private:
     std::vector<Vector> tangentBReference;
     std::vector<double> angleReference;
     std::vector<double> curvatureReference;
+    std::vector<double> sectionalCurvatureAReference;
+    std::vector<double> sectionalCurvatureBReference;
     
     InitShape shape;
     std::vector<double> shapeParams;
@@ -78,6 +80,18 @@ public:
     const std::vector<double>& getCurvatureReference() const;
 
     void referenceTangentExplicitEuler(double dt, int last_timestep, Vector tangent_init);
+
+    double getSectionalCurvature(array<int, 3> cell, Vector tau);
+
+    std::vector<Vector> getTangentAReference() const;
+
+    std::vector<Vector> getTangentBReference() const;
+
+    double getSectionalCurvatureInterpolated(int timestep, Vector tau);
+
+    std::vector<double> getSectionalCurvatureAReference() const;
+
+    std::vector<double> getSectionalCurvatureBReference() const;
 };
 
 Vector normalVector2D(double initAngle, std::string trackedCP);

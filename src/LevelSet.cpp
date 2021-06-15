@@ -20,7 +20,7 @@ LevelSet::LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz
         double initCurvature, InitShape shape, std::vector<double> shapeParams, Vector initCenter, std::string outputDirectory)
         : Field<double>(numX, numY, numZ, dx, dy, dz), 
           positionReference(timesteps), normalReference(timesteps), tangentAReference(timesteps),tangentBReference(timesteps),
-          angleReference(timesteps), curvatureReference(timesteps),
+          angleReference(timesteps), curvatureReference(timesteps), sectionalCurvatureAReference(timesteps), sectionalCurvatureBReference(timesteps),
           shape(shape), shapeParams(shapeParams), initCenter(initCenter) {
 		this->field = field;
 		this->trackedCP = trackedCP;
@@ -598,14 +598,12 @@ LevelSet::referenceCurvatureExplicitEuler(double dt, int last_timestep, double i
         }
     } else if (reference3D == "sectionalCurvature") {
         double curvature = initCurvature;
-        std::vector<double> sectionalCurvatureA(last_timestep);
         double secCurvA = 0.5*curvature;
-        std::vector<double> sectionalCurvatureB(last_timestep);
         double secCurvB = 0.5*curvature;
         for (int i = 0; i < last_timestep; i++) {
             curvatureReference[i] = curvature;
-            sectionalCurvatureA[i] = secCurvA;
-            sectionalCurvatureB[i] = secCurvB;
+            sectionalCurvatureAReference[i] = secCurvA;
+            sectionalCurvatureBReference[i] = secCurvB;
             Vector CP = positionReference[i];
             Vector normal = normalReference[i];
             Vector tangentA = tangentAReference[i];
@@ -614,13 +612,13 @@ LevelSet::referenceCurvatureExplicitEuler(double dt, int last_timestep, double i
             Vector tempA = field->secondPartial(i*dt, CP[0], CP[1], CP[2], tangentA);
 //            curvature = curvature + dt*(temp*normal - 3*curvature*(field->gradAt(i*dt, CP[0], CP[1], CP[2])*tau)*tau);
             secCurvA = secCurvA + dt * (tempA*normal + secCurvA * ((field->gradAt(i*dt, CP[0], CP[1], CP[2]))*normal)*normal
-                    - 2*curvature*(field->gradAt(i*dt, CP[0], CP[1], CP[2])*tangentA)*tangentA);
+                    - 2*secCurvA*(field->gradAt(i*dt, CP[0], CP[1], CP[2])*tangentA)*tangentA);
 
             Vector tempB = field->secondPartial(i*dt, CP[0], CP[1], CP[2], tangentB);
             secCurvB = secCurvB + dt * (tempB*normal + secCurvB * ((field->gradAt(i*dt, CP[0], CP[1], CP[2]))*normal)*normal
-                    - 2*curvature*(field->gradAt(i*dt, CP[0], CP[1], CP[2])*tangentB)*tangentB);
+                    - 2*secCurvB*(field->gradAt(i*dt, CP[0], CP[1], CP[2])*tangentB)*tangentB);
 
-            curvature = secCurvA + secCurvB;
+            curvature = 42;
         }
     } else {
         throw std::invalid_argument("No valid curvature 3D reference selected.\n");
@@ -646,6 +644,8 @@ void LevelSet::referenceTangentExplicitEuler(double dt, int last_timestep, Vecto
 
         tangentA = derivA * dt + tangentA;
         tangentA = tangentA / abs(tangentA);
+        tangentB = derivB * dt + tangentB;
+        tangentB = tangentB / abs(tangentB);
     }
 }
 
@@ -844,6 +844,151 @@ double LevelSet::getCurvature(array<int, 3> cell) const {
     double kappa = -1*(gradNormal*tau1)*tau1 - 1*(gradNormal*tau2)*tau2;
 
     return kappa;
+}
+
+double LevelSet::getSectionalCurvature(array<int, 3> cell, Vector tau) {
+// TODO: This function is (with exception of the last few lines) an exact copy-paste of getCurvature. TODO fix.
+
+    /* Define what number of cells in each direction(excluding the main cell) are considered local.
+       The resulting normal vector field is defined on a cuboid with sidelength 2*local + 1 */
+    int local = 2;
+    int sidelengthZ;
+    if (numZ > 1)
+        sidelengthZ = 2*local + 1;
+    else
+        sidelengthZ = 1;
+
+    // Declare a field of normal vectors
+    Field<Vector> localField(2*local + 1, local + 1, sidelengthZ, dx, dy, dz);
+
+    for (int x = -local; x <= local; x++)
+        for (int y = 0; y <= local; y++)
+            for (int z = -sidelengthZ/2; z <= sidelengthZ/2; z++) {
+                array<int, 3> temp = {x, y, z};
+                temp = temp + cell;
+
+                if (temp[0] < 0 || temp[0] > numX - 1 || temp[1] < 0 || temp[1] > numY - 1 || temp[2] < 0 || temp[2] > numZ - 1)
+                    continue;
+
+                Vector normal = getNormalVector(temp, false);
+
+                if (this->numZ > 1)
+                    localField.at(x+local, y, z+local) = normal;
+                else
+                    localField.at(x+local, y, 0) = normal;
+            }
+
+    // Calculate divergence of localField at cell, which by definition
+    // is in the "middle" of localField
+    double dnx_dx, dnx_dy, dnx_dz, dny_dx, dny_dy, dny_dz, dnz_dx, dnz_dy, dnz_dz;
+    dnx_dx = dnx_dy = dnx_dz = dny_dx = dny_dy = dny_dz = dnz_dx = dnz_dy = dnz_dz = 0;
+
+    if (cell[0] == 0) {
+        dnx_dx = (-localField.at(local + 2, 0, sidelengthZ/2)[0]
+                  + 4.0*localField.at(local + 1, 0, sidelengthZ/2)[0]
+                  - 3.0*localField.at(local, 0, sidelengthZ/2)[0] ) / (2*dx);
+
+        dny_dx = (-localField.at(local + 2, 0, sidelengthZ/2)[1]
+                  + 4.0*localField.at(local + 1, 0, sidelengthZ/2)[1]
+                  - 3.0*localField.at(local, 0, sidelengthZ/2)[1] ) / (2*dx);
+
+        if (numZ > 1) {
+            dnz_dx = (-localField.at(local + 2, 0, sidelengthZ/2)[2]
+                      + 4.0*localField.at(local + 1, 0, sidelengthZ/2)[2]
+                      - 3.0*localField.at(local, 0, sidelengthZ/2)[2] ) / (2*dx);
+        }
+
+    } else if (cell[0] == numX - 1) {
+        dnx_dx = (localField.at(local - 2, 0, sidelengthZ/2)[0]
+                  - 4.0*localField.at(local - 1, 0, sidelengthZ/2)[0]
+                  + 3.0*localField.at(local, 0, sidelengthZ/2)[0] ) / (2*dx);
+
+        dny_dx = (localField.at(local - 2, 0, sidelengthZ/2)[1]
+                  - 4.0*localField.at(local - 1, 0, sidelengthZ/2)[1]
+                  + 3.0*localField.at(local, 0, sidelengthZ/2)[1] ) / (2*dx);
+
+        if (numZ > 1) {
+            dnz_dx = (localField.at(local - 2, 0, sidelengthZ/2)[2]
+                      - 4.0*localField.at(local - 1, 0, sidelengthZ/2)[2]
+                      + 3.0*localField.at(local, 0, sidelengthZ/2)[2] ) / (2*dx);
+        }
+    } else {
+        dnx_dx = (localField.at(local + 1, 0, sidelengthZ/2)[0] - localField.at(local - 1, 0, sidelengthZ/2)[0]) / (2*dx);
+        dny_dx = (localField.at(local + 1, 0, sidelengthZ/2)[1] - localField.at(local - 1, 0, sidelengthZ/2)[1]) / (2*dx);
+        dnz_dx = (localField.at(local + 1, 0, sidelengthZ/2)[2] - localField.at(local - 1, 0, sidelengthZ/2)[2]) / (2*dx);
+    }
+
+    dnx_dy = (-localField.at(local, 2, sidelengthZ/2)[0]
+              + 4.0*localField.at(local, 1, sidelengthZ/2)[0]
+              - 3.0*localField.at(local, 0, sidelengthZ/2)[0] ) / (2*dy);
+
+
+    dny_dy = (-localField.at(local, 2, sidelengthZ/2)[1]
+              + 4.0*localField.at(local, 1, sidelengthZ/2)[1]
+              - 3.0*localField.at(local, 0, sidelengthZ/2)[1] ) / (2*dy);
+
+
+
+    if (numZ > 1) {
+
+        if (cell[2] == 0) {
+            dnx_dz = (-localField.at(local, 0, sidelengthZ/2 + 2)[0]
+                      + 4.0*localField.at(local, 0, sidelengthZ/2 + 1)[0]
+                      - 3.0*localField.at(local, 0, sidelengthZ/2)[0] ) / (2*dz);
+            dny_dz = (-localField.at(local, 0, sidelengthZ/2 + 2)[1]
+                      + 4.0*localField.at(local, 0, sidelengthZ/2 + 1)[1]
+                      - 3.0*localField.at(local, 0, sidelengthZ/2)[1] ) / (2*dz);
+            dnz_dz = (-localField.at(local, 0, sidelengthZ/2 + 2)[2]
+                      + 4.0*localField.at(local, 0, sidelengthZ/2 + 1)[2]
+                      - 3.0*localField.at(local, 0, sidelengthZ/2)[2] ) / (2*dz);
+        } else if (cell[2] == numZ - 1) {
+            dnx_dz = (localField.at(local, 0, sidelengthZ/2 - 2)[0]
+                      - 4.0*localField.at(local, 0, sidelengthZ/2 - 1)[0]
+                      + 3.0*localField.at(local, 0, sidelengthZ/2)[0] ) / (2*dz);
+            dny_dz = (localField.at(local, 0, sidelengthZ/2 - 2)[1]
+                      - 4.0*localField.at(local, 0, sidelengthZ/2 - 1)[1]
+                      + 3.0*localField.at(local, 0, sidelengthZ/2)[1] ) / (2*dz);
+            dnz_dz = (localField.at(local, 0, sidelengthZ/2 - 2)[2]
+                      - 4.0*localField.at(local, 0, sidelengthZ/2 - 1)[2]
+                      + 3.0*localField.at(local, 0, sidelengthZ/2)[2] ) / (2*dz);
+        } else {
+            dnx_dz = (localField.at(local, 0, sidelengthZ/2 + 1)[0] - localField.at(local, 0, sidelengthZ/2 - 1)[0]) / (2*dz);
+            dny_dz = (localField.at(local, 0, sidelengthZ/2 + 1)[1] - localField.at(local, 0, sidelengthZ/2 - 1)[1]) / (2*dz);
+            dnz_dz = (localField.at(local, 0, sidelengthZ/2 + 1)[2] - localField.at(local, 0, sidelengthZ/2 - 1)[2]) / (2*dz);
+        }
+
+        dnz_dy = (-localField.at(local, 2, sidelengthZ/2)[2]
+                  + 4.0*localField.at(local, 1, sidelengthZ/2)[2]
+                  - 3.0*localField.at(local, 0, sidelengthZ/2)[2] ) / (2*dy);
+    }
+    Vector row1 = {dnx_dx, dnx_dy, dnx_dz};
+    Vector row2 = {dny_dx, dny_dy, dny_dz};
+    Vector row3 = {dnz_dx, dnz_dy, dnz_dz};
+
+    Matrix gradNormal = {row1, row2, row3};
+
+    double testVar = -1*(gradNormal*tau)*tau;
+
+    return -1*(gradNormal*tau)*tau;
+}
+
+double LevelSet::getSectionalCurvatureInterpolated(int timestep, Vector tau) {
+        Vector contactPoint = positionReference[timestep];
+        double x = contactPoint[0];
+        double z = contactPoint[2];
+        int i = floor(x/dx);
+        int j = 0;
+        int k = floor(z/dz);
+
+        double lambda = x/dx - i;
+        double mu = z/dz - k;
+
+//        Removed interpolation, as it seems to be causing problems.
+//        double curvature = (1 - mu) * ((1 - lambda) * getCurvature(i, j, k) + lambda*getSectionalCurvature({i + 1, j, k}, tau))
+//                    + mu * ((1 - lambda) * getCurvature(i, j, k + 1) + lambda* getSectionalCurvature({i + 1, j, k + 1}, tau));
+        double curvature = getSectionalCurvature({i, j, k}, tau);
+
+        return curvature;
 }
 
 double LevelSet::getCurvature(int i, int j, int k) const {
@@ -1384,4 +1529,20 @@ std::vector<double> LevelSet::getAngleReference() const {
 
 const std::vector<double>& LevelSet::getCurvatureReference() const {
     return curvatureReference;
+}
+
+std::vector<Vector> LevelSet::getTangentAReference() const {
+    return tangentAReference;
+}
+
+std::vector<double> LevelSet::getSectionalCurvatureAReference() const {
+    return sectionalCurvatureAReference;
+}
+
+std::vector<double> LevelSet::getSectionalCurvatureBReference() const {
+    return sectionalCurvatureBReference;
+}
+
+std::vector<Vector> LevelSet::getTangentBReference() const {
+    return tangentBReference;
 }

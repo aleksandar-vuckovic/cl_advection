@@ -354,8 +354,14 @@ int main(int argc, char **argv) {
     std::vector<Vector> positionTheoretical = Phi.getPositionReference();
     std::vector<double> angleTheoretical = Phi.getAngleReference();
     std::vector<double> curvatureTheoretical = Phi.getCurvatureReference();
+    std::vector<Vector> tangentAReference = Phi.getTangentAReference();
+    std::vector<Vector> tangentBReference = Phi.getTangentBReference();
+    std::vector<double> sectionalCurvatureAReference = Phi.getSectionalCurvatureAReference();
+    std::vector<double> sectionalCurvatureBReference = Phi.getSectionalCurvatureBReference();
     std::vector<double> angleActual(timesteps);
     std::vector<double> curvatureActualDivergence(timesteps);
+    std::vector<double> sectionalCurvatureA_Actual(timesteps);
+    std::vector<double> sectionalCurvatureB_Actual(timesteps);
 
     if (initShape == InitShape::sphere)
         Phi.initSphere(center, radius);
@@ -384,6 +390,10 @@ int main(int argc, char **argv) {
     curvatureFile.precision(16);
     std::ofstream curvatureDerivativeFile(outputDirectory + "curvatureDerivative.csv");
     curvatureDerivativeFile.precision(16);
+    std::ofstream sectionalCurvatureAFile(outputDirectory + "sectionalCurvatureA.csv");
+    sectionalCurvatureAFile.precision(16);
+    std::ofstream sectionalCurvatureBFile(outputDirectory + "sectionalCurvatureB.csv");
+    sectionalCurvatureBFile.precision(16);
 
     double sumAtStart = Phi.sumLevelSet();
 
@@ -443,6 +453,8 @@ int main(int argc, char **argv) {
         if (calculateCurvature) {
 
             curvatureActualDivergence[i] = Phi.getCurvatureInterpolated(i);
+            sectionalCurvatureA_Actual[i] = Phi.getSectionalCurvatureInterpolated(i, tangentAReference[i]);
+            sectionalCurvatureB_Actual[i] = Phi.getSectionalCurvatureInterpolated(i, tangentBReference[i]);
 
             curvatureFile << std::to_string(i*dt) + ", "
                     + std::to_string(curvatureActualDivergence[i]) + ", "
@@ -450,6 +462,14 @@ int main(int argc, char **argv) {
 
             std::cout << "Measured curvature with divergence: " + std::to_string(curvatureActualDivergence[i]) + "\n";
             std::cout << "Reference curvature: " + std::to_string(curvatureTheoretical[i])  << std::endl;
+
+            sectionalCurvatureAFile << std::to_string(i*dt) + ", "
+                             + std::to_string(sectionalCurvatureA_Actual[i]) + ", "
+                             + std::to_string(sectionalCurvatureAReference[i]) + "\n";
+
+            sectionalCurvatureBFile << std::to_string(i*dt) + ", "
+                                       + std::to_string(sectionalCurvatureB_Actual[i]) + ", "
+                                       + std::to_string(sectionalCurvatureBReference[i]) + "\n";
         }
         
         // Calculate numerical flux through all faces of each cell and update Phi
@@ -459,6 +479,8 @@ int main(int argc, char **argv) {
         angleFile.flush();
         curvatureFile.flush();
         curvatureDerivativeFile.flush();
+        sectionalCurvatureAFile.flush();
+        sectionalCurvatureBFile.flush();
     }
 
     if (numZ > 1) {
