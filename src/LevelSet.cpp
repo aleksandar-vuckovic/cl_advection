@@ -1447,7 +1447,7 @@ void LevelSet::calculateNextTimestep(double dt, int timestep) {
 
                     switch(dir) {
                     case 0:
-                        sp = field->at(timestep*dt, (i+1/2)*dx, (j+1)*dy, (k+1/2)*dz) * upNormal;
+                        sp = field->at(timestep*dt, (i + 0.5)*dx, (j + 1)*dy, (k + 0.5)*dz) * upNormal;
                         if (j == numY - 1) {
                             flux += sp*tempPhi.at(i, j, k)*dx*dz;
                         }
@@ -1457,7 +1457,7 @@ void LevelSet::calculateNextTimestep(double dt, int timestep) {
                         break;
 
                     case 1:
-                        sp = field->at(timestep*dt, (i + 1 / 2) * dx, j * dy, (k + 1 / 2) * dz) * downNormal;
+                        sp = field->at(timestep*dt, (i + 0.5) * dx, j * dy, (k + 0.5) * dz) * downNormal;
                         if (j == 0 ) {
                             flux += sp * tempPhi.at(i, j, k) * dx * dz;
                         }
@@ -1467,7 +1467,7 @@ void LevelSet::calculateNextTimestep(double dt, int timestep) {
                         break;
 
                     case 2:
-                        sp = field->at(timestep*dt, i * dx, (j + 1 / 2) * dy, (k + 1 / 2) * dz) * leftNormal;
+                        sp = field->at(timestep*dt, i * dx, (j + 0.5) * dy, (k + 0.5) * dz) * leftNormal;
                         if (i == 0) {
                             flux += sp * tempPhi.at(i, j, k) * dy * dz;
                         }
@@ -1477,7 +1477,7 @@ void LevelSet::calculateNextTimestep(double dt, int timestep) {
                         break;
 
                     case 3:
-                        sp = field->at(timestep*dt, (i + 1) * dx, (j + 1 / 2) * dy, (k + 1 / 2) * dz) * rightNormal;
+                        sp = field->at(timestep*dt, (i + 1) * dx, (j + 0.5) * dy, (k + 0.5) * dz) * rightNormal;
                         if (i == numX - 1) {
                             flux += sp * tempPhi.at(i, j, k) * dy * dz;
                         }
@@ -1489,7 +1489,7 @@ void LevelSet::calculateNextTimestep(double dt, int timestep) {
                     case 4:
                         if (numZ == 1)
                             break; // only relevant for 3D
-                        sp = field->at(timestep*dt, (i + 1 / 2) * dx, (j + 1 / 2) * dy, (k + 1) * dz) * frontNormal;
+                        sp = field->at(timestep*dt, (i + 0.5) * dx, (j + 0.5) * dy, (k + 1) * dz) * frontNormal;
                         if (k == numZ - 1) {
                             flux += sp * tempPhi.at(i, j, k) * dx * dy;
                         }
@@ -1501,7 +1501,7 @@ void LevelSet::calculateNextTimestep(double dt, int timestep) {
                     case 5:
                         if (numZ == 1)
                             break; // only relevant for 3D
-                        sp = field->at(timestep*dt, (i + 1 / 2) * dx, (j + 1 / 2) * dy, k * dz) * backNormal;
+                        sp = field->at(timestep*dt, (i + 0.5) * dx, (j + 0.5) * dy, k * dz) * backNormal;
                         if (k == 0) {
                             flux += sp * tempPhi.at(i, j, k) * dx * dy;
                         }
