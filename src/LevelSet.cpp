@@ -1435,9 +1435,9 @@ void LevelSet::calculateNextTimestep(double dt, int timestep) {
 #pragma omp parallel shared(tempPhi)
     {
 #pragma omp for collapse(3)
-    for (int z = 0; z < numZ; z++) {
-        for (int y = 0; y < numY; y++) {
-            for (int x = 0; x < numX; x++) {
+    for (int k = 0; k < numZ; k++) {
+        for (int j = 0; j < numY; j++) {
+            for (int i = 0; i < numX; i++) {
 
                 //Calculate the flux of phi over the cell faces
                 double flux = 0;
@@ -1447,71 +1447,71 @@ void LevelSet::calculateNextTimestep(double dt, int timestep) {
 
                     switch(dir) {
                     case 0:
-                        sp = field->at(timestep*dt, (x+1/2)*dx, (y+1)*dy, (z+1/2)*dz) * upNormal;
-                        if (y == numY - 1) {
-                            flux += sp*tempPhi.at(x, y, z)*dx*dz;
+                        sp = field->at(timestep*dt, (i+1/2)*dx, (j+1)*dy, (k+1/2)*dz) * upNormal;
+                        if (j == numY - 1) {
+                            flux += sp*tempPhi.at(i, j, k)*dx*dz;
                         }
                         else{
-                            flux += (fmax(sp,0.0)*tempPhi.at(x, y, z) + fmin(sp,0.0)*tempPhi.at(x, y+1, z))*dx*dz;
+                            flux += (fmax(sp,0.0)*tempPhi.at(i, j, k) + fmin(sp, 0.0) * tempPhi.at(i, j + 1, k)) * dx * dz;
                         }
                         break;
 
                     case 1:
-                        sp = field->at(timestep*dt, (x+1/2)*dx, y*dy, (z+1/2)*dz) * downNormal;
-                        if (y == 0 ) {
-                            flux += sp*tempPhi.at(x, y, z)*dx*dz;
+                        sp = field->at(timestep*dt, (i + 1 / 2) * dx, j * dy, (k + 1 / 2) * dz) * downNormal;
+                        if (j == 0 ) {
+                            flux += sp * tempPhi.at(i, j, k) * dx * dz;
                         }
                         else{
-                            flux += (fmax(sp,0.0)*tempPhi.at(x, y, z) + fmin(sp,0.0)*tempPhi.at(x, y-1, z))*dx*dz;
+                            flux += (fmax(sp,0.0)*tempPhi.at(i, j, k) + fmin(sp, 0.0) * tempPhi.at(i, j - 1, k)) * dx * dz;
                         }
                         break;
 
                     case 2:
-                        sp = field->at(timestep*dt, x*dx, (y+1/2)*dy, (z+1/2)*dz) * leftNormal;
-                        if (x == 0) {
-                            flux += sp*tempPhi.at(x, y, z)*dy*dz;
+                        sp = field->at(timestep*dt, i * dx, (j + 1 / 2) * dy, (k + 1 / 2) * dz) * leftNormal;
+                        if (i == 0) {
+                            flux += sp * tempPhi.at(i, j, k) * dy * dz;
                         }
                         else{
-                            flux += (fmax(sp,0.0)*tempPhi.at(x, y, z) + fmin(sp,0.0)*tempPhi.at(x-1, y, z))*dy*dz;
+                            flux += (fmax(sp,0.0)*tempPhi.at(i, j, k) + fmin(sp, 0.0) * tempPhi.at(i - 1, j, k)) * dy * dz;
                         }
                         break;
 
                     case 3:
-                        sp = field->at(timestep*dt, (x+1)*dx, (y+1/2)*dy, (z+1/2)*dz) * rightNormal;
-                        if (x == numX - 1) {
-                            flux += sp*tempPhi.at(x, y, z)*dy*dz;
+                        sp = field->at(timestep*dt, (i + 1) * dx, (j + 1 / 2) * dy, (k + 1 / 2) * dz) * rightNormal;
+                        if (i == numX - 1) {
+                            flux += sp * tempPhi.at(i, j, k) * dy * dz;
                         }
                         else{
-                            flux += (fmax(sp,0.0)*tempPhi.at(x, y, z) + fmin(sp,0.0)*tempPhi.at(x+1, y, z))*dy*dz;
+                            flux += (fmax(sp,0.0)*tempPhi.at(i, j, k) + fmin(sp, 0.0) * tempPhi.at(i + 1, j, k)) * dy * dz;
                         }
                         break;
 
                     case 4:
                         if (numZ == 1)
                             break; // only relevant for 3D
-                        sp = field->at(timestep*dt, (x+1/2)*dx, (y+1/2)*dy, (z+1)*dz) * frontNormal;
-                        if (z == numZ - 1) {
-                            flux += sp*tempPhi.at(x, y, z)*dx*dy;
+                        sp = field->at(timestep*dt, (i + 1 / 2) * dx, (j + 1 / 2) * dy, (k + 1) * dz) * frontNormal;
+                        if (k == numZ - 1) {
+                            flux += sp * tempPhi.at(i, j, k) * dx * dy;
                         }
                         else{
-                            flux += (fmax(sp,0.0)*tempPhi.at(x, y, z) + fmin(sp,0.0)*tempPhi.at(x, y, z+1))*dx*dy;
+                            flux += (fmax(sp,0.0)*tempPhi.at(i, j, k) + fmin(sp, 0.0) * tempPhi.at(i, j, k + 1)) * dx * dy;
                         }
                         break;
 
                     case 5:
                         if (numZ == 1)
                             break; // only relevant for 3D
-                        sp = field->at(timestep*dt, (x+1/2)*dx, (y+1/2)*dy, z*dz) * backNormal;
-                        if (z == 0) {
-                            flux += sp*tempPhi.at(x, y, z)*dx*dy;
+                        sp = field->at(timestep*dt, (i + 1 / 2) * dx, (j + 1 / 2) * dy, k * dz) * backNormal;
+                        if (k == 0) {
+                            flux += sp * tempPhi.at(i, j, k) * dx * dy;
                         }
                         else{
-                            flux += (fmax(sp,0.0)*tempPhi.at(x, y, z) + fmin(sp,0.0)*tempPhi.at(x, y, z-1))*dx*dy;
+                            flux += (fmax(sp,0.0)*tempPhi.at(i, j, k) + fmin(sp, 0.0) * tempPhi.at(i, j, k - 1)) * dx * dy;
                         }
                         break;
                     }
                 }
-                this->at(x, y, z) = this->at(x, y, z) - dt/(dx*dy*dz)*flux;
+                this->at(i, j, k) = this->at(i, j, k) - dt / (dx * dy * dz) * flux;
             }
         }
     }
