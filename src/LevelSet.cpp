@@ -984,9 +984,9 @@ double LevelSet::getSectionalCurvatureInterpolated(int timestep, Vector tau) {
         double mu = z/dz - k;
 
 //        Removed interpolation, as it seems to be causing problems.
-//        double curvature = (1 - mu) * ((1 - lambda) * getCurvature(i, j, k) + lambda*getSectionalCurvature({i + 1, j, k}, tau))
-//                    + mu * ((1 - lambda) * getCurvature(i, j, k + 1) + lambda* getSectionalCurvature({i + 1, j, k + 1}, tau));
-        double curvature = getSectionalCurvature({i, j, k}, tau);
+        double curvature = (1 - mu) * ((1 - lambda) * getSectionalCurvature({i, j, k}, tau) + lambda*getSectionalCurvature({i + 1, j, k}, tau))
+                    + mu * ((1 - lambda) * getSectionalCurvature({i, j, k + 1}, tau) + lambda* getSectionalCurvature({i + 1, j, k + 1}, tau));
+//        double curvature = getSectionalCurvature({i, j, k}, tau);
 
         return curvature;
 }
