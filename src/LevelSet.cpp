@@ -19,8 +19,11 @@ LevelSet::LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz
         std::string trackedCP, double dt, int timesteps, Vector expCP, double expAngle,
         double initCurvature, InitShape shape, std::vector<double> shapeParams, Vector initCenter, std::string outputDirectory)
         : Field<double>(numX, numY, numZ, dx, dy, dz), 
-          positionReference(timesteps), normalReference(timesteps), tangentAReference(timesteps),tangentBReference(timesteps),
-          angleReference(timesteps), curvatureReference(timesteps), sectionalCurvatureAReference(timesteps), sectionalCurvatureBReference(timesteps),
+          positionReference(timesteps), normalReference(timesteps),
+          tangentAReference(timesteps),tangentBReference(timesteps), tangentCReference(timesteps),
+          angleReference(timesteps), curvatureReference(timesteps),
+          sectionalCurvatureAReference(timesteps), sectionalCurvatureBReference(timesteps), sectionalCurvatureCReference(timesteps),
+          alpha1(timesteps), alpha2(timesteps),
           shape(shape), shapeParams(shapeParams), initCenter(initCenter) {
 		this->field = field;
 		this->trackedCP = trackedCP;
@@ -312,19 +315,24 @@ Vector LevelSet::getNormalVector(int i, int j, int k) const {
  * @return The tangential vector
  */
 Vector LevelSet::getTangentialVector(Vector normal) const {
-    double tau1, tau2, tau3;
-
-    if ( std::abs(normal[1]) > 1e-12 ) {
-        tau1 = 1;
-        tau2 = -(normal[2]*normal[2] / (normal[0]*normal[1]) + normal[0]/normal[1]);
-        tau3 = normal[2] / normal[0];
+//    double tau1, tau2, tau3;
+    Vector tau;
+    if ( std::abs(normal[1] - 1) > 1e-12) {
+//        if (std::abs(normal[0]) < 1e-12) {
+//            throw std::runtime_error("Error: Normal_x too small");
+//        }
+//        tau1 = 1;
+//        tau2 = -(normal[2]*normal[2] / (normal[0]*normal[1]) + normal[0]/normal[1]);
+//        tau3 = normal[2] / normal[0];   // TODO: What happens when normal[0] == 0 ? Check again.
+        tau = cross(normal, {0, -1, 0});
     } else {
-        tau1 = 0;
-        tau2 = 1;
-        tau3 = 0;
+//        tau1 = 0;
+//        tau2 = 1;
+//        tau3 = 0;
+        tau = cross(normal, {1, 0, 0});
     }
 
-    Vector tau = {tau1, tau2, tau3};
+    // tau = {tau1, tau2, tau3};
     tau = tau/abs(tau);
 
     if (tau[1] > 0)
@@ -436,7 +444,7 @@ void LevelSet::referenceAngleLinearField(double dt, int last_timestep, double th
         angleReference[i] = temp/M_PI*180;
     }
 }
-
+#include <iostream>
 /**
  * Calculate the reference curvature at the contact point with the explicit Euler method at a given time.
  * Currently, there are two different implementations in the 3D case: One based on the field-formulation of the normal vector,
@@ -600,14 +608,17 @@ LevelSet::referenceCurvatureExplicitEuler(double dt, int last_timestep, double i
         double curvature = initCurvature;
         double secCurvA = 0.5*curvature;
         double secCurvB = 0.5*curvature;
+        double secCurvC = 0.5*curvature;
         for (int i = 0; i < last_timestep; i++) {
             curvatureReference[i] = curvature;
             sectionalCurvatureAReference[i] = secCurvA;
             sectionalCurvatureBReference[i] = secCurvB;
+            sectionalCurvatureCReference[i] = secCurvC;
             Vector CP = positionReference[i];
             Vector normal = normalReference[i];
             Vector tangentA = tangentAReference[i];
             Vector tangentB = tangentBReference[i];
+            Vector tangentC = tangentCReference[i];
             // temp is the second derivative of v in the tau direction
             Vector tempA = field->secondPartial(i*dt, CP[0], CP[1], CP[2], tangentA);
 //            curvature = curvature + dt*(temp*normal - 3*curvature*(field->gradAt(i*dt, CP[0], CP[1], CP[2])*tau)*tau);
@@ -618,7 +629,28 @@ LevelSet::referenceCurvatureExplicitEuler(double dt, int last_timestep, double i
             secCurvB = secCurvB + dt * (tempB*normal + secCurvB * ((field->gradAt(i*dt, CP[0], CP[1], CP[2]))*normal)*normal
                     - 2*secCurvB*(field->gradAt(i*dt, CP[0], CP[1], CP[2])*tangentB)*tangentB);
 
-            curvature = 42;
+            Vector tempC = field->secondPartial(i*dt, CP[0], CP[1], CP[2], tangentC);
+            secCurvC = secCurvC + dt * (tempC*normal + secCurvC * ((field->gradAt(i*dt, CP[0], CP[1], CP[2]))*normal)*normal
+                    - 2*secCurvC*(field->gradAt(i*dt, CP[0], CP[1], CP[2])*tangentC)*tangentC);
+
+            double mixedElement = (secCurvC - alpha1[i]*alpha1[i]*secCurvA - alpha2[i]*alpha2[i]*secCurvB) / (2*alpha1[i]*alpha2[i]);
+            double projection = tangentA*tangentB;
+            Eigen::Matrix2f tau1mat;
+            tau1mat << 1, projection, projection, 1;   // TODO: Einlesen von Werten checken
+            Eigen::Vector2f rightHandTau1;
+            rightHandTau1 << 1, 0;
+            Eigen::Vector2f c1andc2 = tau1mat.colPivHouseholderQr().solve(rightHandTau1);
+            double c1 = c1andc2[0];
+            double c2 = c1andc2[1];
+            Eigen::Matrix2f tau2mat;
+            tau2mat << 1, projection, projection, 1;
+            Eigen::Vector2f rightHandTau2;
+            rightHandTau2 << 0, 1;
+            Eigen::Vector2f c3andc4 = tau2mat.colPivHouseholderQr().solve(rightHandTau2);
+            double c3 = c3andc4[0];
+            double c4 = c3andc4[1];
+
+            curvature = c1*secCurvA + c4*secCurvB + (c2+c3)*mixedElement;
         }
     } else {
         throw std::invalid_argument("No valid curvature 3D reference selected.\n");
@@ -628,11 +660,23 @@ LevelSet::referenceCurvatureExplicitEuler(double dt, int last_timestep, double i
 void LevelSet::referenceTangentExplicitEuler(double dt, int last_timestep, Vector normal_init) {
     Vector tangentA = getTangentialVector(normal_init);
     Vector tangentB = cross(normal_init, tangentA);
+    Vector tangentC = tangentA + tangentB;
+    tangentC = tangentC / abs(tangentC);
+
     Vector derivA {0, 0, 0};
     Vector derivB {0, 0, 0};
+    Vector derivC {0, 0, 0};
     for (int i = 0; i < last_timestep; i++) {
         tangentAReference[i] = tangentA;
         tangentBReference[i] = tangentB;
+        tangentCReference[i] = tangentC;
+        Eigen::Matrix<float, 3, 2> Mat;
+        Mat << tangentA[0], tangentB[0], tangentA[1], tangentB[1], tangentA[2], tangentB[2];
+        Eigen::Vector3f tangentCEigen;
+        tangentCEigen << tangentC[0], tangentC[1], tangentC[2];
+        Eigen::Vector2f alphas = Mat.colPivHouseholderQr().solve(tangentCEigen);
+        alpha1[i] = alphas[0];
+        alpha2[i] = alphas[1];
         Vector CP = positionReference[i];
         // This is the formula copied from the normal reference. TODO: Delete later.
 //        deriv = -1 * transpose(field->gradAt(i*dt, CP[0], CP[1], CP[2])) * tangent
@@ -640,12 +684,16 @@ void LevelSet::referenceTangentExplicitEuler(double dt, int last_timestep, Vecto
         derivA = field->gradAt(i*dt, CP[0], CP[1], CP[2])*tangentA
                 - ((field->gradAt(i*dt, CP[0], CP[1], CP[2])*tangentA)*tangentA)*tangentA;
         derivB = field->gradAt(i*dt, CP[0], CP[1], CP[2])*tangentB
-                 - ((field->gradAt(i*dt, CP[0], CP[1], CP[2])*tangentB)*tangentB)*tangentB;
+                - ((field->gradAt(i*dt, CP[0], CP[1], CP[2])*tangentB)*tangentB)*tangentB;
+        derivC = field->gradAt(i*dt, CP[0], CP[1], CP[2])*tangentC
+                - ((field->gradAt(i*dt, CP[0], CP[1], CP[2])*tangentC)*tangentC)*tangentC;
 
         tangentA = derivA * dt + tangentA;
         tangentA = tangentA / abs(tangentA);
         tangentB = derivB * dt + tangentB;
         tangentB = tangentB / abs(tangentB);
+        tangentC = derivC * dt + tangentC;
+        tangentC = tangentC / abs(tangentC);
     }
 }
 
@@ -1535,14 +1583,14 @@ std::vector<Vector> LevelSet::getTangentAReference() const {
     return tangentAReference;
 }
 
+std::vector<Vector> LevelSet::getTangentBReference() const {
+    return tangentBReference;
+}
+
 std::vector<double> LevelSet::getSectionalCurvatureAReference() const {
     return sectionalCurvatureAReference;
 }
 
 std::vector<double> LevelSet::getSectionalCurvatureBReference() const {
     return sectionalCurvatureBReference;
-}
-
-std::vector<Vector> LevelSet::getTangentBReference() const {
-    return tangentBReference;
 }

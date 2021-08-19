@@ -11,7 +11,7 @@ Field.o : Field.cpp
 	g++ $(objectFlags) Field.cpp -o Field.o
 
 LevelSet.o : LevelSet.cpp
-	g++ $(objectFlags) LevelSet.cpp -o LevelSet.o
+	g++ $(objectFlags) -I /usr/include/eigen3 LevelSet.cpp -o LevelSet.o
 
 VelocityField.o : VelocityField.cpp
 	g++ $(objectFlags) VelocityField.cpp -o VelocityField.o
@@ -29,7 +29,7 @@ clean:
 	rm -rf data/ $(objects) cl_advection cl_advection.debug cl_advection.profile *csv* *xmf*
 
 debug: $(sourceFiles)
-	g++ -g -Wall -fopenmp $(sourceFiles) -o cl_advection.debug
+	g++ -I /usr/include/eigen3 -g -Wall -fopenmp $(sourceFiles) -o cl_advection.debug
 
 profile: $(sourceFiles)
 	g++ -pg -Wall -fopenmp $(sourceFiles) -o cl_advection.profile

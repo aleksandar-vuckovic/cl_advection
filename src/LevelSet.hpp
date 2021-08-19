@@ -3,6 +3,7 @@
 
 #include <sstream>    // Stringstream
 #include <fstream>    // Filestream
+#include <Eigen/Dense>
 
 #include "Field.hpp"
 #include "vecMath.hpp"
@@ -28,11 +29,15 @@ private:
     std::vector<Vector> normalReference;
     std::vector<Vector> tangentAReference;
     std::vector<Vector> tangentBReference;
+    std::vector<Vector> tangentCReference;
     std::vector<double> angleReference;
     std::vector<double> curvatureReference;
     std::vector<double> sectionalCurvatureAReference;
     std::vector<double> sectionalCurvatureBReference;
-    
+    std::vector<double> sectionalCurvatureCReference;
+    std::vector<double> alpha1;
+    std::vector<double> alpha2;
+
     InitShape shape;
     std::vector<double> shapeParams;
     Vector initCenter;
