@@ -356,12 +356,15 @@ int main(int argc, char **argv) {
     std::vector<double> curvatureTheoretical = Phi.getCurvatureReference();
     std::vector<Vector> tangentAReference = Phi.getTangentAReference();
     std::vector<Vector> tangentBReference = Phi.getTangentBReference();
+    std::vector<Vector> tangentCReference = Phi.getTangentCReference();
     std::vector<double> sectionalCurvatureAReference = Phi.getSectionalCurvatureAReference();
     std::vector<double> sectionalCurvatureBReference = Phi.getSectionalCurvatureBReference();
+    std::vector<double> sectionalCurvatureCReference = Phi.getSectionalCurvatureCReference();
     std::vector<double> angleActual(timesteps);
     std::vector<double> curvatureActualDivergence(timesteps);
     std::vector<double> sectionalCurvatureA_Actual(timesteps);
     std::vector<double> sectionalCurvatureB_Actual(timesteps);
+    std::vector<double> sectionalCurvatureC_Actual(timesteps);
 
     if (initShape == InitShape::sphere)
         Phi.initSphere(center, radius);
@@ -394,6 +397,10 @@ int main(int argc, char **argv) {
     sectionalCurvatureAFile.precision(16);
     std::ofstream sectionalCurvatureBFile(outputDirectory + "sectionalCurvatureB.csv");
     sectionalCurvatureBFile.precision(16);
+    std::ofstream sectionalCurvatureCFile(outputDirectory + "sectionalCurvatureC.csv");
+    sectionalCurvatureCFile.precision(16);
+    std::ofstream minimumGradient(outputDirectory + "minimumGradient.csv");
+    minimumGradient.precision(16);
 
     double sumAtStart = Phi.sumLevelSet();
 
@@ -442,6 +449,7 @@ int main(int argc, char **argv) {
             positionFile << i*dt << ", "
                          << newCPReference[0] << ", " << newCPReference[1] << ", " << newCPReference[2] << std::endl;
         }
+        std::cout << "Position " << "x, z  = " << newCPReference[0] << ", " << newCPReference[2] << "\n";
 
         std::cout << "Actual: " << std::to_string(angleActual[i]/(2*M_PI)*360) + "\n";
 		angleFile << std::to_string(i*dt) << ", "
@@ -449,12 +457,14 @@ int main(int argc, char **argv) {
 				  << angleTheoretical[i] << "\n";
 		std::cout << "Reference: " << angleTheoretical[i] << "\n"; 
                 
-        
+        minimumGradient << i*dt << ", " << Phi.getMinimalGradientNorm() << "\n";
+
         if (calculateCurvature) {
 
             curvatureActualDivergence[i] = Phi.getCurvatureInterpolated(i);
             sectionalCurvatureA_Actual[i] = Phi.getSectionalCurvatureInterpolated(i, tangentAReference[i]);
             sectionalCurvatureB_Actual[i] = Phi.getSectionalCurvatureInterpolated(i, tangentBReference[i]);
+            sectionalCurvatureC_Actual[i] = Phi.getSectionalCurvatureInterpolated(i, tangentCReference[i]);
 
             curvatureFile << std::to_string(i*dt) + ", "
                     + std::to_string(curvatureActualDivergence[i]) + ", "
@@ -462,6 +472,7 @@ int main(int argc, char **argv) {
 
             std::cout << "Measured curvature with divergence: " + std::to_string(curvatureActualDivergence[i]) + "\n";
             std::cout << "Reference curvature: " + std::to_string(curvatureTheoretical[i])  << std::endl;
+            std::cout << "Reference secCurvA: " + std::to_string(sectionalCurvatureAReference[i])  << std::endl;
 
             sectionalCurvatureAFile << std::to_string(i*dt) + ", "
                              + std::to_string(sectionalCurvatureA_Actual[i]) + ", "
@@ -470,6 +481,9 @@ int main(int argc, char **argv) {
             sectionalCurvatureBFile << std::to_string(i*dt) + ", "
                                        + std::to_string(sectionalCurvatureB_Actual[i]) + ", "
                                        + std::to_string(sectionalCurvatureBReference[i]) + "\n";
+            sectionalCurvatureCFile << std::to_string(i*dt) + ", "
+                                       + std::to_string(sectionalCurvatureC_Actual[i]) + ", "
+                                       + std::to_string(sectionalCurvatureCReference[i]) + "\n";
         }
         
         // Calculate numerical flux through all faces of each cell and update Phi
@@ -481,6 +495,7 @@ int main(int argc, char **argv) {
         curvatureDerivativeFile.flush();
         sectionalCurvatureAFile.flush();
         sectionalCurvatureBFile.flush();
+        minimumGradient.flush();
     }
 
     if (numZ > 1) {

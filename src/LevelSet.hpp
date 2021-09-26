@@ -92,11 +92,17 @@ public:
 
     std::vector<Vector> getTangentBReference() const;
 
+    std::vector<Vector> getTangentCReference() const;
+
     double getSectionalCurvatureInterpolated(int timestep, Vector tau);
 
     std::vector<double> getSectionalCurvatureAReference() const;
 
     std::vector<double> getSectionalCurvatureBReference() const;
+
+    std::vector<double> getSectionalCurvatureCReference() const;
+
+    double getMinimalGradientNorm();
 };
 
 Vector normalVector2D(double initAngle, std::string trackedCP);

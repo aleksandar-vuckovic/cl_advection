@@ -444,7 +444,7 @@ void LevelSet::referenceAngleLinearField(double dt, int last_timestep, double th
         angleReference[i] = temp/M_PI*180;
     }
 }
-#include <iostream>
+
 /**
  * Calculate the reference curvature at the contact point with the explicit Euler method at a given time.
  * Currently, there are two different implementations in the 3D case: One based on the field-formulation of the normal vector,
@@ -622,6 +622,8 @@ LevelSet::referenceCurvatureExplicitEuler(double dt, int last_timestep, double i
             // temp is the second derivative of v in the tau direction
             Vector tempA = field->secondPartial(i*dt, CP[0], CP[1], CP[2], tangentA);
 //            curvature = curvature + dt*(temp*normal - 3*curvature*(field->gradAt(i*dt, CP[0], CP[1], CP[2])*tau)*tau);
+
+            // TODO: Remove debug variables:
             secCurvA = secCurvA + dt * (tempA*normal + secCurvA * ((field->gradAt(i*dt, CP[0], CP[1], CP[2]))*normal)*normal
                     - 2*secCurvA*(field->gradAt(i*dt, CP[0], CP[1], CP[2])*tangentA)*tangentA);
 
@@ -1567,6 +1569,24 @@ void LevelSet::calculateNextTimestep(double dt, int timestep) {
     }
 }
 
+double LevelSet::getMinimalGradientNorm() {
+    double minimum;
+    for (int i = 1; i < numX - 1; i++) {
+        for (int j = 1; j < numY - 1; j++) {
+            for (int k = 1; k < numZ - 1; k++) {
+                double x = (at(i + 1, j, k) - at(i - 1, j, k)) / 2*dx;
+                double y = (at(i, j + 1, k) - at(i, j - 1, k)) / 2*dy;
+                double z = (at(i, j, k + 1) - at(i, j, k - 1)) / 2*dz;
+                double value = sqrt(x*x + y*y + z*z);
+                if ((i == 1 && j == 1 && k == 1) || value < minimum)
+                    minimum = value;
+            }
+        }
+    }
+    return minimum;
+}
+
+
 std::vector<Vector> LevelSet::getPositionReference() const {
     return positionReference;
 }
@@ -1587,10 +1607,18 @@ std::vector<Vector> LevelSet::getTangentBReference() const {
     return tangentBReference;
 }
 
+std::vector<Vector> LevelSet::getTangentCReference() const {
+    return tangentCReference;
+}
+
 std::vector<double> LevelSet::getSectionalCurvatureAReference() const {
     return sectionalCurvatureAReference;
 }
 
 std::vector<double> LevelSet::getSectionalCurvatureBReference() const {
     return sectionalCurvatureBReference;
+}
+
+std::vector<double> LevelSet::getSectionalCurvatureCReference() const {
+    return sectionalCurvatureCReference;
 }
