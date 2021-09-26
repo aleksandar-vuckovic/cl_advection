@@ -5,7 +5,7 @@ objects = main.o Field.o LevelSet.o VelocityField.o velocityFields.o vecMath.o
 objectFlags = -c -O3 -Wall -fopenmp
 
 main.o : main.cpp
-	g++ $(objectFlags) main.cpp -o main.o
+	g++ $(objectFlags) -I /usr/include/eigen3 main.cpp -o main.o
 
 Field.o : Field.cpp
 	g++ $(objectFlags) Field.cpp -o Field.o
