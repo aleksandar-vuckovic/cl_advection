@@ -34,3 +34,6 @@ cl_advection.creator
 cl_advection.files
 cl_advection.includes
 
+# CLion files
+src/.idea/
+src/cmake-build-debug/

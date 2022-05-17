@@ -1569,6 +1569,115 @@ void LevelSet::calculateNextTimestep(double dt, int timestep) {
     }
 }
 
+/**
+ * Calculate the next timestep at a given time and evolves the field using
+ * our new surface term approach to preserve the norm of the gradient at the
+ * zero level set
+ *
+ * For the flux calculation, the upwind method is used to ensure stability. Furthermore we impose
+ * the Neumann boundary condition onto the field
+ *
+ * @param dt The width of the timestep by which to evolve the field
+ * @param timestep The index of the timestep
+ */
+void LevelSet::calculateNextTimestepSourceTerm(double dt, int timestep) {
+    LevelSet tempPhi(*this);
+
+    const Vector upNormal = {0, 1, 0};
+    const Vector downNormal = {0,-1, 0};
+    const Vector leftNormal = {-1, 0, 0};
+    const Vector rightNormal = {1, 0, 0};
+    const Vector frontNormal = {0, 0, 1};
+    const Vector backNormal = {0, 0, -1};
+
+    // loop over all cells
+#pragma omp parallel shared(tempPhi)
+    {
+#pragma omp for collapse(3)
+        for (int k = 0; k < numZ; k++) {
+            for (int j = 0; j < numY; j++) {
+                for (int i = 0; i < numX; i++) {
+
+                    //Calculate the flux of phi over the cell faces
+                    double flux = 0;
+                    double sp = 0;
+
+                    for (int dir = 0; dir < 6; dir++) {
+
+                        switch(dir) {
+                            case 0:
+                                sp = field->at(timestep*dt, (i + 0.5)*dx, (j + 1)*dy, (k + 0.5)*dz) * upNormal;
+                                if (j == numY - 1) {
+                                    flux += sp*tempPhi.at(i, j, k)*dx*dz;
+                                }
+                                else{
+                                    flux += (fmax(sp,0.0)*tempPhi.at(i, j, k) + fmin(sp, 0.0) * tempPhi.at(i, j + 1, k)) * dx * dz;
+                                }
+                                break;
+
+                            case 1:
+                                sp = field->at(timestep*dt, (i + 0.5) * dx, j * dy, (k + 0.5) * dz) * downNormal;
+                                if (j == 0 ) {
+                                    flux += sp * tempPhi.at(i, j, k) * dx * dz;
+                                }
+                                else{
+                                    flux += (fmax(sp,0.0)*tempPhi.at(i, j, k) + fmin(sp, 0.0) * tempPhi.at(i, j - 1, k)) * dx * dz;
+                                }
+                                break;
+
+                            case 2:
+                                sp = field->at(timestep*dt, i * dx, (j + 0.5) * dy, (k + 0.5) * dz) * leftNormal;
+                                if (i == 0) {
+                                    flux += sp * tempPhi.at(i, j, k) * dy * dz;
+                                }
+                                else{
+                                    flux += (fmax(sp,0.0)*tempPhi.at(i, j, k) + fmin(sp, 0.0) * tempPhi.at(i - 1, j, k)) * dy * dz;
+                                }
+                                break;
+
+                            case 3:
+                                sp = field->at(timestep*dt, (i + 1) * dx, (j + 0.5) * dy, (k + 0.5) * dz) * rightNormal;
+                                if (i == numX - 1) {
+                                    flux += sp * tempPhi.at(i, j, k) * dy * dz;
+                                }
+                                else{
+                                    flux += (fmax(sp,0.0)*tempPhi.at(i, j, k) + fmin(sp, 0.0) * tempPhi.at(i + 1, j, k)) * dy * dz;
+                                }
+                                break;
+
+                            case 4:
+                                if (numZ == 1)
+                                    break; // only relevant for 3D
+                                sp = field->at(timestep*dt, (i + 0.5) * dx, (j + 0.5) * dy, (k + 1) * dz) * frontNormal;
+                                if (k == numZ - 1) {
+                                    flux += sp * tempPhi.at(i, j, k) * dx * dy;
+                                }
+                                else{
+                                    flux += (fmax(sp,0.0)*tempPhi.at(i, j, k) + fmin(sp, 0.0) * tempPhi.at(i, j, k + 1)) * dx * dy;
+                                }
+                                break;
+
+                            case 5:
+                                if (numZ == 1)
+                                    break; // only relevant for 3D
+                                sp = field->at(timestep*dt, (i + 0.5) * dx, (j + 0.5) * dy, k * dz) * backNormal;
+                                if (k == 0) {
+                                    flux += sp * tempPhi.at(i, j, k) * dx * dy;
+                                }
+                                else{
+                                    flux += (fmax(sp,0.0)*tempPhi.at(i, j, k) + fmin(sp, 0.0) * tempPhi.at(i, j, k - 1)) * dx * dy;
+                                }
+                                break;
+                        }
+                    }
+                    this->at(i, j, k) = this->at(i, j, k) - dt / (dx * dy * dz) * flux;
+                }
+            }
+        }
+
+    }
+}
+
 double LevelSet::getMinimalGradientNorm() {
     double minimum;
     for (int i = 1; i < numX - 1; i++) {

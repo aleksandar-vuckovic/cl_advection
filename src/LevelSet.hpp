@@ -79,6 +79,7 @@ public:
     Vector normalVector2D(double initAngle);
     static Vector normalVector2D(double initAngle, std::string trackedCP);
     void calculateNextTimestep(double dt, int timestep);
+    void calculateNextTimestepSourceTerm(double dt, int timestep);
 
     std::vector<Vector> getPositionReference() const;
     std::vector<double> getAngleReference() const;
