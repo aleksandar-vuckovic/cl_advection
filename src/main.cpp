@@ -59,6 +59,7 @@ int main(int argc, char **argv) {
     = ellipsoidStretchX = ellipsoidStretchY = ellipsoidStretchZ = 0;
     
     bool writeField = false, calculateCurvature = true;
+    bool applySourceTerm = false;
     std::string trackedContactPoint = "left", fieldName = "", outputDirectory = "";
     InitShape initShape = InitShape::sphere;
     VelocityField *field = nullptr;
@@ -214,6 +215,8 @@ int main(int argc, char **argv) {
                         initCurvature = std::stod(value);
                     else if (varName == "calculateCurvature")
                         std::stringstream(value) >> std::boolalpha >> calculateCurvature;
+                    else if (varName == "applySourceTerm")
+                        std::stringstream(value) >> std::boolalpha >> applySourceTerm;
                     else if (varName == "threads")
                         threads = std::stoi(value);
                     else
@@ -487,8 +490,12 @@ int main(int argc, char **argv) {
         }
         
         // Calculate numerical flux through all faces of each cell and update Phi
-        //Phi.calculateNextTimestep(dt, i);
-        Phi.calculateNextTimestepSourceTerm(dt, i); // develop source term approach
+        if(applySourceTerm){
+            Phi.calculateNextTimestepSourceTerm(dt, i); // develop source term approach
+        }
+        else{
+            Phi.calculateNextTimestep(dt, i); // standard implementation without source term
+        }
 
         positionFile.flush();
         angleFile.flush();
