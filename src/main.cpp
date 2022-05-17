@@ -487,7 +487,8 @@ int main(int argc, char **argv) {
         }
         
         // Calculate numerical flux through all faces of each cell and update Phi
-        Phi.calculateNextTimestep(dt, i);
+        //Phi.calculateNextTimestep(dt, i);
+        Phi.calculateNextTimestepSourceTerm(dt, i); // develop source term approach
 
         positionFile.flush();
         angleFile.flush();

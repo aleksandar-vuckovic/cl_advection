@@ -1498,6 +1498,7 @@ void LevelSet::calculateNextTimestep(double dt, int timestep) {
                     switch(dir) {
                     case 0:
                         sp = field->at(timestep*dt, (i + 0.5)*dx, (j + 1)*dy, (k + 0.5)*dz) * upNormal;
+
                         if (j == numY - 1) {
                             flux += sp*tempPhi.at(i, j, k)*dx*dz;
                         }
@@ -1670,6 +1671,8 @@ void LevelSet::calculateNextTimestepSourceTerm(double dt, int timestep) {
                                 break;
                         }
                     }
+
+                    // Introduce source term here!
                     this->at(i, j, k) = this->at(i, j, k) - dt / (dx * dy * dz) * flux;
                 }
             }
