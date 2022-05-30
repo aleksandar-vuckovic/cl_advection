@@ -1,0 +1,18 @@
+#!/bin/bash
+
+#TESTCASE_TOOL_SUBMIT_JOB sh jobscript
+
+echo "$case:$subcase"
+
+mv solver_input Inputfile
+
+echo "Run solver"
+/home/fricke/1-Projects/24_LevelSet_Advection/levelset_solver_aleks/src/cl_advection
+
+gnuplot plot.gp
+
+## Run analysis script
+#echo "Run Analysis"
+#python2 subcase_analysis.py
+
+echo "****************"
