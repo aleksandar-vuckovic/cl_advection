@@ -1686,7 +1686,7 @@ void LevelSet::calculateNextTimestepSourceTerm(double dt, int timestep) {
 }
 
 double LevelSet::getMinimalGradientNorm() {
-    double minimum
+    double minimum;
     for (int i = 1; i < numX - 1; i++) {
         for (int j = 1; j < numY - 1; j++) {
             for (int k = 1; k < numZ - 1; k++) {
