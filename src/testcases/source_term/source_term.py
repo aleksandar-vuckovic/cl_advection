@@ -39,7 +39,7 @@ def read_subcases():
 
 	## Arrays to loop over
         sources= [0,1]
-        meshes = [25,50]
+        meshes = [10,25,50]
         ##
         
         for source_active in sources:
