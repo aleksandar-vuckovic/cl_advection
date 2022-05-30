@@ -18,7 +18,7 @@
 LevelSet::LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz, VelocityField *field,
         std::string trackedCP, double dt, int timesteps, Vector expCP, double expAngle,
         double initCurvature, InitShape shape, std::vector<double> shapeParams, Vector initCenter, std::string outputDirectory)
-        : Field<double>(numX, numY, numZ, dx, dy, dz), 
+        : Field<double>(numX, numY, numZ, dx, dy, dz),
           positionReference(timesteps), normalReference(timesteps),
           tangentAReference(timesteps),tangentBReference(timesteps), tangentCReference(timesteps),
           angleReference(timesteps), curvatureReference(timesteps),
@@ -34,9 +34,9 @@ LevelSet::LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz
 		// Calculate reference data
         if (numZ == 1 && ( field->getName() == "navierField" || field->getName() == "timeDependentNavierField") )
             contactPointLinearField(dt, timesteps, field->getC1(), expCP[0], field->getV0());
-        else 
+        else
             referenceContactPointExplicitEuler(dt, timesteps, expCP);
-            
+
         referenceNormalExplicitEuler(dt, timesteps, expNormalVec);
         referenceTangentExplicitEuler(dt, timesteps, expNormalVec);
         referenceCurvatureExplicitEuler(dt, timesteps, initCurvature, "sectionalCurvature");
@@ -108,7 +108,7 @@ std::vector<Vector> LevelSet::referenceContactPointBackwards(double dt, int last
  * @return The position of the contact point in arbitrary units
  */
 void LevelSet::contactPointLinearField(double dt, int last_timestep, double c1, double x0, double v0) {
-    double t = 0;  
+    double t = 0;
     for (int i = 0; i < last_timestep; i++) {
         t = i*dt;
         if (field->getName() == "navierField") {
@@ -139,13 +139,13 @@ Vector LevelSet::getContactPoint(int timestep, bool indexOnly /* = false */) con
     if (numZ == 1) {
         if (trackedCP == "left") {
             double initSign = this->at(0, 0, 0)/std::abs(this->at(0, 0, 0));
-            
+
             if (initSign < 0)
                 throw std::runtime_error("CP_Exit_Simulation_Plane");
 
             for (int i = 0; i < numX; i++) {
                 if (this->at(i, 0, 0)*initSign < 0) {
-                    
+
                     if (indexOnly)
                         return {double(i) + 0.5, 0, 0}; //Add 0.5 to compensate floating-point errors
                     double alpha = this->at(i,0,0)-this->at(i - 1, 0, 0);
@@ -179,11 +179,11 @@ Vector LevelSet::getContactPoint(int timestep, bool indexOnly /* = false */) con
             }
         }
         throw std::runtime_error("CP_Exit_Simulation_Plane");
-    } 
-    
+    }
+
     else {
         const Vector ref = positionReference[timestep];
-         if (ref[0] < 0 || ref[1] < 0 || ref[2] < 0 || 
+         if (ref[0] < 0 || ref[1] < 0 || ref[2] < 0 ||
              ref[0] > this->numX*dx || ref[1] > this->numY*dy || ref[2] > this->numZ*dz) {
                  throw std::runtime_error("CP_Exit_Simulation_Plane");
              }
@@ -205,7 +205,7 @@ Vector LevelSet::getContactPoint(int timestep, bool indexOnly /* = false */) con
 
 /**
  * Get the current indices of the contact point.
- * 
+ *
  * This is a wrapper function for LevelSet::getContactPoint.
  * @param timestep The timestep
  * @return The indices of the contact point.
@@ -217,7 +217,7 @@ array<int, 3> LevelSet::getContactPointIndices(int timestep) const {
 
 /**
  * Calculate the normal vector.
- * 
+ *
  * This function uses finite differences to calculate the normal vector of the Level set field at cell
  * @param cell The indices of the contact point.
  * @param cellIsCP Whether cell is the index-vector of the contact point.
@@ -344,7 +344,7 @@ Vector LevelSet::getTangentialVector(Vector normal) const {
 /**
  * Calculate the contact angle.
  * This function uses finite differences to calculate the normal vector of the Level set field at cell and
- * thus calculate the contact angle. This is a wrapper function for LevelSet::getNormalVector. 
+ * thus calculate the contact angle. This is a wrapper function for LevelSet::getNormalVector.
  *
  * @param timestep The timestep when the contact angle is calculated.
  * @return The contact angle in degrees
@@ -463,7 +463,7 @@ LevelSet::referenceCurvatureExplicitEuler(double dt, int last_timestep, double i
         double curvature = initCurvature;
         for (int i = 0; i < last_timestep; i++) {
             curvatureReference[i] = curvature;
-            Vector CP = positionReference[i];        
+            Vector CP = positionReference[i];
             Vector normal = normalReference[i];
             Vector tau = getTangentialVector(normal);
             // temp is the second derivative of v in the tau direction
@@ -488,7 +488,7 @@ LevelSet::referenceCurvatureExplicitEuler(double dt, int last_timestep, double i
             for (int x = -local; x <= local; x++)
                 for (int y = 0; y <= local; y++)
                     for (int z = -sidelengthZ/2; z <= sidelengthZ/2; z++) {
-                        Vector temp = CP + Vector({d*x, d*y, d*z}); 
+                        Vector temp = CP + Vector({d*x, d*y, d*z});
 
                         if (temp[0] < 0 || temp[0] > numX*dx || temp[1] < 0 || temp[1] > numY*dy || temp[2] < 0 || temp[2] > numZ*dz)
                             continue;
@@ -1304,7 +1304,7 @@ void LevelSet::initSphere(Vector center, double radius) {
 }
 
 /** Initialize a plane.
- * 
+ *
  *  @param refPoint The reference point of the plane in degrees.
  *  @param angleA The angle between the initialized plane and the x-z-plane (= polar angle of normal vector) in deg.
  *  @param angleB The angle of rotation around the y-axis (= azimuthal angle) in deg.
@@ -1313,12 +1313,12 @@ void LevelSet::initPlane(Vector refPoint, double polarAngle, double azimuthalAng
     polarAngle = polarAngle/180*M_PI;
     azimuthalAngle = azimuthalAngle/180*M_PI;
     Vector normal = {sin(polarAngle) * cos(azimuthalAngle), cos(polarAngle), sin(polarAngle)* sin(azimuthalAngle)};
-    
+
     for (int k = 0; k < numZ; k++)
         for (int j = 0; j < numY; j++)
             for (int i = 0; i < numX; i++)
                 at(i, j, k) = normal * (Vector({i*dx, j*dy, k*dz}) - refPoint);
-            
+
 }
 
 /** Initialize a paraboloid.
@@ -1355,7 +1355,7 @@ void LevelSet::initEllipsoid(Vector refPoint, double stretchX, double stretchY, 
 Vector LevelSet::expectedNormalVector(Vector contactPoint) {
      std::vector<double>& params = shapeParams;
      Vector& refPoint = initCenter;
- 
+
     Vector normal = {0, 0, 0};
 
     if (shape == InitShape::sphere) {
@@ -1374,7 +1374,7 @@ Vector LevelSet::expectedNormalVector(Vector contactPoint) {
         double stretchZ = params.at(2);
         normal = { stretchX * (contactPoint[0] - refPoint[0]), stretchY * (contactPoint[1] - refPoint[1]), stretchZ * (contactPoint[2] - refPoint[2]) };
     }
-    
+
     return normal/abs(normal);
 }
 
@@ -1383,7 +1383,7 @@ Matrix LevelSet::expectedNormalVectorGradient(Vector contactPoint) {
     Vector vec0;
     Vector vec1;
     Vector vec2;
-    
+
     double x = contactPoint[0];
     double y = 0;
     double z = contactPoint[2];
@@ -1414,8 +1414,8 @@ Matrix LevelSet::expectedNormalVectorGradient(Vector contactPoint) {
         double stretchZ = params.at(2);
         double n_abs = sqrt(pow(stretchX * (x - x0), 2) + pow(stretchY * (y - y0), 2) + pow(stretchZ * (z - z0), 2));
 
-        vec0 = { stretchX / n_abs - pow(stretchX, 3) * pow(x - x0, 2) / pow(n_abs, 3), 
-                 stretchX * pow(stretchY, 2) * (x - x0) * (y - y0) / pow(n_abs, 3), 
+        vec0 = { stretchX / n_abs - pow(stretchX, 3) * pow(x - x0, 2) / pow(n_abs, 3),
+                 stretchX * pow(stretchY, 2) * (x - x0) * (y - y0) / pow(n_abs, 3),
                  stretchX * pow(stretchZ, 2) * (x - x0) * (z - z0) / pow(n_abs, 3) };
         vec1 = { -pow(stretchX, 2) * stretchY * (x - x0) * (y - y0) / pow(n_abs, 3),
                  stretchY / n_abs - pow(stretchY, 3) * pow(y - y0, 2) / pow(n_abs, 3),
@@ -1602,6 +1602,7 @@ void LevelSet::calculateNextTimestepSourceTerm(double dt, int timestep) {
                     //Calculate the flux of phi over the cell faces
                     double flux = 0;
                     double sp = 0;
+                    double source = 0;
 
                     for (int dir = 0; dir < 6; dir++) {
 
@@ -1673,7 +1674,10 @@ void LevelSet::calculateNextTimestepSourceTerm(double dt, int timestep) {
                     }
 
                     // Introduce source term here!
-                    this->at(i, j, k) = this->at(i, j, k) - dt / (dx * dy * dz) * flux;
+                    // local coordinates (i + 0.5)*dx, (j + 0.5)*dy, (k + 0.5)*dz
+                    source = sin((i + 0.5)*dx)*cos((j + 0.5)*dy); // dummy example
+
+                    this->at(i, j, k) = this->at(i, j, k)*(1.0-source*dt) - dt / (dx * dy * dz) * flux;
                 }
             }
         }
@@ -1682,7 +1686,7 @@ void LevelSet::calculateNextTimestepSourceTerm(double dt, int timestep) {
 }
 
 double LevelSet::getMinimalGradientNorm() {
-    double minimum;
+    double minimum
     for (int i = 1; i < numX - 1; i++) {
         for (int j = 1; j < numY - 1; j++) {
             for (int k = 1; k < numZ - 1; k++) {
