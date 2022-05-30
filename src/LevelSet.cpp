@@ -1674,10 +1674,19 @@ void LevelSet::calculateNextTimestepSourceTerm(double dt, int timestep) {
                     }
 
                     // Introduce source term here!
-                    // local coordinates (i + 0.5)*dx, (j + 0.5)*dy, (k + 0.5)*dz
-                    source = sin((i + 0.5)*dx)*cos((j + 0.5)*dy); // dummy example
+                    //source = 0.1 // dummy source
+                    //source = cos((i + 0.5)*dx)*sin( (j + 0.5)*dy); // dummy source
+                    
+                    // Full implementation
+                    // Problem TODO: this field seems to be much too noisy! How can we get a smoother normal field?
+                    source = (field->gradAt(timestep*dt, (i + 0.5)*dx, (j + 0.5)*dy, (k + 0.5)*dz)*tempPhi.getNormalVector(i, j, k))*tempPhi.getNormalVector(i,j,k);
 
-                    this->at(i, j, k) = this->at(i, j, k)*(1.0-source*dt) - dt / (dx * dy * dz) * flux;
+                    // explicit update
+                    //this->at(i, j, k) = this->at(i, j, k)*(1.0-source*dt) - dt / (dx * dy * dz) * flux;
+                    
+                    // implicit update
+                    this->at(i, j, k) = (this->at(i, j, k) - dt / (dx * dy * dz) * flux)/(1+source*dt);
+                    
                 }
             }
         }
