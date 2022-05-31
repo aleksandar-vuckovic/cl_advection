@@ -1307,10 +1307,22 @@ double LevelSet::sumLevelSet() {
  * @param radius The radius of the droplet
  */
 void LevelSet::initSphere(Vector center, double radius) {
+
+    if(numZ>1){
+
     for (int k = 0; k < numZ; k++)
         for (int j = 0; j < numY; j++)
             for (int i = 0; i < numX; i++)
-                at(i, j, k) = pow(i*dx - center[0], 2) + pow(j*dy - center[1], 2) + pow(k*dz - center[2], 2) - pow(radius, 2);
+                at(i, j, k) = 0.5*(pow(i*dx - center[0], 2)/radius + pow(j*dy - center[1], 2)/(2*radius)/radius + pow(k*dz - center[2], 2)/(2)/radius - radius);
+
+    }
+    else if(numZ==1){
+          for (int j = 0; j < numY; j++)
+              for (int i = 0; i < numX; i++)
+                  at(i, j, 0) = 0.5*(pow(i*dx - center[0], 2)/radius + pow(j*dy - center[1], 2)/radius - radius);
+
+    }
+
 }
 
 /** Initialize a plane.
@@ -1711,14 +1723,8 @@ void LevelSet::calculateNextTimestepSourceTerm(double dt, int timestep) {
                     reconstructedNormal = reconstructedNormal/abs(reconstructedNormal);
 
 
-                    // Introduce source term here!
-                    //source = 0.1 // dummy source
-                    //source = cos((i + 0.5)*dx)*sin( (j + 0.5)*dy); // dummy source
-                    //source = (field->gradAt(timestep*dt, (i + 0.5)*dx, (j + 0.5)*dy, (k + 0.5)*dz)*rightNormal)*rightNormal; //dummy implementation
-
-                    // Full implementation
-                    source = (field->gradAt(timestep*dt, (i + 0.5)*dx, (j + 0.5)*dy, (k + 0.5)*dz)*reconstructedNormal)*reconstructedNormal;
-                    //source = (field->gradAt(timestep*dt, (i + 0.5)*dx, (j + 0.5)*dy, (k + 0.5)*dz)*tempPhi.getNormalVector(i, j, k))*tempPhi.getNormalVector(i,j,k);
+                    // Compute source term
+                    source = (field->gradAt(timestep*dt, (i + 0.5)*dx, (j + 0.5)*dy, (k + 0.5)*dz)*reconstructedNormal)*reconstructedNormal*(-1.0);
 
                     // explicit update
                     this->at(i, j, k) = this->at(i, j, k)*(1.0-source*dt) - dt / (dx * dy * dz) * flux;
