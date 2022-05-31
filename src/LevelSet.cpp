@@ -1687,27 +1687,26 @@ void LevelSet::calculateNextTimestepSourceTerm(double dt, int timestep) {
 
                     // Compute the local normal (2D)
                     if(i==0){
-                      reconstructedNormal[1] = (tempPhi.at(i+1,j,k)-tempPhi.at(i,j,k))/(dx);
+                      reconstructedNormal[0] = (tempPhi.at(i+1,j,k)-tempPhi.at(i,j,k))/(dx);
                     }
                     else if(i==numX-1){
-                      reconstructedNormal[1] = (tempPhi.at(i,j,k)-tempPhi.at(i-1,j,k))/(dx);
+                      reconstructedNormal[0] = (tempPhi.at(i,j,k)-tempPhi.at(i-1,j,k))/(dx);
                     }
                     else {
-                      reconstructedNormal[1] = (tempPhi.at(i+1,j,k)-tempPhi.at(i-1,j,k))/(2*dx);
+                      reconstructedNormal[0] = (tempPhi.at(i+1,j,k)-tempPhi.at(i-1,j,k))/(2*dx);
                     }
 
                     if(j==0){
-                      reconstructedNormal[2] = (tempPhi.at(i,j+1,k)-tempPhi.at(i,j,k))/(dy);
+                      reconstructedNormal[1] = (tempPhi.at(i,j+1,k)-tempPhi.at(i,j,k))/(dy);
                     }
                     else if(j==numY-1){
-                      reconstructedNormal[2] = (tempPhi.at(i,j,k)-tempPhi.at(i,j-1,k))/(dy);
+                      reconstructedNormal[1] = (tempPhi.at(i,j,k)-tempPhi.at(i,j-1,k))/(dy);
                     }
                     else {
-                      reconstructedNormal[2] = (tempPhi.at(i,j+1,k)-tempPhi.at(i,j-1,k))/(2*dy);
+                      reconstructedNormal[1] = (tempPhi.at(i,j+1,k)-tempPhi.at(i,j-1,k))/(2*dy);
                     }
 
-                    //reconstructedNormal[2] = (tempPhi.at(i,j+1,k)-tempPhi.at(i,j-1,k))/dy;
-                    reconstructedNormal[3] = 0;
+                    reconstructedNormal[2] = 0;
 
                     reconstructedNormal = reconstructedNormal/abs(reconstructedNormal);
 
