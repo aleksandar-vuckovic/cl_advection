@@ -227,7 +227,7 @@ Vector LevelSet::getNormalVector(array<int, 3> cell, bool useInterpolation /* = 
     double normalX = 0, normalY = 0, normalZ = 0;
 
     // TODO Mathis
-    useInterpolation = false;
+    //useInterpolation = false;
 
     if (numZ == 1 && useInterpolation) {
 
@@ -292,6 +292,13 @@ Vector LevelSet::getNormalVector(array<int, 3> cell, bool useInterpolation /* = 
     }
 
     Vector normal = {normalX, normalY, normalZ};
+
+    //TODO Mathis: What if grad phi is numerically zero?
+    if(abs(normal)<1E-15){
+         exit(0);
+    }
+
+
     normal = normal/abs(normal);
     return normal;
 }
@@ -1594,6 +1601,8 @@ void LevelSet::calculateNextTimestepSourceTerm(double dt, int timestep) {
     const Vector frontNormal = {0, 0, 1};
     const Vector backNormal = {0, 0, -1};
 
+    Vector reconstructedNormal = {0,0,0};
+
     // loop over all cells
 #pragma omp parallel shared(tempPhi)
     {
@@ -1676,13 +1685,41 @@ void LevelSet::calculateNextTimestepSourceTerm(double dt, int timestep) {
                         }
                     }
 
+                    // Compute the local normal (2D)
+                    if(i==0){
+                      reconstructedNormal[1] = (tempPhi.at(i+1,j,k)-tempPhi.at(i,j,k))/(dx);
+                    }
+                    else if(i==numX-1){
+                      reconstructedNormal[1] = (tempPhi.at(i,j,k)-tempPhi.at(i-1,j,k))/(dx);
+                    }
+                    else {
+                      reconstructedNormal[1] = (tempPhi.at(i+1,j,k)-tempPhi.at(i-1,j,k))/(2*dx);
+                    }
+
+                    if(j==0){
+                      reconstructedNormal[2] = (tempPhi.at(i,j+1,k)-tempPhi.at(i,j,k))/(dy);
+                    }
+                    else if(j==numY-1){
+                      reconstructedNormal[2] = (tempPhi.at(i,j,k)-tempPhi.at(i,j-1,k))/(dy);
+                    }
+                    else {
+                      reconstructedNormal[2] = (tempPhi.at(i,j+1,k)-tempPhi.at(i,j-1,k))/(2*dy);
+                    }
+
+                    //reconstructedNormal[2] = (tempPhi.at(i,j+1,k)-tempPhi.at(i,j-1,k))/dy;
+                    reconstructedNormal[3] = 0;
+
+                    reconstructedNormal = reconstructedNormal/abs(reconstructedNormal);
+
+
                     // Introduce source term here!
                     //source = 0.1 // dummy source
                     //source = cos((i + 0.5)*dx)*sin( (j + 0.5)*dy); // dummy source
                     //source = (field->gradAt(timestep*dt, (i + 0.5)*dx, (j + 0.5)*dy, (k + 0.5)*dz)*rightNormal)*rightNormal; //dummy implementation
 
                     // Full implementation
-                    source = (field->gradAt(timestep*dt, (i + 0.5)*dx, (j + 0.5)*dy, (k + 0.5)*dz)*tempPhi.getNormalVector(i, j, k))*tempPhi.getNormalVector(i,j,k);
+                    source = (field->gradAt(timestep*dt, (i + 0.5)*dx, (j + 0.5)*dy, (k + 0.5)*dz)*reconstructedNormal)*reconstructedNormal;
+                    //source = (field->gradAt(timestep*dt, (i + 0.5)*dx, (j + 0.5)*dy, (k + 0.5)*dz)*tempPhi.getNormalVector(i, j, k))*tempPhi.getNormalVector(i,j,k);
 
                     // explicit update
                     this->at(i, j, k) = this->at(i, j, k)*(1.0-source*dt) - dt / (dx * dy * dz) * flux;

@@ -19,7 +19,7 @@ do for [quantity in "position contactAngle curvature"]{
 
 set ylabel quantity
 
-plot for [mesh in "10 25 50"] source.'/'.mesh.'/'.quantity.'.csv' using ($1):(abs($2-$3)) title source.'/'.mesh
+plot for [mesh in "50 100 200"] source.'/'.mesh.'/'.quantity.'.csv' using ($1):(abs($2-$3)) title source.'/'.mesh
 
 #file = source.'/'.mesh.'/'.quantity.'.csv'
 
