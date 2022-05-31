@@ -1679,15 +1679,16 @@ void LevelSet::calculateNextTimestepSourceTerm(double dt, int timestep) {
                     // Introduce source term here!
                     //source = 0.1 // dummy source
                     //source = cos((i + 0.5)*dx)*sin( (j + 0.5)*dy); // dummy source
+                    //source = (field->gradAt(timestep*dt, (i + 0.5)*dx, (j + 0.5)*dy, (k + 0.5)*dz)*rightNormal)*rightNormal; //dummy implementation
 
                     // Full implementation
                     source = (field->gradAt(timestep*dt, (i + 0.5)*dx, (j + 0.5)*dy, (k + 0.5)*dz)*tempPhi.getNormalVector(i, j, k))*tempPhi.getNormalVector(i,j,k);
 
                     // explicit update
-                    //this->at(i, j, k) = this->at(i, j, k)*(1.0-source*dt) - dt / (dx * dy * dz) * flux;
+                    this->at(i, j, k) = this->at(i, j, k)*(1.0-source*dt) - dt / (dx * dy * dz) * flux;
 
                     // implicit update
-                    this->at(i, j, k) = (this->at(i, j, k) - dt / (dx * dy * dz) * flux)/(1+source*dt);
+                    //this->at(i, j, k) = (this->at(i, j, k) - dt / (dx * dy * dz) * flux)/(1+source*dt);
 
                 }
             }

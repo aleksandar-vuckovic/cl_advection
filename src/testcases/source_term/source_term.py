@@ -19,7 +19,8 @@ def build_subcase(source_active, mesh):
 	  subcase["solver_data"]["applySourceTerm"] = "false"
 	
 	subcase["solver_data"]["numY"] = mesh
-	subcase["solver_data"]["numX"] = mesh*10
+	subcase["solver_data"]["numX"] = mesh*2
+	subcase["solver_data"]["lenZ"] = 1.0/mesh
 	
 	return subcase
 	
@@ -39,7 +40,7 @@ def read_subcases():
 
 	## Arrays to loop over
         sources= [0,1]
-        meshes = [10,25,50]
+        meshes = [50,100,200]
         ##
         
         for source_active in sources:
