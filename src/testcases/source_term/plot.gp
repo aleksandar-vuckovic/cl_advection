@@ -18,3 +18,9 @@ set ylabel "Position"
 
 plot "position.csv" using 1:2 title "LevelSet" with points pointsize 0.5,\
      "position.csv" using 1:3 title "Reference" with line
+     
+set output "results_curvature.pdf"
+set ylabel "Curvature"
+
+plot "curvature.csv" using 1:2 title "LevelSet" with points pointsize 0.5,\
+     "curvature.csv" using 1:3 title "Reference" with line
