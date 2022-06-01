@@ -335,7 +335,7 @@ Vector LevelSet::getTangentialVector(Vector normal) const {
 //        tau1 = 1;
 //        tau2 = -(normal[2]*normal[2] / (normal[0]*normal[1]) + normal[0]/normal[1]);
 //        tau3 = normal[2] / normal[0];   // TODO: What happens when normal[0] == 0 ? Check again.
-        tau = cross(normal, {0, -1, 0});
+        tau = cross(normal, {0, 0, 1});
     } else {
 //        tau1 = 0;
 //        tau2 = 1;
