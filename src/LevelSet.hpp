@@ -56,7 +56,7 @@ public:
     void referenceNormalExplicitEuler(double dt, int timestep, Vector n_sigma_init);
     Vector referenceNormalExplicitEulerSingle(double dt, int last_timestep, std::vector<Vector> backwardsPoints);
     void referenceAngleLinearField(double dt, int timesteps, double theta0);
-    Vector getNormalVector(array<int, 3> cell,  bool useInterpolation = true) const;
+    Vector getNormalVector(array<int, 3> cell,  bool useInterpolation = true, bool normalizeVector = true) const;
     Vector getNormalVector(int i, int j, int k) const;
     Vector getTangentialVector(Vector normal) const;
     double getContactAngleInterpolated(int timestep);
@@ -103,7 +103,7 @@ public:
 
     std::vector<double> getSectionalCurvatureCReference() const;
 
-    double getMinimalGradientNorm();
+    double getGradPhiNormAtContactPoint(int timestep);
 };
 
 Vector normalVector2D(double initAngle, std::string trackedCP);

@@ -220,10 +220,11 @@ array<int, 3> LevelSet::getContactPointIndices(int timestep) const {
  *
  * This function uses finite differences to calculate the normal vector of the Level set field at cell
  * @param cell The indices of the contact point.
- * @param cellIsCP Whether cell is the index-vector of the contact point.
+ * @param cellIsCP Whether cell is the index-vector of the contact point (default is true).
+ * @param normalizeVector Whether the resulting gradient vector is normalized (default is true).
  * @return The normal vector at cell.
  */
-Vector LevelSet::getNormalVector(array<int, 3> cell, bool useInterpolation /* = true */) const {
+Vector LevelSet::getNormalVector(array<int, 3> cell, bool useInterpolation /* = true */, bool normalizeVector /* = true */) const {
     double normalX = 0, normalY = 0, normalZ = 0;
 
     // TODO Mathis
@@ -298,8 +299,8 @@ Vector LevelSet::getNormalVector(array<int, 3> cell, bool useInterpolation /* = 
          exit(0);
     }
 
-
-    normal = normal/abs(normal);
+    if (normalizeVector)
+        normal = normal/abs(normal);
     return normal;
 }
 
@@ -1313,8 +1314,7 @@ void LevelSet::initSphere(Vector center, double radius) {
     for (int k = 0; k < numZ; k++)
         for (int j = 0; j < numY; j++)
             for (int i = 0; i < numX; i++)
-                at(i, j, k) = 0.5*(pow(i*dx - center[0], 2)/radius + pow(j*dy - center[1], 2)/(2*radius)/radius + pow(k*dz - center[2], 2)/(2)/radius - radius);
-
+                at(i, j, k) = 0.5*(pow(i*dx - center[0], 2)/radius + pow(j*dy - center[1], 2)/radius + pow(k*dz - center[2], 2)/radius - radius);
     }
     else if(numZ==1){
           for (int j = 0; j < numY; j++)
@@ -1739,21 +1739,12 @@ void LevelSet::calculateNextTimestepSourceTerm(double dt, int timestep) {
     }
 }
 
-double LevelSet::getMinimalGradientNorm() {
+double LevelSet::getGradPhiNormAtContactPoint(int timestep) {
     double minimum;
-    for (int i = 1; i < numX - 1; i++) {
-        for (int j = 1; j < numY - 1; j++) {
-            for (int k = 1; k < numZ - 1; k++) {
-                double x = (at(i + 1, j, k) - at(i - 1, j, k)) / 2*dx;
-                double y = (at(i, j + 1, k) - at(i, j - 1, k)) / 2*dy;
-                double z = (at(i, j, k + 1) - at(i, j, k - 1)) / 2*dz;
-                double value = sqrt(x*x + y*y + z*z);
-                if ((i == 1 && j == 1 && k == 1) || value < minimum)
-                    minimum = value;
-            }
-        }
-    }
-    return minimum;
+    std::array<int, 3> contactPoint = getContactPointIndices(timestep);
+    Vector gradPhi = getNormalVector(contactPoint, false, false);
+    double gradPhiNorm = abs(gradPhi);
+    return gradPhiNorm;
 }
 
 

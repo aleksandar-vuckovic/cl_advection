@@ -402,8 +402,8 @@ int main(int argc, char **argv) {
     sectionalCurvatureBFile.precision(16);
     std::ofstream sectionalCurvatureCFile(outputDirectory + "sectionalCurvatureC.csv");
     sectionalCurvatureCFile.precision(16);
-    std::ofstream minimumGradient(outputDirectory + "minimumGradient.csv");
-    minimumGradient.precision(16);
+    std::ofstream gradientNormAtContactPoint(outputDirectory + "gradientNormAtContactPoint.csv");
+    gradientNormAtContactPoint.precision(16);
 
     double sumAtStart = Phi.sumLevelSet();
 
@@ -460,7 +460,7 @@ int main(int argc, char **argv) {
 				  << angleTheoretical[i] << "\n";
 		std::cout << "Reference: " << angleTheoretical[i] << "\n"; 
                 
-        minimumGradient << i*dt << ", " << Phi.getMinimalGradientNorm() << "\n";
+        gradientNormAtContactPoint << i * dt << ", " << Phi.getGradPhiNormAtContactPoint(i) << "\n";
 
         if (calculateCurvature) {
 
@@ -503,7 +503,7 @@ int main(int argc, char **argv) {
         curvatureDerivativeFile.flush();
         sectionalCurvatureAFile.flush();
         sectionalCurvatureBFile.flush();
-        minimumGradient.flush();
+        gradientNormAtContactPoint.flush();
     }
 
     if (numZ > 1) {
