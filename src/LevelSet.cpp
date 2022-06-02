@@ -222,15 +222,17 @@ array<int, 3> LevelSet::getContactPointIndices(int timestep) const {
  * @param cell The indices of the contact point.
  * @param cellIsCP Whether cell is the index-vector of the contact point (default is true).
  * @param normalizeVector Whether the resulting gradient vector is normalized (default is true).
+ * @param findCPin2D Whether to take the passed coordinates and calculate the normal there or whether to find
+ * the contact point automatically (using the change in sign). Only applicable in 2D.
  * @return The normal vector at cell.
  */
-Vector LevelSet::getNormalVector(array<int, 3> cell, bool useInterpolation /* = true */, bool normalizeVector /* = true */) const {
+Vector LevelSet::getNormalVector(array<int, 3> cell, bool useInterpolation /* = true */, bool normalizeVector /* = true */, bool findCPin2D /* = true */) const {
     double normalX = 0, normalY = 0, normalZ = 0;
 
     // TODO Mathis
     //useInterpolation = false;
 
-    if (numZ == 1 && useInterpolation) {
+    if (numZ == 1 && findCPin2D && useInterpolation) {
 
         if (trackedCP == "left") {
              // find root of phi, alpha: coefficient for convex combination
@@ -272,22 +274,43 @@ Vector LevelSet::getNormalVector(array<int, 3> cell, bool useInterpolation /* = 
 
     } else {
         if (cell[0] > 0 && cell[0] < numX - 1) {
-                normalX = (this->at(cell[0] + 1, cell[1], cell[2]) - this->at(cell[0] - 1, cell[1], cell[2]))/(2*dx);
+                normalX =    (this->at(cell[0] + 1, cell[1], cell[2])
+                            - this->at(cell[0] - 1, cell[1], cell[2]))/(2*dx);
         } else if (cell[0] == 0) {
-                normalX = (-1*this->at(cell[0] + 2, cell[1], cell[2]) +4*this->at(cell[0] + 1, cell[1], cell[2]) -3*this->at(cell[0], cell[1], cell[2]))/(2*dx);
+                normalX = (-1*this->at(cell[0] + 2, cell[1], cell[2])
+                           +4*this->at(cell[0] + 1, cell[1], cell[2])
+                           -3*this->at(cell[0], cell[1], cell[2]))/(2*dx);
         } else {
-                normalX = (this->at(cell[0] - 2, cell[1], cell[2]) -4*this->at(cell[0] - 1, cell[1], cell[2]) +3*this->at(cell[0], cell[1], cell[2]))/(2*dx);
+                normalX = (   this->at(cell[0] - 2, cell[1], cell[2])
+                           -4*this->at(cell[0] - 1, cell[1], cell[2])
+                           +3*this->at(cell[0], cell[1], cell[2]))/(2*dx);
         }
 
-        normalY = (-1*this->at(cell[0], cell[1] + 2, cell[2]) +4*this->at(cell[0], cell[1] + 1, cell[2]) -3*this->at(cell[0], cell[1], cell[2]))/(2*dy);
+        if (cell[1] > 0 && cell[1] < numY - 1) {
+            normalY =   ( this->at(cell[0], cell[1] + 1, cell[2])
+                        - this->at(cell[0], cell[1] - 1, cell[2])) / (2 * dy);
+        } else if (cell[1] == 0) {
+            normalY = (-1*this->at(cell[0], cell[1] + 2, cell[2])
+                       +4*this->at(cell[0], cell[1] + 1, cell[2])
+                       -3*this->at(cell[0], cell[1], cell[2])) / (2 * dy);
+        } else {
+            normalY =    (this->at(cell[0], cell[1] - 2, cell[2])
+                       -4*this->at(cell[0], cell[1] - 1, cell[2])
+                       +3*this->at(cell[0], cell[1], cell[2])) / (2 * dy);
+        }
 
         if (numZ > 1) {
             if (cell[2] > 0 && cell[2] < numZ - 1) {
-                    normalZ = (this->at(cell[0], cell[1], cell[2] + 1) - this->at(cell[0], cell[1], cell[2] - 1))/(2*dz);
+                    normalZ =   (this->at(cell[0], cell[1], cell[2] + 1)
+                               - this->at(cell[0], cell[1], cell[2] - 1))/(2*dz);
             } else if (cell[2] == 0) {
-                    normalZ = (-1*this->at(cell[0], cell[1], cell[2] + 2) +4*this->at(cell[0], cell[1], cell[2] + 1) -3*this->at(cell[0], cell[1], cell[2]))/(2*dz);
+                    normalZ =(-1*this->at(cell[0], cell[1], cell[2] + 2)
+                              +4*this->at(cell[0], cell[1], cell[2] + 1)
+                              -3*this->at(cell[0], cell[1], cell[2]))/(2*dz);
             } else {
-                    normalZ = (this->at(cell[0], cell[1], cell[2] - 2) -4*this->at(cell[0], cell[1], cell[2] - 1) +3*this->at(cell[0], cell[1], cell[2]))/(2*dz);
+                    normalZ =   (this->at(cell[0], cell[1], cell[2] - 2)
+                              -4*this->at(cell[0], cell[1], cell[2] - 1)
+                              +3*this->at(cell[0], cell[1], cell[2]))/(2*dz);
             }
         }
     }
@@ -1134,12 +1157,15 @@ double LevelSet::getCurvatureInterpolated(int timestep) const {
  * @param timestep The index of the timestep
  * @param total_timesteps The total number of timesteps
  * @param total_writesteps The total number of steps that will be written to disk
- * @param xmfFile A pointer to the XMF file.
+ * @param mainXmfFile A pointer to the XMF file.
  */
-void LevelSet::writeToFile(double dt, int timestep, int total_timesteps, int total_writesteps, std::ofstream *xmfFile, std::ofstream *tauXmfFile) {
+void
+LevelSet::writeToFile(double dt, int timestep, int total_timesteps, int total_writesteps, std::ofstream *mainXmfFile,
+                      std::ofstream *tauXmfFile) {
     int Npoints = numX*numY*numZ;
     double *pointCoordinates = new double[Npoints*3];
     double *pointPhiValues = new double[Npoints];
+    double *pointRValues = new double[Npoints];
 
     int index = 0;
 
@@ -1153,12 +1179,14 @@ void LevelSet::writeToFile(double dt, int timestep, int total_timesteps, int tot
                     index += 3;
                 }
                 pointPhiValues[i + j*numX + k*numX*numY] = this->at(i, j, k);
+                Vector normalVector = getNormalVector({i, j, k}, false, true, false);
+                pointRValues[i + j*numX + k*numX*numY] = (field->gradAt(dt*timestep, i*dx, j*dy, k*dz) * normalVector) * normalVector;
             }
         }
 
     // If it is the first iteration, create coordinate file
     if (timestep == 0) {
-        *xmfFile    << "<?xml version=\"1.0\" ?>\n"
+        *mainXmfFile   << "<?xml version=\"1.0\" ?>\n"
                        "<!DOCTYPE Xdmf SYSTEM \"Xdmf.dtd\" [\n"
                        "<!ENTITY Npoints \"" + std::to_string(Npoints) + "\">\n"
                        "<!ENTITY numX \"" + std::to_string(numX) + "\">\n"
@@ -1178,14 +1206,14 @@ void LevelSet::writeToFile(double dt, int timestep, int total_timesteps, int tot
                          "<Time TimeType=\"List\">\n"
                          "<DataItem Format=\"XML\" NumberType=\"Float\" Dimensions=\""+ std::to_string(total_writesteps) + "\">\n";
 
-        *xmfFile << temp;
+        *mainXmfFile << temp;
         *tauXmfFile << temp;
 
         for (int i = 0; i < total_writesteps; i++) {
-            *xmfFile << std::to_string(i*((double)total_timesteps/total_writesteps)*dt) << " ";
+            *mainXmfFile << std::to_string(i*((double)total_timesteps/total_writesteps)*dt) << " ";
             *tauXmfFile << std::to_string(i*((double)total_timesteps/total_writesteps)*dt) << " ";
         }
-        *xmfFile <<"</DataItem>\n" << "</Time>\n";
+        *mainXmfFile <<"</DataItem>\n" << "</Time>\n";
         *tauXmfFile <<"</DataItem>\n" << "</Time>\n";
 
         //Write field coordinates into binary file
@@ -1202,9 +1230,15 @@ void LevelSet::writeToFile(double dt, int timestep, int total_timesteps, int tot
 	fwrite(pointPhiValues, sizeof(double), Npoints, PhiFile);
 	fclose(PhiFile);
 
+    FILE *rFile;
+    std::string filenameRFile = outputDirectory + "data/r_t="+ std::to_string(timestep*dt)+".bin";
+    rFile = fopen(filenameRFile.data(), "wb");
+    fwrite(pointRValues, sizeof(double), Npoints, rFile);
+    fclose(rFile);
+
     // TODO: Testen ob wirklich Reihenfolge numX,numY,numZ in NumberOfElements und Dimensions bei Topology und DataItem vertauscht ist
 
-     *xmfFile << "<Grid GridType=\"Uniform\">\n"
+     *mainXmfFile << "<Grid GridType=\"Uniform\">\n"
              << "<Topology TopologyType=\"3DCoRectMesh\" NumberOfElements=\"&numZ; &numY; &numX;\"/>\n"
              << "<Geometry GeometryType=\"ORIGIN_DXDYDZ\"> \n"
              << "<DataItem Format=\"XML\" NumberType=\"Float\" Dimensions=\"3\">"
@@ -1218,17 +1252,22 @@ void LevelSet::writeToFile(double dt, int timestep, int total_timesteps, int tot
              << "<DataItem Format=\"Binary\" NumberType=\"Float\" Precision=\"8\"  Endian=\"Little\" Dimensions=\"&numZ; &numY; &numX;\">\n"
 			 << "Phi_t=" + std::to_string(timestep*dt) +".bin\n"
 			 << "</DataItem></Attribute>\n"
+             << "<Attribute Name =\"sourceTermField\" AttributeType=\"Scalar\" Center=\"Node\">\n"
+             << "<DataItem Format=\"Binary\" NumberType=\"Float\" Precision=\"8\"  Endian=\"Little\" Dimensions=\"&numZ; &numY; &numX;\">\n"
+             << "r_t=" + std::to_string(timestep*dt) +".bin\n"
+             << "</DataItem></Attribute>\n"
              << "<Attribute Name =\"VelocityField\" AttributeType=\"Vector\" Center=\"Node\">\n"
              << "<DataItem Format=\"Binary\" NumberType=\"Float\" Precision=\"8\" Endian=\"Little\" Dimensions=\"&numZ; &numY; &numX; 3\">\n";
 
+
     if (field->getName() == "timeDependentNavierField") {
-		*xmfFile << "Vel_t=" + std::to_string(timestep*dt) +".bin\n";
+		*mainXmfFile << "Vel_t=" + std::to_string(timestep * dt) + ".bin\n";
     }
     else {
-		*xmfFile << "Vel_t=" + std::to_string(0*dt) +".bin\n";
+		*mainXmfFile << "Vel_t=" + std::to_string(0 * dt) + ".bin\n";
     }
 
-        *xmfFile << "</DataItem></Attribute>\n"
+        *mainXmfFile << "</DataItem></Attribute>\n"
                  << "</Grid>\n";
 
     *tauXmfFile  << "<Grid>\n"
@@ -1245,6 +1284,7 @@ void LevelSet::writeToFile(double dt, int timestep, int total_timesteps, int tot
 
     delete[] pointCoordinates;
     delete[] pointPhiValues;
+    delete[] pointRValues;
 
     //Write velocity field
     if (field->getName() == "timeDependentNavierField")
