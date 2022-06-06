@@ -1,8 +1,7 @@
 set datafile separator ","
 set term pdf
-set output "results.pdf"
 set key above
-set xlabel "time"
+
 
 
 set style line 1 \
@@ -10,25 +9,36 @@ set style line 1 \
     linetype 1 linewidth 1 \
     pointtype 2 pointsize 0.5
 
+set output "results_gradient_norm.pdf"
+
+do for [source in "0 1"]{
+
+set xlabel "time"
+set ylabel "|grad phi|"
+
+plot for [mesh in "50 100 200"] source.'/'.mesh.'/gradientNormAtContactPoint.csv' using ($1):($2) title source.'/'.mesh
+
+}
+
+    
+####################
+
 set logscale y
 set logscale x
+
+set output "results.pdf"
 
 do for [source in "0 1"]{
 
 do for [quantity in "position contactAngle curvature"]{
 
+set xlabel "time"
 set ylabel quantity
 
 plot for [mesh in "50 100 200"] source.'/'.mesh.'/'.quantity.'.csv' using ($1):(abs($2-$3)) title source.'/'.mesh
 
-#file = source.'/'.mesh.'/'.quantity.'.csv'
-
-#plot file using ($1):(abs($2-$3)) title quantity.'/'.source.'/'.mesh
-
-
 }
 }
 
-#list="0/25/contactAngle.csv 0/50/contactAngle.csv 1/25/contactAngle.csv 1/50/contactAngle.csv"
-#plot for [file in list] file using ($1):(abs($2-$3))
+
 
