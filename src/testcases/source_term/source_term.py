@@ -3,6 +3,7 @@
 # have to be implemented.
 
 import copy
+import math
 
 def build_subcase(source_active, mesh, setup):
 	subcase = {}
@@ -22,8 +23,20 @@ def build_subcase(source_active, mesh, setup):
 	subcase["solver_data"]["numX"] = mesh*2
 	subcase["solver_data"]["lenZ"] = 1.0/mesh
 	
+	subcase["solver_data"]["geometry"] = """
+centerX=0.5
+centerY=-0.15
+centerZ=0.0
+radius=0.3
+
+expcpX=0.7598076211353315
+expcpY=0.0
+expcpZ=0.0
+expAngle=60.0"""
+	
 	## define the field
-	if(setup=="A"):
+	if(setup=="periodic"):
+	
 		subcase["solver_data"]["time"]=1.0
 	
 		subcase["solver_data"]["field"] = """
@@ -33,19 +46,7 @@ c2=-2
 tau=0.4
 field=timeDependentNavierField"""
 
-		subcase["solver_data"]["geometry"] = """
-centerX=0.5
-centerY=0.0
-centerZ=0.0
-radius=0.3
-
-expcpX=0.8
-expcpY=0.0
-expcpZ=0.0
-expAngle=90.0"""
-
-
-	elif(setup=="B"):
+	elif(setup=="linear"):
 		subcase["solver_data"]["time"]=1.0
 		subcase["solver_data"]["field"] = """
 v0=+0.8
@@ -53,16 +54,14 @@ c1=-1.0
 c2=0
 field=navierField"""
 
-		subcase["solver_data"]["geometry"] = """
-centerX=0.5
-centerY=0.0
-centerZ=0.0
-radius=0.3
+	elif(setup=="shear"):
+		subcase["solver_data"]["time"]=1.0
+		subcase["solver_data"]["field"] = """
+v0=-0.2
+c1=0.1
+c2=-2
+field=shearField"""
 
-expcpX=0.8
-expcpY=0.0
-expcpZ=0.0
-expAngle=90.0"""
 	
 	return subcase
 	
@@ -81,7 +80,7 @@ def read_subcases():
 	####### Construct subcases via loops ########
 
 	## Arrays to loop over
-	setups=["A"]
+	setups=["periodic","linear","shear"]
         sources= [0,1]
         meshes = [50,100,200]
         ##

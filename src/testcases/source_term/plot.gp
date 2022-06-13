@@ -24,3 +24,8 @@ set ylabel "Curvature"
 
 plot "curvature.csv" using 1:2 title "LevelSet" with points pointsize 0.5,\
      "curvature.csv" using 1:3 title "Reference" with line
+     
+set output "results_gradient_norm.pdf"
+set ylabel "|nabla \phi|"
+
+plot "gradientNormAtContactPoint.csv" using 1:2 title "LevelSet" with points pointsize 0.5,\

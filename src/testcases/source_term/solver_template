@@ -12,7 +12,7 @@ writeField=true
 
 $field
 
-$geomtry
+$geometry
 
 trackedContactPoint=right
 applySourceTerm=$applySourceTerm
