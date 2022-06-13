@@ -102,10 +102,11 @@ public:
     std::vector<double> getSectionalCurvatureBReference() const;
 
     std::vector<double> getSectionalCurvatureCReference() const;
-
+    
     double getGradPhiNormAtContactPoint(int timestep);
 };
 
 Vector normalVector2D(double initAngle, std::string trackedCP);
+double bumpCutoff(double x);
 
 #endif

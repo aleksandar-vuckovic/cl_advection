@@ -1756,8 +1756,24 @@ void LevelSet::calculateNextTimestepSourceTerm(double dt, int timestep) {
                     else {
                       reconstructedGradient[1] = (tempPhi.at(i,j+1,k)-tempPhi.at(i,j-1,k))/(2*dy);
                     }
-
-                    reconstructedGradient[2] = 0;
+                    
+                    if(numZ > 2){
+                    
+                    if(k==0){
+                      reconstructedGradient[2] = (tempPhi.at(i,j,k+1)-tempPhi.at(i,j,k))/(dz);
+                    }
+                    else if(k==numZ-1){
+                      reconstructedGradient[2] = (tempPhi.at(i,j,k)-tempPhi.at(i,j,k-1))/(dz);
+                    }
+                    else {
+                      reconstructedGradient[2] = (tempPhi.at(i,j,k+1)-tempPhi.at(i,j,k-1))/(2*dz);
+                    }
+                    
+                    }
+                    else{
+                      // 2D case
+                      reconstructedGradient[2] = 0;
+                    }
 
                     // Regularize this term to go to zero if reconstructedGradient->0
                     // in this case the source term will vanish
@@ -1767,11 +1783,13 @@ void LevelSet::calculateNextTimestepSourceTerm(double dt, int timestep) {
                       reconstructedNormal = reconstructedGradient/abs(reconstructedGradient);
                     }
                     else{
-                      reconstructedNormal = reconstructedGradient;
+                      reconstructedNormal = reconstructedGradient; // use the gradient if |reconstructedGradient| is too small
                     }
 
                     // Compute source term
                     source = (field->gradAt(timestep*dt, (i + 0.5)*dx, (j + 0.5)*dy, (k + 0.5)*dz)*reconstructedNormal)*reconstructedNormal*(-1.0);
+                    // Cut-off the source term, use a cut-off length like 4*dx
+                    //source = source*bumpCutoff(this->at(i, j, k)/(4*dx));
 
                     // explicit update
                     this->at(i, j, k) = this->at(i, j, k)*(1.0-source*dt) - dt / (dx * dy * dz) * flux;
@@ -1784,6 +1802,21 @@ void LevelSet::calculateNextTimestepSourceTerm(double dt, int timestep) {
         }
 
     }
+}
+
+// numerical cutt-off function if |x| >= 1
+double bumpCutoff(double x){
+
+  double var = 1-x*x;
+
+  if(abs(var)>1E-8){
+   return exp(-1/var);
+  }
+  else{
+   // return 0 if x is close to 1
+   return 0;
+  }
+
 }
 
 double LevelSet::getGradPhiNormAtContactPoint(int timestep) {
