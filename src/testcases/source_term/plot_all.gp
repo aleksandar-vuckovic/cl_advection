@@ -56,7 +56,7 @@ do for [source in "0 1"]{
 
 set xlabel "time"
 
-set ylabel quantity." error"
+set ylabel quantity
 
 plot for [mesh in "50 100 200"] source.'/'.mesh.'/'.quantity.'.csv' using ($1):(abs($2)) title source.'/'.mesh with line
 
