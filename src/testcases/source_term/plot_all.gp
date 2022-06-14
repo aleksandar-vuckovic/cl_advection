@@ -4,10 +4,37 @@ set key above
 
 
 
-set style line 1 \
-    linecolor rgb '#dd181f' \
-    linetype 1 linewidth 1 \
+set style line 128 \
+    linecolor rgb '#0060ad' \
+    linetype 1 linewidth 1.5 \
     pointtype 2 pointsize 0.5
+
+set style line 256 \
+    linecolor rgb '#dd181f' \
+    linetype 1 linewidth 1.5 \
+    pointtype 5 pointsize 0.5
+
+set style line 512 \
+    linecolor rgb '#29c524' \
+    linetype 1 linewidth 1.5 \
+    pointtype 7 pointsize 0.5
+
+set style line 1024 \
+    linecolor rgb '#7D72F9' \
+    linetype 1 linewidth 1.5 \
+    pointtype 3 pointsize 0.5
+
+set style line 2048 \
+    linecolor 'orange' \
+    linetype 1 linewidth 1.5 \
+    pointtype 9 pointsize 0.5
+
+set style line 1 \
+    linecolor rgb '#000000' \
+    linetype 1 linewidth 1.5 \
+    pointtype 4 pointsize 0.5
+
+set colorsequence default # default, podo
 
 set output "results_gradient_norm.pdf"
 
@@ -16,16 +43,12 @@ do for [source in "0 1"]{
 set xlabel "time"
 set ylabel "|grad phi|"
 
-plot for [mesh in "50 100 200"] source.'/'.mesh.'/gradientNormAtContactPoint.csv' using ($1):($2) title source.'/'.mesh
+plot for [mesh in "50 100 200"] source.'/'.mesh.'/gradientNormAtContactPoint.csv' using ($1):($2) title source.'/'.mesh with points pointsize 0.5
 
 }
+############################
 
-    
-####################
-
-set logscale y
-set logscale x
-
+   
 set output "results.pdf"
 
 do for [source in "0 1"]{
@@ -33,9 +56,31 @@ do for [source in "0 1"]{
 do for [quantity in "position contactAngle curvature"]{
 
 set xlabel "time"
-set ylabel quantity
 
-plot for [mesh in "50 100 200"] source.'/'.mesh.'/'.quantity.'.csv' using ($1):(abs($2-$3)) title source.'/'.mesh
+set ylabel quantity." error"
+
+plot for [mesh in "50 100 200"] source.'/'.mesh.'/'.quantity.'.csv' using ($1):(abs($2)) title source.'/'.mesh with line
+
+}
+}
+    
+    
+####################
+
+set logscale y
+set logscale x
+
+set output "errors.pdf"
+
+do for [source in "0 1"]{
+
+do for [quantity in "position contactAngle curvature"]{
+
+set xlabel "time"
+
+set ylabel quantity." error"
+
+plot for [mesh in "50 100 200"] source.'/'.mesh.'/'.quantity.'.csv' using ($1):(abs($2-$3)) title source.'/'.mesh with line
 
 }
 }
