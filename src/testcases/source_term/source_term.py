@@ -58,8 +58,6 @@ field=navierField"""
 		subcase["solver_data"]["time"]=1.0
 		subcase["solver_data"]["field"] = """
 v0=-0.2
-c1=0.1
-c2=-2
 field=shearField"""
 
 	

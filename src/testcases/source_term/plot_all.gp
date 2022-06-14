@@ -38,22 +38,21 @@ set colorsequence default # default, podo
 
 set output "results_gradient_norm.pdf"
 
-do for [source in "0 1"]{
-
 set xlabel "time"
 set ylabel "|grad phi|"
 
-plot for [mesh in "50 100 200"] source.'/'.mesh.'/gradientNormAtContactPoint.csv' using ($1):($2) title source.'/'.mesh with points pointsize 0.5
+plot for [mesh in "50 100 200"] '0/'.mesh.'/gradientNormAtContactPoint.csv' using ($1):($2) title '0/'.mesh with points pointsize 0.3,\
+     for [mesh in "50 100 200"] '1/'.mesh.'/gradientNormAtContactPoint.csv' using ($1):($2) title '1/'.mesh with points pointsize 0.3 
 
-}
+
 ############################
 
    
 set output "results.pdf"
 
-do for [source in "0 1"]{
-
 do for [quantity in "position contactAngle curvature"]{
+
+do for [source in "0 1"]{
 
 set xlabel "time"
 
@@ -63,6 +62,21 @@ plot for [mesh in "50 100 200"] source.'/'.mesh.'/'.quantity.'.csv' using ($1):(
 
 }
 }
+############################
+
+do for [quantity in "position contactAngle curvature gradientNormAtContactPoint"]{
+
+set output 'comparison_'.quantity.'.pdf'
+
+set xlabel "time"
+
+set ylabel quantity
+
+plot '0/200/'.quantity.'.csv' using ($1):(abs($2)) title "Source off" with line,\
+     '1/200/'.quantity.'.csv' using ($1):(abs($2)) title "Source on" with line
+
+}
+
     
     
 ####################
@@ -70,11 +84,11 @@ plot for [mesh in "50 100 200"] source.'/'.mesh.'/'.quantity.'.csv' using ($1):(
 set logscale y
 set logscale x
 
-set output "errors.pdf"
+do for [quantity in "position contactAngle curvature"]{
+
+set output 'error_'.quantity.'.pdf'
 
 do for [source in "0 1"]{
-
-do for [quantity in "position contactAngle curvature"]{
 
 set xlabel "time"
 
