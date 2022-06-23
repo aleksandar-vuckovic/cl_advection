@@ -72,8 +72,8 @@ set xlabel "time"
 
 set ylabel quantity
 
-plot '0/200/'.quantity.'.csv' using ($1):(abs($2)) title "Source off" with line,\
-     '1/200/'.quantity.'.csv' using ($1):(abs($2)) title "Source on" with line
+plot '0/200/'.quantity.'.csv' using ($1):(abs($2)) title "Source off" with line linestyle 128,\
+     '1/200/'.quantity.'.csv' using ($1):(abs($2)) every 20 title "Source on" with points pointsize 0.4
 
 }
 
@@ -81,14 +81,15 @@ plot '0/200/'.quantity.'.csv' using ($1):(abs($2)) title "Source off" with line,
     
 ####################
 
-set logscale y
+set logscale y 10
+set format y "10^{%L}"
 set logscale x
 
 do for [quantity in "position contactAngle curvature"]{
 
-set output 'error_'.quantity.'.pdf'
-
 do for [source in "0 1"]{
+
+set output 'error_'.quantity.'_'.source.'.pdf'
 
 set xlabel "time"
 
