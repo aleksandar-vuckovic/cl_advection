@@ -317,7 +317,7 @@ Vector LevelSet::getNormalVector(array<int, 3> cell, bool useInterpolation /* = 
 
     //TODO Mathis: What if grad phi is numerically zero?
     if(abs(normal)<1E-15){
-         //exit(0);
+        throw std::runtime_error("Exit_Normal_Vector_0");
     }
 
     if (normalizeVector)
@@ -1177,7 +1177,15 @@ LevelSet::writeToFile(double dt, int timestep, int total_timesteps, int total_wr
                     index += 3;
                 }
                 pointPhiValues[i + j*numX + k*numX*numY] = this->at(i, j, k);
-                Vector normalVector = getNormalVector({i, j, k}, false, true, false);
+                Vector normalVector;
+                try {
+                    normalVector = getNormalVector({i, j, k}, false, true, false);
+                } catch (std::runtime_error& e) {
+                    std::string str = e.what();
+                    if (str.compare("Exit_Normal_Vector_0")) {
+                        normalVector = {0, 0, 0};
+                    }
+                }
                 pointRValues[i + j*numX + k*numX*numY] = (field->gradAt(dt*timestep, i*dx, j*dy, k*dz) * normalVector) * normalVector;
             }
         }

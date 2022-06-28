@@ -1,13 +1,13 @@
 numX=100
 numY=100
 numZ=100
-lenX=1.0
-lenY=1.0
-lenZ=1.0
+lenX=1
+lenY=1
+lenZ=1
 
-time=4.0
+time=1.0
 CFL=0.4
-writestepsFraction=0.1
+writestepsFraction=.2
 writeField=true
 
 v0=0.1
@@ -29,3 +29,6 @@ expcpY=0.0
 expcpZ=0.5
 
 threads=4
+
+useLogisticMethod=true
+logisticParameter=1
