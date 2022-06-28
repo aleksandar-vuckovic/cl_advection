@@ -60,6 +60,7 @@ int main(int argc, char **argv) {
     
     bool writeField = false, calculateCurvature = true;
     bool applySourceTerm = false;
+    bool calculateEvaluationQuantities = true;
     std::string trackedContactPoint = "left", fieldName = "", outputDirectory = "";
     InitShape initShape = InitShape::sphere;
     VelocityField *field = nullptr;
@@ -217,6 +218,8 @@ int main(int argc, char **argv) {
                         std::stringstream(value) >> std::boolalpha >> calculateCurvature;
                     else if (varName == "applySourceTerm")
                         std::stringstream(value) >> std::boolalpha >> applySourceTerm;
+                    else if (varName == "calculateEvaluationQuantities")
+                        std::stringstream(value) >> std::boolalpha >> calculateEvaluationQuantities;
                     else if (varName == "threads")
                         threads = std::stoi(value);
                     else
@@ -415,10 +418,25 @@ int main(int argc, char **argv) {
 
     // main loop
     for (int i = 0; i < timesteps; ++i) {
+        if (!calculateEvaluationQuantities) {
+            std::cout << "Calculation of evaluation quantities has been disabled.\n";
+        }
         std::cout << "Step " << i << std::endl;
         //Write field to file
         if (writeField && i % (int)ceil((double)timesteps/writesteps) == 0) {
-            Phi.writeToFile(dt, i, timesteps, writesteps, &MainXmfFile, &tauXmfFile);
+            try {
+                Phi.writeToFile(dt, i, timesteps, writesteps, &MainXmfFile, &tauXmfFile);
+            } catch (std::runtime_error& e) {
+                std::string str = e.what();
+                if (str.compare("Exit_Normal_Vector_0") == 0) {
+                    std::cout << "WARNING: Normal vector with norm 0 encountered. Exiting.\n";
+                    positionFile.flush();
+                    angleFile.flush();
+                    if (calculateCurvature)
+                        curvatureFile.flush();
+                    break;
+                }
+            }
         }
 
 	    // Calculate the reference position of the contact point
@@ -441,7 +459,20 @@ int main(int argc, char **argv) {
         }
 
         // Evaluate the Contact Angle numerically based on Phi
-        angleActual[i] = Phi.getContactAngleInterpolated(i);
+        if (calculateEvaluationQuantities)
+            try {
+                angleActual[i] = Phi.getContactAngleInterpolated(i);
+            } catch (std::runtime_error& e) {
+                std::string str = e.what();
+                if (str.compare("Exit_Normal_Vector_0") == 0) {
+                    std::cout << "WARNING: Normal vector with norm 0 encountered. Exiting.\n";
+                    positionFile.flush();
+                    angleFile.flush();
+                    if (calculateCurvature)
+                        curvatureFile.flush();
+                    break;
+                }
+            }
 
         // Output to command line and positionFile
         std::cout << "Time: " << std::to_string(i*dt) << "\n";
@@ -454,15 +485,16 @@ int main(int argc, char **argv) {
         }
         std::cout << "Position " << "x, z  = " << newCPReference[0] << ", " << newCPReference[2] << "\n";
 
-        std::cout << "Actual: " << std::to_string(angleActual[i]/(2*M_PI)*360) + "\n";
-		angleFile << std::to_string(i*dt) << ", "
-				  << angleActual[i]/(2*M_PI)*360 << ", "
-				  << angleTheoretical[i] << "\n";
-		std::cout << "Reference: " << angleTheoretical[i] << "\n"; 
-                
-        gradientNormAtContactPoint << i * dt << ", " << Phi.getGradPhiNormAtContactPoint(i) << "\n";
+        if (calculateEvaluationQuantities) {
+            std::cout << "Actual: " << std::to_string(angleActual[i] / (2 * M_PI) * 360) + "\n";
+            angleFile << std::to_string(i * dt) << ", "
+                      << angleActual[i] / (2 * M_PI) * 360 << ", "
+                      << angleTheoretical[i] << "\n";
+            gradientNormAtContactPoint << i * dt << ", " << Phi.getGradPhiNormAtContactPoint(i) << "\n";
+            std::cout << "Reference angle: " << angleTheoretical[i] << "\n";
+        }
 
-        if (calculateCurvature) {
+        if (calculateEvaluationQuantities && calculateCurvature) {
 
             curvatureActualDivergence[i] = Phi.getCurvatureInterpolated(i);
             sectionalCurvatureA_Actual[i] = Phi.getSectionalCurvatureInterpolated(i, tangentAReference[i]);
@@ -490,8 +522,20 @@ int main(int argc, char **argv) {
         }
         
         // Calculate numerical flux through all faces of each cell and update Phi
-        if(applySourceTerm){
-            Phi.calculateNextTimestepSourceTerm(dt, i); // develop source term approach
+        if (applySourceTerm) {
+            try {
+                Phi.calculateNextTimestepSourceTerm(dt, i); // develop source term approach
+            } catch (std::runtime_error& e) {
+                std::string str = e.what();
+                if (str.compare("Exit_Normal_Vector_0") == 0) {
+                    std::cout << "WARNING: Normal vector with norm 0 encountered. Exiting.\n";
+                    positionFile.flush();
+                    angleFile.flush();
+                    if (calculateCurvature)
+                        curvatureFile.flush();
+                    break;
+                }
+            }
         }
         else{
             Phi.calculateNextTimestep(dt, i); // standard implementation without source term
