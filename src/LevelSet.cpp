@@ -1752,7 +1752,8 @@ void LevelSet::calculateNextTimestepSourceTerm(double dt, int timestep) {
                       reconstructedGradient[0] = (tempPhi.at(i,j,k)-tempPhi.at(i-1,j,k))/(dx);
                     }
                     else {
-                      reconstructedGradient[0] = (tempPhi.at(i+1,j,k)-tempPhi.at(i-1,j,k))/(2*dx);
+                      reconstructedGradient[0] = (tempPhi.at(i+1,j,k)-tempPhi.at(i,j,k))/dx; // use first-order also away from the boundary for consistency   
+                      //reconstructedGradient[0] = (tempPhi.at(i+1,j,k)-tempPhi.at(i-1,j,k))/(2*dx);
                     }
 
                     if(j==0){
@@ -1762,7 +1763,8 @@ void LevelSet::calculateNextTimestepSourceTerm(double dt, int timestep) {
                       reconstructedGradient[1] = (tempPhi.at(i,j,k)-tempPhi.at(i,j-1,k))/(dy);
                     }
                     else {
-                      reconstructedGradient[1] = (tempPhi.at(i,j+1,k)-tempPhi.at(i,j-1,k))/(2*dy);
+                      reconstructedGradient[1] = (tempPhi.at(i,j+1,k)-tempPhi.at(i,j,k))/(dy); // use first-order also away from the boundary for consistency                  
+                      //reconstructedGradient[1] = (tempPhi.at(i,j+1,k)-tempPhi.at(i,j-1,k))/(2*dy);
                     }
 
                     if(numZ > 2){
@@ -1774,7 +1776,8 @@ void LevelSet::calculateNextTimestepSourceTerm(double dt, int timestep) {
                       reconstructedGradient[2] = (tempPhi.at(i,j,k)-tempPhi.at(i,j,k-1))/(dz);
                     }
                     else {
-                      reconstructedGradient[2] = (tempPhi.at(i,j,k+1)-tempPhi.at(i,j,k-1))/(2*dz);
+                      reconstructedGradient[2] = (tempPhi.at(i,j,k+1)-tempPhi.at(i,j,k))/dz; // use first-order also away from the boundary for consistency
+                      //reconstructedGradient[2] = (tempPhi.at(i,j,k+1)-tempPhi.at(i,j,k-1))/(2*dz); 
                     }
 
                     }
@@ -1783,16 +1786,10 @@ void LevelSet::calculateNextTimestepSourceTerm(double dt, int timestep) {
                       reconstructedGradient[2] = 0;
                     }
 
-                    // Regularize this term to go to zero if reconstructedGradient->0
-                    // in this case the source term will vanish
-                    // TODO: Implement a smoother version of this idea
-
-                    if(abs(reconstructedGradient)>1E-12){
-                      reconstructedNormal = reconstructedGradient/abs(reconstructedGradient);
-                    }
-                    else{
-                      reconstructedNormal = reconstructedGradient; // use the gradient if |reconstructedGradient| is too small
-                    }
+                                
+                    // Normalize the Normal vector (including regularization)
+                    reconstructedNormal = reconstructedGradient/(abs(reconstructedGradient)+1E-12);
+                    //////////
 
                     // Compute source term
                     source = (field->gradAt(timestep*dt, (i + 0.5)*dx, (j + 0.5)*dy, (k + 0.5)*dz)*reconstructedNormal)*reconstructedNormal*(-1.0);

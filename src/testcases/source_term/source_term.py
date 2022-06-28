@@ -18,12 +18,9 @@ def build_subcase(source_active, mesh, setup):
 	  subcase["solver_data"]["applySourceTerm"] = "true"
 	else:
 	  subcase["solver_data"]["applySourceTerm"] = "false"
-	
-	subcase["solver_data"]["numY"] = mesh
-	subcase["solver_data"]["numX"] = mesh*2
-	subcase["solver_data"]["lenZ"] = 1.0/mesh
-	
-	subcase["solver_data"]["geometry"] = """
+	  
+	  
+	geometry1 =  """
 centerX=0.5
 centerY=-0.15
 centerZ=0.0
@@ -32,12 +29,29 @@ radius=0.3
 expcpX=0.7598076211353315
 expcpY=0.0
 expcpZ=0.0
-expAngle=60.0"""
+expAngle=60.0""" 
+
+	geometry2 =  """
+centerX=0.5
+centerY=0.15
+centerZ=0.0
+radius=0.3
+
+expcpX=0.7598076211353315
+expcpY=0.0
+expcpZ=0.0
+expAngle=120.0""" 
 	
+	subcase["solver_data"]["numY"] = mesh
+	subcase["solver_data"]["numX"] = mesh*2
+	subcase["solver_data"]["lenZ"] = 1.0/mesh
+	
+
 	## define the field
 	if(setup=="periodic"):
 	
 		subcase["solver_data"]["time"]=1.0
+	 	subcase["solver_data"]["geometry"] = geometry1
 	
 		subcase["solver_data"]["field"] = """
 v0=-0.2
@@ -48,6 +62,7 @@ field=timeDependentNavierField"""
 
 	elif(setup=="linear"):
 		subcase["solver_data"]["time"]=1.0
+	 	subcase["solver_data"]["geometry"] = geometry1
 		subcase["solver_data"]["field"] = """
 v0=+0.8
 c1=-1.0
@@ -56,12 +71,21 @@ field=navierField"""
 
 	elif(setup=="shear"):
 		subcase["solver_data"]["time"]=1.0
+	 	subcase["solver_data"]["geometry"] = geometry1
 		subcase["solver_data"]["field"] = """
 v0=-0.2
 field=shearField"""
 
 	
-	return subcase
+	elif(setup=="largeAngle"):
+		subcase["solver_data"]["time"]=1.0
+	 	subcase["solver_data"]["geometry"] = geometry2
+		subcase["solver_data"]["field"] = """
+v0=-0.2
+field=shearField"""
+
+	
+	return subcase	
 	
 
 def build_subcase_name(source_active, mesh,setup):
@@ -78,7 +102,7 @@ def read_subcases():
 	####### Construct subcases via loops ########
 
 	## Arrays to loop over
-	setups=["periodic","linear","shear"]
+	setups=["periodic","linear","shear","largeAngle"]
         sources= [0,1]
         meshes = [50,100,200]
         ##
