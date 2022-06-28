@@ -444,25 +444,27 @@ int main(int argc, char **argv) {
 
         // Get the the new contact point
         Vector newCPActual;
-        try {
-            newCPActual = Phi.getContactPoint(i);
-        } catch (std::runtime_error& e) {
-            std::string str = e.what();
-            if (str.compare("CP_Exit_Simulation_Plane") == 0) {
-                std::cout << "WARNING: Contact point left simulation plane during evolution time. Exiting.\n";
-                positionFile.flush();
-                angleFile.flush();
-                if (calculateCurvature)
-                    curvatureFile.flush();
-                break;
+        if (calculateEvaluationQuantities) {
+            try {
+                newCPActual = Phi.getContactPoint(i);
+            } catch (std::runtime_error &e) {
+                std::string str = e.what();
+                if (str.compare("CP_Exit_Simulation_Plane") == 0) {
+                    std::cout << "WARNING: Contact point left simulation plane during evolution time. Exiting.\n";
+                    positionFile.flush();
+                    angleFile.flush();
+                    if (calculateCurvature)
+                        curvatureFile.flush();
+                    break;
+                }
             }
         }
 
         // Evaluate the Contact Angle numerically based on Phi
-        if (calculateEvaluationQuantities)
+        if (calculateEvaluationQuantities) {
             try {
                 angleActual[i] = Phi.getContactAngleInterpolated(i);
-            } catch (std::runtime_error& e) {
+            } catch (std::runtime_error &e) {
                 std::string str = e.what();
                 if (str.compare("Exit_Normal_Vector_0") == 0) {
                     std::cout << "WARNING: Normal vector with norm 0 encountered. Exiting.\n";
@@ -473,19 +475,21 @@ int main(int argc, char **argv) {
                     break;
                 }
             }
+        }
 
         // Output to command line and positionFile
         std::cout << "Time: " << std::to_string(i*dt) << "\n";
 
-        if (numZ == 1) {
-            positionFile << i*dt << ", " << newCPActual[0] << ", " << newCPReference[0] << std::endl;
-        } else {
-            positionFile << i*dt << ", "
-                         << newCPReference[0] << ", " << newCPReference[1] << ", " << newCPReference[2] << std::endl;
-        }
-        std::cout << "Position " << "x, z  = " << newCPReference[0] << ", " << newCPReference[2] << "\n";
+
 
         if (calculateEvaluationQuantities) {
+            if (numZ == 1) {
+                positionFile << i*dt << ", " << newCPActual[0] << ", " << newCPReference[0] << std::endl;
+            } else {
+                positionFile << i*dt << ", "
+                             << newCPReference[0] << ", " << newCPReference[1] << ", " << newCPReference[2] << std::endl;
+            }
+            std::cout << "Position " << "x, z  = " << newCPReference[0] << ", " << newCPReference[2] << "\n";
             std::cout << "Actual: " << std::to_string(angleActual[i] / (2 * M_PI) * 360) + "\n";
             angleFile << std::to_string(i * dt) << ", "
                       << angleActual[i] / (2 * M_PI) * 360 << ", "
