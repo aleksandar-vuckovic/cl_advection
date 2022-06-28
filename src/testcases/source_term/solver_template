@@ -5,26 +5,14 @@ lenX=1.0
 lenY=0.5
 lenZ=$lenZ
 
-time=2.0
-CFL=0.5
+time=$time
+CFL=0.3
 writestepsFraction=0.05
 writeField=true
 
-v0=-0.2
-c1=0.1
-c2=-2
-tau=0.4
-field=timeDependentNavierField
+$field
 
-centerX=0.5
-centerY=0.0
-centerZ=0.0
-radius=0.3
-
-expcpX=0.8
-expcpY=0.0
-expcpZ=0.0
-expAngle=90.0
+$geometry
 
 trackedContactPoint=right
 applySourceTerm=$applySourceTerm

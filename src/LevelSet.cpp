@@ -229,8 +229,6 @@ array<int, 3> LevelSet::getContactPointIndices(int timestep) const {
 Vector LevelSet::getNormalVector(array<int, 3> cell, bool useInterpolation /* = true */, bool normalizeVector /* = true */, bool findCPin2D /* = true */) const {
     double normalX = 0, normalY = 0, normalZ = 0;
 
-    // TODO Mathis
-    //useInterpolation = false;
 
     if (numZ == 1 && findCPin2D && useInterpolation) {
 
@@ -1662,6 +1660,7 @@ void LevelSet::calculateNextTimestepSourceTerm(double dt, int timestep) {
     const Vector backNormal = {0, 0, -1};
 
     Vector reconstructedNormal = {0,0,0};
+    Vector reconstructedGradient = {0,0,0};
 
     // loop over all cells
 #pragma omp parallel shared(tempPhi)
@@ -1745,34 +1744,60 @@ void LevelSet::calculateNextTimestepSourceTerm(double dt, int timestep) {
                         }
                     }
 
-                    // Compute the local normal (2D)
+                    // Compute the local gradient (2D)
                     if(i==0){
-                      reconstructedNormal[0] = (tempPhi.at(i+1,j,k)-tempPhi.at(i,j,k))/(dx);
+                      reconstructedGradient[0] = (tempPhi.at(i+1,j,k)-tempPhi.at(i,j,k))/(dx);
                     }
                     else if(i==numX-1){
-                      reconstructedNormal[0] = (tempPhi.at(i,j,k)-tempPhi.at(i-1,j,k))/(dx);
+                      reconstructedGradient[0] = (tempPhi.at(i,j,k)-tempPhi.at(i-1,j,k))/(dx);
                     }
                     else {
-                      reconstructedNormal[0] = (tempPhi.at(i+1,j,k)-tempPhi.at(i-1,j,k))/(2*dx);
+                      reconstructedGradient[0] = (tempPhi.at(i+1,j,k)-tempPhi.at(i-1,j,k))/(2*dx);
                     }
 
                     if(j==0){
-                      reconstructedNormal[1] = (tempPhi.at(i,j+1,k)-tempPhi.at(i,j,k))/(dy);
+                      reconstructedGradient[1] = (tempPhi.at(i,j+1,k)-tempPhi.at(i,j,k))/(dy);
                     }
                     else if(j==numY-1){
-                      reconstructedNormal[1] = (tempPhi.at(i,j,k)-tempPhi.at(i,j-1,k))/(dy);
+                      reconstructedGradient[1] = (tempPhi.at(i,j,k)-tempPhi.at(i,j-1,k))/(dy);
                     }
                     else {
-                      reconstructedNormal[1] = (tempPhi.at(i,j+1,k)-tempPhi.at(i,j-1,k))/(2*dy);
+                      reconstructedGradient[1] = (tempPhi.at(i,j+1,k)-tempPhi.at(i,j-1,k))/(2*dy);
                     }
 
-                    reconstructedNormal[2] = 0;
+                    if(numZ > 2){
 
-                    reconstructedNormal = reconstructedNormal/abs(reconstructedNormal);
+                    if(k==0){
+                      reconstructedGradient[2] = (tempPhi.at(i,j,k+1)-tempPhi.at(i,j,k))/(dz);
+                    }
+                    else if(k==numZ-1){
+                      reconstructedGradient[2] = (tempPhi.at(i,j,k)-tempPhi.at(i,j,k-1))/(dz);
+                    }
+                    else {
+                      reconstructedGradient[2] = (tempPhi.at(i,j,k+1)-tempPhi.at(i,j,k-1))/(2*dz);
+                    }
 
+                    }
+                    else{
+                      // 2D case
+                      reconstructedGradient[2] = 0;
+                    }
+
+                    // Regularize this term to go to zero if reconstructedGradient->0
+                    // in this case the source term will vanish
+                    // TODO: Implement a smoother version of this idea
+
+                    if(abs(reconstructedGradient)>1E-12){
+                      reconstructedNormal = reconstructedGradient/abs(reconstructedGradient);
+                    }
+                    else{
+                      reconstructedNormal = reconstructedGradient; // use the gradient if |reconstructedGradient| is too small
+                    }
 
                     // Compute source term
                     source = (field->gradAt(timestep*dt, (i + 0.5)*dx, (j + 0.5)*dy, (k + 0.5)*dz)*reconstructedNormal)*reconstructedNormal*(-1.0);
+                    // Cut-off the source term, use a cut-off length like 4*dx
+                    //source = source*bumpCutoff(this->at(i, j, k)/(4*dx));
 
                     // explicit update
                     this->at(i, j, k) = this->at(i, j, k)*(1.0-source*dt) - dt / (dx * dy * dz) * flux;
@@ -1785,6 +1810,21 @@ void LevelSet::calculateNextTimestepSourceTerm(double dt, int timestep) {
         }
 
     }
+}
+
+// numerical cutt-off function if |x| >= 1
+double bumpCutoff(double x){
+
+  double var = 1-x*x;
+
+  if(abs(var)>1E-8){
+   return exp(-1/var);
+  }
+  else{
+   // return 0 if x is close to 1
+   return 0;
+  }
+
 }
 
 double LevelSet::getGradPhiNormAtContactPoint(int timestep) {

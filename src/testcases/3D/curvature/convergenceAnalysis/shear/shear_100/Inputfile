@@ -36,3 +36,6 @@ trackedContactPoint=left
 calculateCurvature=true
 
 threads=8
+
+useLogisticMethod=true
+logisticParameter=2

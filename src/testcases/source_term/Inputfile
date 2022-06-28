@@ -27,4 +27,5 @@ expcpZ=0.0
 expAngle=30.0
 
 trackedContactPoint=right
-applySourceTerm=true
+applySourceTerm=false
+calculateEvaluationQuantities=true
