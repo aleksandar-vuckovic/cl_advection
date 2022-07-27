@@ -1746,38 +1746,44 @@ void LevelSet::calculateNextTimestepSourceTerm(double dt, int timestep) {
 
                     // Compute the local gradient (2D)
                     if(i==0){
-                      reconstructedGradient[0] = (tempPhi.at(i+1,j,k)-tempPhi.at(i,j,k))/(dx);
+                      //reconstructedGradient[0] = (tempPhi.at(i+1,j,k)-tempPhi.at(i,j,k))/(dx); //1st order forward differencing
+                      reconstructedGradient[0] = (-tempPhi.at(i+2,j,k)+4.0*tempPhi.at(i+1,j,k)-3.0*tempPhi.at(i,j,k))/(2.0*dx); // 2nd order forward differencing
                     }
                     else if(i==numX-1){
-                      reconstructedGradient[0] = (tempPhi.at(i,j,k)-tempPhi.at(i-1,j,k))/(dx);
+                      //reconstructedGradient[0] = (tempPhi.at(i,j,k)-tempPhi.at(i-1,j,k))/(dx); //1st order backward differencing
+                      reconstructedGradient[0] = (3.0*tempPhi.at(i,j,k)-4.0*tempPhi.at(i-1,j,k)+tempPhi.at(i-2,j,k))/(2.0*dx); //2nd order backward differencing
                     }
                     else {
-                      reconstructedGradient[0] = (tempPhi.at(i+1,j,k)-tempPhi.at(i,j,k))/dx; // use first-order also away from the boundary for consistency   
-                      //reconstructedGradient[0] = (tempPhi.at(i+1,j,k)-tempPhi.at(i-1,j,k))/(2*dx);
+                      //reconstructedGradient[0] = (tempPhi.at(i+1,j,k)-tempPhi.at(i,j,k))/dx; // quickfix: use first-order also away from the boundary for consistency   
+                      reconstructedGradient[0] = (tempPhi.at(i+1,j,k)-tempPhi.at(i-1,j,k))/(2*dx); // 2nd order central
                     }
 
                     if(j==0){
-                      reconstructedGradient[1] = (tempPhi.at(i,j+1,k)-tempPhi.at(i,j,k))/(dy);
+                      //reconstructedGradient[1] = (tempPhi.at(i,j+1,k)-tempPhi.at(i,j,k))/(dy); //1st order forward differencing
+                      reconstructedGradient[1] = (-tempPhi.at(i,j+2,k)+4.0*tempPhi.at(i,j+1,k)-3.0*tempPhi.at(i,j,k))/(2.0*dy); // 2nd order forward differencing
                     }
                     else if(j==numY-1){
-                      reconstructedGradient[1] = (tempPhi.at(i,j,k)-tempPhi.at(i,j-1,k))/(dy);
+                      //reconstructedGradient[1] = (tempPhi.at(i,j,k)-tempPhi.at(i,j-1,k))/(dy); //1st order backward differencing
+                      reconstructedGradient[1] = (3.0*tempPhi.at(i,j,k)-4.0*tempPhi.at(i,j-1,k)+tempPhi.at(i,j-2,k))/(2.0*dy); //2nd order backward differencing
                     }
                     else {
-                      reconstructedGradient[1] = (tempPhi.at(i,j+1,k)-tempPhi.at(i,j,k))/(dy); // use first-order also away from the boundary for consistency                  
-                      //reconstructedGradient[1] = (tempPhi.at(i,j+1,k)-tempPhi.at(i,j-1,k))/(2*dy);
+                      //reconstructedGradient[1] = (tempPhi.at(i,j+1,k)-tempPhi.at(i,j,k))/(dy); // quickfix: use first-order also away from the boundary for consistency                  
+                      reconstructedGradient[1] = (tempPhi.at(i,j+1,k)-tempPhi.at(i,j-1,k))/(2*dy); // 2nd order central
                     }
 
                     if(numZ > 2){
 
                     if(k==0){
-                      reconstructedGradient[2] = (tempPhi.at(i,j,k+1)-tempPhi.at(i,j,k))/(dz);
+                      //reconstructedGradient[2] = (tempPhi.at(i,j,k+1)-tempPhi.at(i,j,k))/(dz); //1st order forward differencing
+                      reconstructedGradient[2] = (-tempPhi.at(i,j,k+2)+4.0*tempPhi.at(i,j,k+1)-3.0*tempPhi.at(i,j,k))/(2.0*dz); // 2nd order forward differencing
                     }
                     else if(k==numZ-1){
-                      reconstructedGradient[2] = (tempPhi.at(i,j,k)-tempPhi.at(i,j,k-1))/(dz);
+                      //reconstructedGradient[2] = (tempPhi.at(i,j,k)-tempPhi.at(i,j,k-1))/(dz); //1st order backward differencing
+                      reconstructedGradient[2] = (3.0*tempPhi.at(i,j,k)-4.0*tempPhi.at(i,j,k-1)+tempPhi.at(i,j,k-2))/(2.0*dz); //2nd order backward differencing
                     }
                     else {
-                      reconstructedGradient[2] = (tempPhi.at(i,j,k+1)-tempPhi.at(i,j,k))/dz; // use first-order also away from the boundary for consistency
-                      //reconstructedGradient[2] = (tempPhi.at(i,j,k+1)-tempPhi.at(i,j,k-1))/(2*dz); 
+                      //reconstructedGradient[2] = (tempPhi.at(i,j,k+1)-tempPhi.at(i,j,k))/dz; // quickfix: use first-order also away from the boundary for consistency
+                      reconstructedGradient[2] = (tempPhi.at(i,j,k+1)-tempPhi.at(i,j,k-1))/(2*dz);  // 2nd order central
                     }
 
                     }
@@ -1793,8 +1799,6 @@ void LevelSet::calculateNextTimestepSourceTerm(double dt, int timestep) {
 
                     // Compute source term
                     source = (field->gradAt(timestep*dt, (i + 0.5)*dx, (j + 0.5)*dy, (k + 0.5)*dz)*reconstructedNormal)*reconstructedNormal*(-1.0);
-                    // Cut-off the source term, use a cut-off length like 4*dx
-                    //source = source*bumpCutoff(this->at(i, j, k)/(4*dx));
 
                     // explicit update
                     this->at(i, j, k) = this->at(i, j, k)*(1.0-source*dt) - dt / (dx * dy * dz) * flux;
@@ -1807,21 +1811,6 @@ void LevelSet::calculateNextTimestepSourceTerm(double dt, int timestep) {
         }
 
     }
-}
-
-// numerical cutt-off function if |x| >= 1
-double bumpCutoff(double x){
-
-  double var = 1-x*x;
-
-  if(abs(var)>1E-8){
-   return exp(-1/var);
-  }
-  else{
-   // return 0 if x is close to 1
-   return 0;
-  }
-
 }
 
 double LevelSet::getGradPhiNormAtContactPoint(int timestep) {
