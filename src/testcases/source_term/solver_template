@@ -6,7 +6,7 @@ lenY=0.5
 lenZ=$lenZ
 
 time=$time
-CFL=0.3
+CFL=$cfl
 writestepsFraction=0.05
 writeField=true
 

@@ -5,7 +5,7 @@
 import copy
 import math
 
-def build_subcase(source_active, mesh, setup):
+def build_subcase(source_active, mesh, setup, cfl):
 	subcase = {}
 	subcase["solver_data"] = {}
 	subcase["jobscript_data"] = {}
@@ -13,6 +13,8 @@ def build_subcase(source_active, mesh, setup):
 	## Dictionaries for additional files
 	#subcase["subcase_analysis.py"] = {} 
 	#subcase["case_analysis.py"] = {} 
+	
+	subcase["solver_data"]["cfl"] = cfl
 	
 	if(source_active==1):
 	  subcase["solver_data"]["applySourceTerm"] = "true"
@@ -88,8 +90,8 @@ field=shearField"""
 	return subcase	
 	
 
-def build_subcase_name(source_active, mesh,setup):
-	return setup+"/"+str(source_active)+'/'+str(mesh)
+def build_subcase_name(source_active, mesh,setup,cfl):
+	return 'cfl_'+str(cfl)+'/'+setup+"/"+str(source_active)+'/'+str(mesh)
 
 	
 def read_subcases():
@@ -105,13 +107,15 @@ def read_subcases():
 	setups=["periodic","linear","shear","largeAngle"]
         sources= [0,1]
         meshes = [50,100,200]
+        cfls = [0.5,1.0]
         ##
         
         for source_active in sources:
         	for mesh in meshes:
         		for setup in setups:
-        			subcase_name = build_subcase_name(source_active,mesh,setup)
-        			case_data[subcase_name] = build_subcase(source_active,mesh,setup)
+        			for cfl in cfls:
+        				subcase_name = build_subcase_name(source_active,mesh,setup,cfl)
+	        			case_data[subcase_name] = build_subcase(source_active,mesh,setup,cfl)
         		
        #######################################################################
       
