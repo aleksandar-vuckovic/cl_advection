@@ -41,8 +41,8 @@ set output "results_gradient_norm.pdf"
 set xlabel "time"
 set ylabel "|grad phi|"
 
-plot for [mesh in "50 100 200"] '0/'.mesh.'/gradientNormAtContactPoint.csv' using ($1):($2) title '0/'.mesh with points pointsize 0.3,\
-     for [mesh in "50 100 200"] '1/'.mesh.'/gradientNormAtContactPoint.csv' using ($1):($2) title '1/'.mesh with points pointsize 0.3 
+plot for [mesh in "50 100 200"] '0/'.mesh.'/gradientNormAtContactPoint.csv' using ($1):($2) title 'Source-0/Mesh-'.mesh with points pointsize 0.3,\
+     for [mesh in "50 100 200"] '1/'.mesh.'/gradientNormAtContactPoint.csv' using ($1):($2) title 'Source-1/Mesh-'.mesh with points pointsize 0.3 
 
 
 ############################
@@ -95,7 +95,7 @@ set xlabel "time"
 
 set ylabel quantity." error"
 
-plot for [mesh in "50 100 200"] source.'/'.mesh.'/'.quantity.'.csv' using ($1):(abs($2-$3)) title source.'/'.mesh with line
+plot for [mesh in "50 100 200"] source.'/'.mesh.'/'.quantity.'.csv' using ($1):(abs($2-$3)) title 'Source-'.source.'/Mesh-'.mesh with line
 
 }
 }
