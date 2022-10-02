@@ -35,4 +35,4 @@ threads=1
 
 calculateCurvature=true
 
-applySourceTerm=false
+applySourceTerm=true
