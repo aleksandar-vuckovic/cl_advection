@@ -15,6 +15,7 @@ def build_subcase(source_active, mesh, setup, cfl):
 	#subcase["case_analysis.py"] = {} 
 	
 	subcase["solver_data"]["cfl"] = cfl
+	subcase["jobscript_data"]["dx"] = 2.0/mesh
 	
 	if(source_active==1):
 	  subcase["solver_data"]["applySourceTerm"] = "true"
@@ -91,4 +92,4 @@ def read_case_files():
 	return [] #["case_analysis.py"]
 
 def read_subcase_files():
-	return ["plot.gp"] #["subcase_analysis.py"]
+	return ["plot.gp","readData.py"]

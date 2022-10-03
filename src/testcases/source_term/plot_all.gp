@@ -72,8 +72,8 @@ set xlabel "time"
 
 set ylabel quantity
 
-plot '0/200/'.quantity.'.csv' using ($1):(abs($2)) title "Source off" with line linestyle 128,\
-     '1/200/'.quantity.'.csv' using ($1):(abs($2)) every 20 title "Source on" with points pointsize 0.4
+plot '0/200/'.quantity.'.csv' using ($1):($2) title "Source off" with line linestyle 128,\
+     '1/200/'.quantity.'.csv' using ($1):($2) every 20 title "Source on" with points pointsize 0.4
 
 }
 

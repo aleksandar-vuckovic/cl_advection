@@ -11,8 +11,7 @@ echo "Run solver"
 
 gnuplot plot.gp
 
-## Run analysis script
-#echo "Run Analysis"
-#python2 subcase_analysis.py
+# Run analysis script
+python3 readData.py $dx
 
 echo "****************"
