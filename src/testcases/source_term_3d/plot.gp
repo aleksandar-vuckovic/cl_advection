@@ -10,19 +10,13 @@ set style line 1 \
     linetype 1 linewidth 1 \
     pointtype 2 pointsize 0.5
 
-plot "contactAngle.csv" using 1:2 title "LevelSet" with points pointsize 0.5,\
+plot "contactAngle.csv" using 1:2 title "LevelSet" with line,\
      "contactAngle.csv" using 1:3 title "Reference" with line
 
-set output "results_position.pdf"
-set ylabel "Position"
-
-plot "position.csv" using 1:2 title "LevelSet" with points pointsize 0.5,\
-     "position.csv" using 1:3 title "Reference" with line
-     
 set output "results_curvature.pdf"
 set ylabel "Curvature"
 
-plot "curvature.csv" using 1:2 title "LevelSet" with points pointsize 0.5,\
+plot "curvature.csv" using 1:2 title "LevelSet" with line,\
      "curvature.csv" using 1:3 title "Reference" with line
      
 set output "results_gradient_norm.pdf"

@@ -21,35 +21,36 @@ def build_subcase(source_active, mesh, setup, cfl):
 	else:
 	  subcase["solver_data"]["applySourceTerm"] = "false"
 	  
-	  
-	geometry1 =  """
-centerX=0.5
-centerY=-0.15
-centerZ=0.0
-radius=0.3
-
-expcpX=0.7598076211353315
-expcpY=0.0
-expcpZ=0.0
-expAngle=60.0""" 
-
-	subcase["solver_data"]["numY"] = mesh
-	subcase["solver_data"]["numX"] = mesh*2
-	subcase["solver_data"]["lenZ"] = 1.0/mesh
-	
+ 
+	## define the mesh
+	if(mesh==50):
+		subcase["solver_data"]["numZ"] = 50
+		subcase["solver_data"]["numX"] = 50
+		subcase["solver_data"]["numY"] = 15
+	elif(mesh==100):
+		subcase["solver_data"]["numZ"] = 100
+		subcase["solver_data"]["numX"] = 100
+		subcase["solver_data"]["numY"] = 30
+	elif(mesh==200):
+		subcase["solver_data"]["numZ"] = 200
+		subcase["solver_data"]["numX"] = 200
+		subcase["solver_data"]["numY"] = 60
 
 	## define the field
 	if(setup=="strawberry"):
 	
-		subcase["solver_data"]["time"]=1.0
-	 	subcase["solver_data"]["geometry"] = geometry1
+		subcase["solver_data"]["time"]=2.0
 	
 		subcase["solver_data"]["field"] = """
-v0=-0.2
+v0=0.3
+w0=0.4
 c1=0.1
-c2=-2
-tau=0.4
-field=timeDependentNavierField"""
+c2=0.1
+c3=-0.2
+c4=0.3
+c5=-0.1
+c6=0.1
+field=strawberryField"""
 
 	return subcase	
 	
@@ -71,7 +72,7 @@ def read_subcases():
 	setups=["strawberry"]
         sources= [0,1]
         meshes = [50,100,200]
-        cfls = [0.5,1.0]
+        cfls = [0.2]
         ##
         
         for source_active in sources:
