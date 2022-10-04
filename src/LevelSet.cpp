@@ -1814,11 +1814,28 @@ void LevelSet::calculateNextTimestepSourceTerm(double dt, int timestep) {
 }
 
 double LevelSet::getGradPhiNormAtContactPoint(int timestep) {
-    double minimum;
-    std::array<int, 3> contactPoint = getContactPointIndices(timestep);
-    Vector gradPhi = getNormalVector(contactPoint, false, false);
-    double gradPhiNorm = abs(gradPhi);
-    return gradPhiNorm;
+    array<int, 3> cell = getContactPointIndices(timestep);
+    if (numZ == 1) {
+        Vector gradPhi = getNormalVector(cell, false, false);
+        double gradPhiNorm = abs(gradPhi);
+        return gradPhiNorm;
+    } else {
+        Vector contactPoint = positionReference[timestep];
+        double x = contactPoint[0];
+        double y = contactPoint[1];
+        double z = contactPoint[2];
+        int i = floor(x/dx);
+        int j = ceil(y/dy);
+        int k = floor(z/dz);
+
+        double lambda = x/dx - i;
+        double mu = z/dz - k;
+
+        Vector gradPhi = (1 - mu) * ((1 - lambda) * getNormalVector({i, j, k}, false, false) + lambda*getNormalVector({i + 1, j, k}, false, false))
+                         + mu * ((1 - lambda) * getNormalVector({i, j, k + 1}, false, false) + lambda*getNormalVector({i + 1, j, k + 1}, false, false));
+        double gradPhiNorm = abs(gradPhi);
+        return gradPhiNorm;
+    }
 }
 
 
