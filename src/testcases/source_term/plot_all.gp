@@ -33,6 +33,12 @@ set style line 1 \
     linecolor rgb '#000000' \
     linetype 1 linewidth 1.5 \
     pointtype 4 pointsize 0.5
+    
+set style line 2 \
+    linecolor rgb '#000000' \
+    linetype 1 linewidth 1 \
+    pointtype 2 pointsize 0.5 \
+    dashtype 4
 
 set colorsequence default # default, podo
 
@@ -64,7 +70,7 @@ plot for [mesh in "50 100 200"] source.'/'.mesh.'/'.quantity.'.csv' using ($1):(
 }
 ############################
 
-do for [quantity in "position contactAngle curvature gradientNormAtContactPoint"]{
+do for [quantity in "position contactAngle curvature"]{
 
 set output 'comparison_'.quantity.'.pdf'
 
@@ -72,10 +78,17 @@ set xlabel "time"
 
 set ylabel quantity
 
-plot '0/200/'.quantity.'.csv' using ($1):($2) title "Source off" with line linestyle 128,\
-     '1/200/'.quantity.'.csv' using ($1):($2) every 20 title "Source on" with points pointsize 0.4
-
+plot '0/200/'.quantity.'.csv' using ($1):($2) every 10 title "Source off" with points pointsize 0.7,\
+     '1/200/'.quantity.'.csv' using ($1):($2) every 10 title "Source on" with points pointsize 0.6,\
+     '1/200/'.quantity.'.csv' using ($1):($3) title "Reference" with line linestyle 2
 }
+
+set output "comparison_gradientNormAtContactPoint.pdf"
+
+set ylabel "gradientNormAtContactPoint"
+
+plot '0/200/gradientNormAtContactPoint.csv' using ($1):($2) title "Source off" with line linestyle 128,\
+     '1/200/gradientNormAtContactPoint.csv' using ($1):($2) title "Source on" with line
 
     
     
