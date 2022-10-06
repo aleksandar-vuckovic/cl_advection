@@ -23,13 +23,13 @@ g(x) = b*x
 set ylabel "Maximum Position Error"
 set xlabel "{/Symbol D}x"
 
-set format x "%2.1t{/Symbol \264}10^{%L}"
+#set format x "%2.1t{/Symbol \264}10^{%L}"
 
 set logscale x
 set logscale y
 
-set xrange[0.002:0.012]
-set xtics(0.0025, 0.005, 0.01)
+set xrange[0.01:0.04]
+set xtics(0.01, 0.02, 0.04)
 
 set output "max_error_position.pdf"
 
