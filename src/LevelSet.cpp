@@ -1816,7 +1816,7 @@ void LevelSet::calculateNextTimestepSourceTerm(double dt, int timestep) {
 double LevelSet::getGradPhiNormAtContactPoint(int timestep) {
     array<int, 3> cell = getContactPointIndices(timestep);
     if (numZ == 1) {
-        Vector gradPhi = getNormalVector(cell, false, false);
+        Vector gradPhi = getNormalVector(cell, true, false);
         double gradPhiNorm = abs(gradPhi);
         return gradPhiNorm;
     } else {
