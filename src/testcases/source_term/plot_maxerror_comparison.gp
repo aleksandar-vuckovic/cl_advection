@@ -68,7 +68,7 @@ plot "0/max_error_curvature.csv" using 1:2 title "Source off" smooth unique with
 
 #####
 set output "max_gradient_deviation.pdf"
-set ylabel "max(||grad phi|-1|)"
+set ylabel "max(||grad {/symbol f}|-1|)"
 
 fit f(x) "1/max_gradient_deviation.csv" using 1:2 via a
 

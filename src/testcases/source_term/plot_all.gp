@@ -85,10 +85,10 @@ plot '0/200/'.quantity.'.csv' using ($1):($2) every 10 title "Source off" with p
 
 set output "comparison_gradientNormAtContactPoint.pdf"
 
-set ylabel "gradientNormAtContactPoint"
+set ylabel "|grad {/symbol f}|"
 
-plot '0/200/gradientNormAtContactPoint.csv' using ($1):($2) title "Source off" with line linestyle 128,\
-     '1/200/gradientNormAtContactPoint.csv' using ($1):($2) title "Source on" with line
+plot '0/200/gradientNormAtContactPoint.csv' using ($1):($2) every 1 title "Source off" with points pointsize 0.7,\
+     '1/200/gradientNormAtContactPoint.csv' using ($1):($2) every 1 title "Source on" with points pointsize 0.6
 
     
     
