@@ -1804,7 +1804,8 @@ void LevelSet::calculateNextTimestepSourceTerm(double dt, int timestep) {
                     //source = source + (1.0 - abs(reconstructedNormal));  // Dieter's restoring method
 
                     // Apply Mollifier
-                    //source = source*mollifier1(tempPhi.at(i,j,k));
+                    //source = source*mollifier1(tempPhi.at(i,j,k),0.02,0.4);
+                    //source = source*mollifier2(tempPhi.at(i,j,k),0.02);
 
                     // explicit update
                     this->at(i, j, k) = this->at(i, j, k)*(1.0-source*dt) - dt / (dx * dy * dz) * flux;
@@ -1819,22 +1820,29 @@ void LevelSet::calculateNextTimestepSourceTerm(double dt, int timestep) {
     }
 }
 
-double mollifier1(double x) {
-  // w is the width of the plateau
-  // s is the strength of decay
+double mollifier1(double x, double w1, double w2) {
+  // w1 is the width of the plateau
+  // w2 is the width before the mollifier is close to 0 (here 10^-3).
 
-  double w = 0.02;
-  double s = 2.0;
+  double s=1.0; // help variable
 
-      if (x >= 0) {
-          if (x < w) {
+  s = std::log(1000)/pow((w2-w1),2);
+
+    if (x >= 0) {
+          if (x < w1) {
               return 1.0;
           } else {
-              return exp(- s*pow(x-w, 2));
+              return exp(- s*pow(x-w1, 2));
           }
       } else {
-          return mollifier1(-x);
+          return mollifier1(-x,w1,w2);
       }
+}
+
+double mollifier2(double x, double w) {
+
+  return std::exp(-std::pow(x / w, 2));
+
 }
 
 double LevelSet::getGradPhiNormAtContactPoint(int timestep) {

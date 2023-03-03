@@ -109,6 +109,7 @@ public:
 
 Vector normalVector2D(double initAngle, std::string trackedCP);
 double bumpCutoff(double x);
-double mollifier1(double x);
+double mollifier1(double x, double w1, double w2);
+double mollifier2(double x, double w);
 
 #endif
