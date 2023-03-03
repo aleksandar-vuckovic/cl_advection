@@ -23,7 +23,7 @@ private:
     /**
     *   Reference data..
     *   This is needed, since many other reference solvers are coupled, and all of them require this data,
-    *   leading to a high number in nested loops. 
+    *   leading to a high number in nested loops.
     **/
     std::vector<Vector> positionReference;
     std::vector<Vector> normalReference;
@@ -41,6 +41,7 @@ private:
     InitShape shape;
     std::vector<double> shapeParams;
     Vector initCenter;
+
 
 public:
     LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz, VelocityField *field,
@@ -102,11 +103,12 @@ public:
     std::vector<double> getSectionalCurvatureBReference() const;
 
     std::vector<double> getSectionalCurvatureCReference() const;
-    
+
     double getGradPhiNormAtContactPoint(int timestep);
 };
 
 Vector normalVector2D(double initAngle, std::string trackedCP);
 double bumpCutoff(double x);
+double mollifier1(double x);
 
 #endif

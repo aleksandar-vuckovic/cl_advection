@@ -1800,6 +1800,12 @@ void LevelSet::calculateNextTimestepSourceTerm(double dt, int timestep) {
                     // Compute source term
                     source = (field->gradAt(timestep*dt, (i + 0.5)*dx, (j + 0.5)*dy, (k + 0.5)*dz)*reconstructedNormal)*reconstructedNormal*(-1.0);
 
+                    // Dieter's restoring method
+                    //source = source + (1.0 - abs(reconstructedNormal));  // Dieter's restoring method
+
+                    // Apply Mollifier
+                    //source = source*mollifier1(tempPhi.at(i,j,k));
+
                     // explicit update
                     this->at(i, j, k) = this->at(i, j, k)*(1.0-source*dt) - dt / (dx * dy * dz) * flux;
 
@@ -1811,6 +1817,24 @@ void LevelSet::calculateNextTimestepSourceTerm(double dt, int timestep) {
         }
 
     }
+}
+
+double mollifier1(double x) {
+  // w is the width of the plateau
+  // s is the strength of decay
+
+  double w = 0.02;
+  double s = 2.0;
+
+      if (x >= 0) {
+          if (x < w) {
+              return 1.0;
+          } else {
+              return exp(- s*pow(x-w, 2));
+          }
+      } else {
+          return mollifier1(-x);
+      }
 }
 
 double LevelSet::getGradPhiNormAtContactPoint(int timestep) {
