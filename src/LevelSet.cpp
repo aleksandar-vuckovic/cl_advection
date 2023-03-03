@@ -1649,7 +1649,7 @@ void LevelSet::calculateNextTimestep(double dt, int timestep) {
  * @param dt The width of the timestep by which to evolve the field
  * @param timestep The index of the timestep
  */
-void LevelSet::calculateNextTimestepSourceTerm(double dt, int timestep) {
+void LevelSet::calculateNextTimestepSourceTerm(double dt, int timestep, int applyMollifier, double mollifier_width1, double mollifier_width2) {
     LevelSet tempPhi(*this);
 
     const Vector upNormal = {0, 1, 0};
@@ -1804,8 +1804,12 @@ void LevelSet::calculateNextTimestepSourceTerm(double dt, int timestep) {
                     //source = source + (1.0 - abs(reconstructedNormal));  // Dieter's restoring method
 
                     // Apply Mollifier
-                    //source = source*mollifier1(tempPhi.at(i,j,k),0.02,0.4);
-                    //source = source*mollifier2(tempPhi.at(i,j,k),0.02);
+                    if(applyMollifier==1){
+                      source = source*mollifier1(tempPhi.at(i,j,k),mollifier_width1,mollifier_width2);
+                    }
+                    else if(applyMollifier==2){
+                      source = source*mollifier2(tempPhi.at(i,j,k),mollifier_width1);
+                    }
 
                     // explicit update
                     this->at(i, j, k) = this->at(i, j, k)*(1.0-source*dt) - dt / (dx * dy * dz) * flux;

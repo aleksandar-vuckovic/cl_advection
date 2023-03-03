@@ -47,7 +47,7 @@ int main(int argc, char **argv) {
     int numX, numY, numZ, threads;
     numX = numY = numZ = 0;
     threads = 1;
-    
+
     double lenX, lenY, lenZ, time, centerX, centerY, centerZ, radius, expcpX, expcpY, expcpZ, expAngle, expNormalX, expNormalY, expNormalZ, initCurvature;
     double v0, w0, x0, y0, z0, c1, c2, c3, c4, c5, c6, tau, CFL, writestepsFraction, planePolarAngle, planeAzimuthalAngle, fieldAzimuthalAngle, alpha;
     double paraboloidStretchX, paraboloidStretchZ, paraboloidHeightMinimum;
@@ -55,11 +55,15 @@ int main(int argc, char **argv) {
 
     lenX = lenY = lenZ = time = centerX = centerY = centerZ = radius = expcpX = expcpY = expcpZ = expNormalX = expNormalY = expNormalZ = initCurvature
     = expAngle = v0 = w0 = x0 = y0 = z0 = c1 = c2 = c3 = c4 = c5 = c6 = tau = CFL = writestepsFraction = planePolarAngle
-    = planeAzimuthalAngle =  fieldAzimuthalAngle = alpha = paraboloidStretchX = paraboloidStretchZ = paraboloidHeightMinimum 
+    = planeAzimuthalAngle =  fieldAzimuthalAngle = alpha = paraboloidStretchX = paraboloidStretchZ = paraboloidHeightMinimum
     = ellipsoidStretchX = ellipsoidStretchY = ellipsoidStretchZ = 0;
-    
+
     bool writeField = false, calculateCurvature = true;
     bool applySourceTerm = false;
+    int applyMollifier = 0;
+		double mollifier_width1 = 0.0;
+		double mollifier_width2 = 0.0;
+
     bool calculateEvaluationQuantities = true;
     std::string trackedContactPoint = "left", fieldName = "", outputDirectory = "";
     InitShape initShape = InitShape::sphere;
@@ -218,6 +222,12 @@ int main(int argc, char **argv) {
                         std::stringstream(value) >> std::boolalpha >> calculateCurvature;
                     else if (varName == "applySourceTerm")
                         std::stringstream(value) >> std::boolalpha >> applySourceTerm;
+										else if (varName == "mollifier_width1")
+														mollifier_width1 = std::stod(value);
+									  else if (varName == "mollifier_width2")
+														mollifier_width2 = std::stod(value);
+										else if (varName == "applyMollifier")
+		                    		applyMollifier = std::stoi(value);
                     else if (varName == "calculateEvaluationQuantities")
                         std::stringstream(value) >> std::boolalpha >> calculateEvaluationQuantities;
                     else if (varName == "threads")
@@ -347,12 +357,12 @@ int main(int argc, char **argv) {
     else {
       // 3D case
       dt = CFL*std::min(std::min(dx,dy),dz)/field->getMaxNormValue();
-    } 
+    }
 
     int timesteps = time/dt;
     int writesteps = ceil(writestepsFraction*timesteps);
 
-    LevelSet Phi(numX, numY, numZ, dx, dy, dz, field, trackedContactPoint, dt, timesteps, 
+    LevelSet Phi(numX, numY, numZ, dx, dy, dz, field, trackedContactPoint, dt, timesteps,
     expCP, expAngle, initCurvature, initShape, shapeParams, center, outputDirectory);
 
     expNormalVecGrad = Phi.expectedNormalVectorGradient(expCP);
@@ -390,7 +400,7 @@ int main(int argc, char **argv) {
     if (sysRet == 256) {
     	std::cout << "Overwriting folder \"data\".\n";
     }
-    
+
     std::ofstream positionFile(outputDirectory + "position.csv");
     positionFile.precision(16);
     std::ofstream angleFile(outputDirectory + "contactAngle.csv");
@@ -524,11 +534,11 @@ int main(int argc, char **argv) {
                                        + std::to_string(sectionalCurvatureC_Actual[i]) + ", "
                                        + std::to_string(sectionalCurvatureCReference[i]) + "\n";
         }
-        
+
         // Calculate numerical flux through all faces of each cell and update Phi
         if (applySourceTerm) {
             try {
-                Phi.calculateNextTimestepSourceTerm(dt, i); // develop source term approach
+                Phi.calculateNextTimestepSourceTerm(dt, i, applyMollifier, mollifier_width1, mollifier_width2); // develop source term approach
             } catch (std::runtime_error& e) {
                 std::string str = e.what();
                 if (str.compare("Exit_Normal_Vector_0") == 0) {

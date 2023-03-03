@@ -80,7 +80,7 @@ public:
     Vector normalVector2D(double initAngle);
     static Vector normalVector2D(double initAngle, std::string trackedCP);
     void calculateNextTimestep(double dt, int timestep);
-    void calculateNextTimestepSourceTerm(double dt, int timestep);
+    void calculateNextTimestepSourceTerm(double dt, int timestep, int applyMollifier, double mollifier_width1, double mollifier_width2);
 
     std::vector<Vector> getPositionReference() const;
     std::vector<double> getAngleReference() const;
