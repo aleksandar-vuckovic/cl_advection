@@ -1360,12 +1360,12 @@ void LevelSet::initSphere(Vector center, double radius) {
     for (int k = 0; k < numZ; k++)
         for (int j = 0; j < numY; j++)
             for (int i = 0; i < numX; i++)
-                at(i, j, k) = 0.5*(pow(i*dx - center[0], 2)/radius + pow(j*dy - center[1], 2)/radius + pow(k*dz - center[2], 2)/radius - radius);
+                at(i, j, k) = sqrt(pow(i*dx - center[0], 2) + pow(j*dy - center[1], 2) + pow(k*dz - center[2], 2)) - radius; // use actual signed distance function for a sphere
     }
     else if(numZ==1){
           for (int j = 0; j < numY; j++)
               for (int i = 0; i < numX; i++)
-                  at(i, j, 0) = 0.5*(pow(i*dx - center[0], 2)/radius + pow(j*dy - center[1], 2)/radius - radius);
+                  at(i, j, 0) = sqrt(pow(i*dx - center[0], 2) + pow(j*dy - center[1], 2)) - radius; // use actual signed distance function for a sphere
 
     }
 
