@@ -28,8 +28,8 @@ set format x "%2.1t{/Symbol \264}10^{%L}"
 set logscale x
 set logscale y
 
-set xrange[0.002:0.012]
-set xtics(0.0025, 0.005, 0.01)
+set xrange[0.001:0.006]
+set xtics(0.001,0.0025, 0.005)
 
 set output "max_error_position.pdf"
 

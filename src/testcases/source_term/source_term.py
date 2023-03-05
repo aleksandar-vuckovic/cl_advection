@@ -107,8 +107,8 @@ def read_subcases():
 	## Arrays to loop over
 	setups=["periodic","shear"] #,"largeAngle","linear"]
         sources= [0,1]
-        meshes = [50,100,200]
-        cfls = [0.5,1.0]
+        meshes = [100,200,400]
+        cfls = [0.2,0.5]
         ##
         
         for source_active in sources:

@@ -16,3 +16,7 @@ $geometry
 
 trackedContactPoint=right
 applySourceTerm=$applySourceTerm
+
+applyMollifier=1
+mollifier_width1=0.05
+mollifier_width2=0.15

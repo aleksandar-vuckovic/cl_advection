@@ -47,8 +47,8 @@ set output "results_gradient_norm.pdf"
 set xlabel "time"
 set ylabel "|grad phi|"
 
-plot for [mesh in "50 100 200"] '0/'.mesh.'/gradientNormAtContactPoint.csv' using ($1):($2) title 'Source-0/Mesh-'.mesh with points pointsize 0.3,\
-     for [mesh in "50 100 200"] '1/'.mesh.'/gradientNormAtContactPoint.csv' using ($1):($2) title 'Source-1/Mesh-'.mesh with points pointsize 0.3 
+plot for [mesh in "100 200 400"] '0/'.mesh.'/gradientNormAtContactPoint.csv' using ($1):($2) title 'Source-0/Mesh-'.mesh with points pointsize 0.3,\
+     for [mesh in "100 200 400"] '1/'.mesh.'/gradientNormAtContactPoint.csv' using ($1):($2) title 'Source-1/Mesh-'.mesh with points pointsize 0.3 
 
 
 ############################
@@ -64,7 +64,7 @@ set xlabel "time"
 
 set ylabel quantity
 
-plot for [mesh in "50 100 200"] source.'/'.mesh.'/'.quantity.'.csv' using ($1):(abs($2)) title source.'/'.mesh with line
+plot for [mesh in "100 200 400"] source.'/'.mesh.'/'.quantity.'.csv' using ($1):(abs($2)) title source.'/'.mesh with line
 
 }
 }
@@ -78,17 +78,17 @@ set xlabel "time"
 
 set ylabel quantity
 
-plot '0/200/'.quantity.'.csv' using ($1):($2) every 10 title "Source off" with points pointsize 0.7,\
-     '1/200/'.quantity.'.csv' using ($1):($2) every 10 title "Source on" with points pointsize 0.6,\
-     '1/200/'.quantity.'.csv' using ($1):($3) title "Reference" with line linestyle 2
+plot '0/400/'.quantity.'.csv' using ($1):($2) every 10 title "Source off" with points pointsize 0.7,\
+     '1/400/'.quantity.'.csv' using ($1):($2) every 10 title "Source on" with points pointsize 0.6,\
+     '1/400/'.quantity.'.csv' using ($1):($3) title "Reference" with line linestyle 2
 }
 
 set output "comparison_gradientNormAtContactPoint.pdf"
 
 set ylabel "|grad {/symbol f}|"
 
-plot '0/200/gradientNormAtContactPoint.csv' using ($1):($2) every 1 title "Source off" with points pointsize 0.7,\
-     '1/200/gradientNormAtContactPoint.csv' using ($1):($2) every 1 title "Source on" with points pointsize 0.6
+plot '0/400/gradientNormAtContactPoint.csv' using ($1):($2) every 1 title "Source off" with points pointsize 0.7,\
+     '1/400/gradientNormAtContactPoint.csv' using ($1):($2) every 1 title "Source on" with points pointsize 0.6
 
     
     
@@ -108,7 +108,7 @@ set xlabel "time"
 
 set ylabel quantity." error"
 
-plot for [mesh in "50 100 200"] source.'/'.mesh.'/'.quantity.'.csv' using ($1):(abs($2-$3)) title 'Source-'.source.'/Mesh-'.mesh with line
+plot for [mesh in "100 200 400"] source.'/'.mesh.'/'.quantity.'.csv' using ($1):(abs($2-$3)) title 'Source-'.source.'/Mesh-'.mesh with line
 
 }
 }
