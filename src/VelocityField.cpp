@@ -11,7 +11,6 @@
 #define _USE_MATH_DEFINES
 #include <cmath>
 
-
 using std::array;
 
 /**
@@ -27,22 +26,22 @@ using std::array;
  * \f$\tilde{x} = (x, 0, z) \cdot \hat{n}_\Gamma. \hat{n}_\Gamma and \hat{n}_y are the unit vectors of the new coordinate system.
  */
 VelocityField::VelocityField(std::string name, double v0, double w0, double x0, double y0, double z0,
-                             double c1, double c2, double c3, double c4, double c5, double c6, double tau,
-                             double xmin, double xmax, double ymin, double ymax, double zmin, double zmax,
-                             double dx, double dy, double dz, double azimuthalAngle, double alpha, std::string outputDirectory)
-                             : alpha(alpha), n_gamma({cos(azimuthalAngle), 0, sin(azimuthalAngle)}), n_y({0, 1, 0})
+							 double c1, double c2, double c3, double c4, double c5, double c6, double tau,
+							 double xmin, double xmax, double ymin, double ymax, double zmin, double zmax,
+							 double dx, double dy, double dz, double azimuthalAngle, double alpha, std::string outputDirectory)
+	: alpha(alpha), n_gamma({cos(azimuthalAngle), 0, sin(azimuthalAngle)}), n_y({0, 1, 0})
 {
 	this->v0 = v0;
-    this->w0 = w0;
-    this->x0 = x0;
-    this->y0 = y0;
-    this->z0 = z0;
+	this->w0 = w0;
+	this->x0 = x0;
+	this->y0 = y0;
+	this->z0 = z0;
 	this->c1 = c1;
 	this->c2 = c2;
 	this->c3 = c3;
-    this->c4 = c4;
-    this->c5 = c5;
-    this->c6 = c6;
+	this->c4 = c4;
+	this->c5 = c5;
+	this->c6 = c6;
 	this->tau = tau;
 
 	this->xmin = xmin;
@@ -54,23 +53,29 @@ VelocityField::VelocityField(std::string name, double v0, double w0, double x0, 
 	this->dx = dx;
 	this->dy = dy;
 	this->dz = dz;
-    this->outputDirectory = outputDirectory;
+	this->outputDirectory = outputDirectory;
 
-    if (name == "shearField" || name == "timeDependentshearField" || name == "navierField" || name == "timeDependentNavierField" || name == "quadraticField" || name == "strawberryField") {
+	if (name == "shearField" || name == "timeDependentshearField" || name == "navierField" || name == "timeDependentNavierField" || name == "quadraticField" || name == "strawberryField")
+	{
 		this->name = name;
-	} else {
+	}
+	else
+	{
 		throw std::invalid_argument("No available field was chosen.");
 	}
 
 	double maxNormValue = 0, currentVal = 0, x, y, z;
 
-	for (int i = 0; i < (xmax - xmin)/dx; i++) {
-		for (int j = 0; j < (ymax - ymin)/dy; j++) {
-			for (int k = 0; k < (zmax - zmin)/dz; k++) {
-				x = i*dx - xmin;
-				y = j*dy - ymin;
-				z = k*dz - zmin;
-				
+	for (int i = 0; i < (xmax - xmin) / dx; i++)
+	{
+		for (int j = 0; j < (ymax - ymin) / dy; j++)
+		{
+			for (int k = 0; k < (zmax - zmin) / dz; k++)
+			{
+				x = i * dx - xmin;
+				y = j * dy - ymin;
+				z = k * dz - zmin;
+
 				currentVal = abs(this->at(0, x, y, z));
 				if (currentVal > maxNormValue)
 					maxNormValue = currentVal;
@@ -88,30 +93,42 @@ VelocityField::VelocityField(std::string name, double v0, double w0, double x0, 
  * @param x, y, z The coordinates of the point
  * @return The velocity field at the given coordinates
  */
-Vector VelocityField::at(double t, double x, double y, double z) {
+Vector VelocityField::at(double t, double x, double y, double z)
+{
 
-	double x_tilde = x*n_gamma[0] + z*n_gamma[2] - alpha;
+	double x_tilde = x * n_gamma[0] + z * n_gamma[2] - alpha;
 	Vector vec;
-	if (name == "shearField") {
+	if (name == "shearField")
+	{
 		vec = shearField(x_tilde, y, z, v0);
-        vec = vec[0]*n_gamma + vec[1]*n_y; // TODO mafri check this line
-        } else if (name == "timeDependentshearField") {
-        	vec = shearField(x_tilde, y, z, v0);
-	        vec = vec[0]*n_gamma + vec[1]*n_y; // TODO mafri check this line
-	        vec = cos(M_PI*t/tau) * vec;
-	} else if (name == "navierField") {
+		vec = vec[0] * n_gamma + vec[1] * n_y; // TODO mafri check this line
+	}
+	else if (name == "timeDependentshearField")
+	{
+		vec = shearField(x_tilde, y, z, v0);
+		vec = vec[0] * n_gamma + vec[1] * n_y; // TODO mafri check this line
+		vec = cos(M_PI * t / tau) * vec;
+	}
+	else if (name == "navierField")
+	{
 		vec = navierField(x_tilde, y, z, v0, c1, c2);
-        vec = vec[0]*n_gamma + vec[1]*n_y;
-	} else if (name == "timeDependentNavierField") {
-		vec = cos(M_PI*t/tau) * navierField(x_tilde, y, z, v0, c1, c2);
-        vec = vec[0]*n_gamma + vec[1]*n_y;
-	} else if (name == "quadraticField") {
-	    vec = quadraticField(x_tilde, y, z, v0, c1, c2, c3);
-        vec = vec[0]*n_gamma + vec[1]*n_y;
-    } else if (name == "strawberryField") {
-        vec = strawberryField(x_tilde, y, z, v0, w0, x0, y0, z0, c1, c2, c3, c4, c5, c6);
-    }
-    return vec;
+		vec = vec[0] * n_gamma + vec[1] * n_y;
+	}
+	else if (name == "timeDependentNavierField")
+	{
+		vec = cos(M_PI * t / tau) * navierField(x_tilde, y, z, v0, c1, c2);
+		vec = vec[0] * n_gamma + vec[1] * n_y;
+	}
+	else if (name == "quadraticField")
+	{
+		vec = quadraticField(x_tilde, y, z, v0, c1, c2, c3);
+		vec = vec[0] * n_gamma + vec[1] * n_y;
+	}
+	else if (name == "strawberryField")
+	{
+		vec = strawberryField(x_tilde, y, z, v0, w0, x0, y0, z0, c1, c2, c3, c4, c5, c6);
+	}
+	return vec;
 }
 
 /**
@@ -121,23 +138,35 @@ Vector VelocityField::at(double t, double x, double y, double z) {
  * @param x, y, z The coordinates of the point
  * @return The jacobian matrix at the given coordinates
  */
-Matrix VelocityField::gradAt(double t, double x, double y, double z) {
-	
-	double x_tilde = x*n_gamma[0] + z*n_gamma[2] - alpha;
+Matrix VelocityField::gradAt(double t, double x, double y, double z)
+{
+
+	double x_tilde = x * n_gamma[0] + z * n_gamma[2] - alpha;
 	Matrix mat;
-	if (name == "shearField") {
-        mat = gradShearField(x_tilde, y, z, v0);
-        } else if (name == "timeDependentshearField") {
-        mat = cos(M_PI*t/tau)*gradShearField(x_tilde, y, z, v0);
-	} else if (name == "navierField") {
-        mat = gradNavierField(x_tilde, y, z, v0, c1, c2);
-	} else if (name == "timeDependentNavierField") {
-        mat = cos(M_PI*t/tau)*gradNavierField(x_tilde, y, z, v0, c1, c2);
-	} else if (name == "quadraticField") {
-        mat = gradQuadraticField(x_tilde, y, z, v0, c1, c2, c3);
-    } else if (name == "strawberryField") {
-        return gradStrawberryField(x_tilde, y, z, v0, w0, x0, y0, z0, c1, c2, c3, c4, c5, c6);
-    }
+	if (name == "shearField")
+	{
+		mat = gradShearField(x_tilde, y, z, v0);
+	}
+	else if (name == "timeDependentshearField")
+	{
+		mat = cos(M_PI * t / tau) * gradShearField(x_tilde, y, z, v0);
+	}
+	else if (name == "navierField")
+	{
+		mat = gradNavierField(x_tilde, y, z, v0, c1, c2);
+	}
+	else if (name == "timeDependentNavierField")
+	{
+		mat = cos(M_PI * t / tau) * gradNavierField(x_tilde, y, z, v0, c1, c2);
+	}
+	else if (name == "quadraticField")
+	{
+		mat = gradQuadraticField(x_tilde, y, z, v0, c1, c2, c3);
+	}
+	else if (name == "strawberryField")
+	{
+		return gradStrawberryField(x_tilde, y, z, v0, w0, x0, y0, z0, c1, c2, c3, c4, c5, c6);
+	}
 	/* const double c = abs(n_gamma);
 	const Vector Q_0 {n_gamma[0]*n_gamma[0]/(c*c), n_gamma[0]/c, n_gamma[0]*n_gamma[2]/(c*c)};
 	const Vector Q_1 {n_gamma[0]/c, 1, n_gamma[2]/c};
@@ -149,15 +178,15 @@ Matrix VelocityField::gradAt(double t, double x, double y, double z) {
 
 	Matrix temp;
 	const double c = abs(n_gamma);
-	temp[0][0] = mat[0][0] * n_gamma[0] * n_gamma[0] / (c*c);
+	temp[0][0] = mat[0][0] * n_gamma[0] * n_gamma[0] / (c * c);
 	temp[0][1] = mat[0][1] * n_gamma[0] / c;
-	temp[0][2] = mat[0][0] * n_gamma[0] * n_gamma[2] / (c*c);
+	temp[0][2] = mat[0][0] * n_gamma[0] * n_gamma[2] / (c * c);
 	temp[1][0] = mat[1][0] * n_gamma[0] / c;
 	temp[1][1] = mat[1][1];
 	temp[1][2] = mat[1][0] * n_gamma[2] / c;
-	temp[2][0] = mat[0][0] * n_gamma[0] * n_gamma[2] / (c*c);
+	temp[2][0] = mat[0][0] * n_gamma[0] * n_gamma[2] / (c * c);
 	temp[2][1] = mat[0][1] * n_gamma[2] / c;
-	temp[2][2] = mat[0][0] * n_gamma[2] * n_gamma[2] / (c*c);
+	temp[2][2] = mat[0][0] * n_gamma[2] * n_gamma[2] / (c * c);
 
 	return temp;
 }
@@ -165,8 +194,8 @@ Matrix VelocityField::gradAt(double t, double x, double y, double z) {
 /* Matrix  VelocityField::hessianAt(double t, double x, double y, double z) {
 	Vector p = {x, y, z};
 	p = rotMatrix.transposed*p;
-	x = p[0]; 
-	y = p[1]; 
+	x = p[0];
+	y = p[1];
 	z = p[2];
 
 	if (name == "shearField") {
@@ -194,19 +223,25 @@ Matrix VelocityField::gradAt(double t, double x, double y, double z) {
  * @param t The time
  */
 
-Vector VelocityField::secondPartial(double t, double x, double y, double z, Vector tau) {
+Vector VelocityField::secondPartial(double t, double x, double y, double z, Vector tau)
+{
 
-	double x_tilde = x*n_gamma[0] + z*n_gamma[2] - alpha;
+	double x_tilde = x * n_gamma[0] + z * n_gamma[2] - alpha;
 
 	// Second order partial derivatives of the velocity fields with the structure
 	// {dxdx_vx, dxdy_vx, dydy_vx, dxdx_vy, dxdy_vy, dydy_vy}
-	array<double, 6> partials; 
+	array<double, 6> partials;
 
-	if (name == "shearField") {
-        partials = partialsShearField(x_tilde, y, z, v0);
-	} else if (name == "quadraticField") {
-        partials = partialsQuadraticField(x_tilde, y, z, v0, c1, c2, c3);
-	} else {
+	if (name == "shearField")
+	{
+		partials = partialsShearField(x_tilde, y, z, v0);
+	}
+	else if (name == "quadraticField")
+	{
+		partials = partialsQuadraticField(x_tilde, y, z, v0, c1, c2, c3);
+	}
+	else
+	{
 		partials = {0, 0, 0, 0, 0, 0};
 	}
 
@@ -215,61 +250,46 @@ Vector VelocityField::secondPartial(double t, double x, double y, double z, Vect
 	double n_z = n_gamma[2];
 	double c = abs(n_gamma);
 
-	temp[0][0] = pow(n_x/c, 3) * partials[0] * tau[0] 
-                   + pow(n_x/c, 2) * partials[1] * tau[1]
-                   + pow(n_x, 2) * n_z / pow(c, 3) * partials[0] * tau[2];
+	temp[0][0] = pow(n_x / c, 3) * partials[0] * tau[0] + pow(n_x / c, 2) * partials[1] * tau[1] + pow(n_x, 2) * n_z / pow(c, 3) * partials[0] * tau[2];
 
-	temp[0][1] = pow(n_x/c, 2) * partials[1] * tau[0] 
-	           + n_x/c * partials[2] * tau[1] 
-	           + n_x*n_z/pow(c, 2) * partials[1] * tau[2];
+	temp[0][1] = pow(n_x / c, 2) * partials[1] * tau[0] + n_x / c * partials[2] * tau[1] + n_x * n_z / pow(c, 2) * partials[1] * tau[2];
 
-	temp[0][2] = pow(n_x, 2)*n_z/pow(c, 3) * partials[0] * tau[0] 
-	           + n_x*n_z /pow(c, 3) * partials[1] * tau[1] 
-	           + n_x*pow(n_z, 2) / pow(c, 3)* partials[0]*tau[2];
+	temp[0][2] = pow(n_x, 2) * n_z / pow(c, 3) * partials[0] * tau[0] + n_x * n_z / pow(c, 3) * partials[1] * tau[1] + n_x * pow(n_z, 2) / pow(c, 3) * partials[0] * tau[2];
 
-	temp[1][0] = pow(n_x/c, 2) * partials[3] * tau[0] 
-	           + n_x/c * partials[4] * tau[1] 
-	           + n_x*n_z/pow(c, 2) * partials[3] * tau[2];
+	temp[1][0] = pow(n_x / c, 2) * partials[3] * tau[0] + n_x / c * partials[4] * tau[1] + n_x * n_z / pow(c, 2) * partials[3] * tau[2];
 
-	temp[1][1] = n_x/c * partials[4] * tau[0] 
-	           + partials[5] * tau[1] 
-	           + n_z/c * partials[4] * tau[2];
+	temp[1][1] = n_x / c * partials[4] * tau[0] + partials[5] * tau[1] + n_z / c * partials[4] * tau[2];
 
-	temp[1][2] = n_x*n_z/pow(c, 2) *partials[3] * tau[0] 
-	           + n_z/c * partials[4] * tau[1] 
-	           + pow(n_z/c, 2) * partials[3] * tau[2];
+	temp[1][2] = n_x * n_z / pow(c, 2) * partials[3] * tau[0] + n_z / c * partials[4] * tau[1] + pow(n_z / c, 2) * partials[3] * tau[2];
 
-	temp[2][0] = pow(n_x, 2)*n_z/pow(c, 3) * partials[0] * tau[0] 
-	           + n_x*n_z/pow(c, 2)*partials[1] * tau[1] 
-	           + n_x*pow(n_z, 2)/ pow(c, 3) * partials[0] * tau[2];
+	temp[2][0] = pow(n_x, 2) * n_z / pow(c, 3) * partials[0] * tau[0] + n_x * n_z / pow(c, 2) * partials[1] * tau[1] + n_x * pow(n_z, 2) / pow(c, 3) * partials[0] * tau[2];
 
-	temp[2][1] = n_x*n_z/pow(c, 2) * partials[1] * tau[0] 
-	           + n_z/c * partials[2] * tau[1] 
-	           + pow(n_z/c, 2) * partials[1] * tau[2];
+	temp[2][1] = n_x * n_z / pow(c, 2) * partials[1] * tau[0] + n_z / c * partials[2] * tau[1] + pow(n_z / c, 2) * partials[1] * tau[2];
 
-	temp[2][2] = n_x*pow(n_z, 2)/pow(c, 3) * partials[0] * tau[0] 
-	           + pow(n_z/c, 2) * partials[1] * tau[1] 
-                   + pow(n_z/c, 3) * partials[0] * tau[2];
+	temp[2][2] = n_x * pow(n_z, 2) / pow(c, 3) * partials[0] * tau[0] + pow(n_z / c, 2) * partials[1] * tau[1] + pow(n_z / c, 3) * partials[0] * tau[2];
 
-	return temp*tau;
-	
+	return temp * tau;
 }
 
-void VelocityField::writeToFile(double t) {
-    int numX = (xmax - xmin)/dx;
-	int numY = (ymax - ymin)/dy;
-	int numZ = (zmax - zmin)/dz;
+void VelocityField::writeToFile(double t)
+{
+	int numX = (xmax - xmin) / dx;
+	int numY = (ymax - ymin) / dy;
+	int numZ = (zmax - zmin) / dz;
 
-	double *fieldValues = new double[numX*numY*numZ*3];
+	double *fieldValues = new double[numX * numY * numZ * 3];
 	double x, y, z;
 	int index = 0;
 
-	for (int k = 0; k < numZ; k++) {
-		for (int j = 0; j < numY; j++) {
-			for (int i = 0; i < numX; i++) {
-				x = i*dx - xmin;
-				y = j*dy - ymin;
-				z = k*dz - zmin;
+	for (int k = 0; k < numZ; k++)
+	{
+		for (int j = 0; j < numY; j++)
+		{
+			for (int i = 0; i < numX; i++)
+			{
+				x = i * dx - xmin;
+				y = j * dy - ymin;
+				z = k * dz - zmin;
 				Vector temp = this->at(t, x, y, z);
 				fieldValues[index] = temp[0];
 				fieldValues[index + 1] = temp[1];
@@ -279,53 +299,64 @@ void VelocityField::writeToFile(double t) {
 		}
 	}
 
-    std::string filename = outputDirectory + "data/Vel_t=" + std::to_string(t) + ".bin";
+	std::string filename = outputDirectory + "data/Vel_t=" + std::to_string(t) + ".bin";
 	FILE *velFile;
 	velFile = fopen(filename.data(), "wb");
-	fwrite(fieldValues, sizeof(double), numX*numY*numZ*3, velFile);
+	fwrite(fieldValues, sizeof(double), numX * numY * numZ * 3, velFile);
 	fclose(velFile);
 
 	delete[] fieldValues;
 }
 
-double VelocityField::getXMax() {
+double VelocityField::getXMax()
+{
 	return xmax;
 }
-double VelocityField::getYMax() {
+double VelocityField::getYMax()
+{
 	return ymax;
 }
 
-double VelocityField::getDx() {
+double VelocityField::getDx()
+{
 	return dx;
 }
 
-double VelocityField::getDy() {
+double VelocityField::getDy()
+{
 	return dy;
 }
-double VelocityField::getV0() {
-    return v0;
+double VelocityField::getV0()
+{
+	return v0;
 }
 
-double VelocityField::getC1() {
+double VelocityField::getC1()
+{
 	return c1;
 }
 
-double VelocityField::getC2() {
-    return c2;
+double VelocityField::getC2()
+{
+	return c2;
 }
 
-double VelocityField::getC3() {
-    return c3;
+double VelocityField::getC3()
+{
+	return c3;
 }
 
-double VelocityField::getTau() {
+double VelocityField::getTau()
+{
 	return tau;
 }
 
-std::string VelocityField::getName() {
+std::string VelocityField::getName()
+{
 	return name;
 }
 
-double VelocityField::getMaxNormValue() {
+double VelocityField::getMaxNormValue()
+{
 	return maxAbsoluteValue;
 }

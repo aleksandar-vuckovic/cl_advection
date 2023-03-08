@@ -8,14 +8,13 @@
  *
  */
 
-
-#include <iostream>   // Terminal IO
-#include <iomanip>    // IO manipulation, set::fixed, set::setprecision
+#include <iostream> // Terminal IO
+#include <iomanip>  // IO manipulation, set::fixed, set::setprecision
 #include <stdio.h>
 #include <string>
 #include <vector>
 #include <chrono>
-#include <getopt.h>   // GNU getopt
+#include <getopt.h> // GNU getopt
 #include "LevelSet.hpp"
 #include "VelocityField.hpp"
 #include "enums.hpp"
@@ -41,8 +40,9 @@ using std::array;
  * expcpX, expcpY, expcpZ, expAngle | The expected coordinates for the initial contact point and the expected initial contact angle. Those are used for the reference solutions.
  * trackedContactPoint | Whether to track the left or right contact point. Only applicable in 2D.
  */
-int main(int argc, char **argv) {
-	auto start = std::chrono::system_clock::now();
+int main(int argc, char **argv)
+{
+    auto start = std::chrono::system_clock::now();
 
     int numX, numY, numZ, threads;
     numX = numY = numZ = 0;
@@ -53,16 +53,13 @@ int main(int argc, char **argv) {
     double paraboloidStretchX, paraboloidStretchZ, paraboloidHeightMinimum;
     double ellipsoidStretchX, ellipsoidStretchY, ellipsoidStretchZ;
 
-    lenX = lenY = lenZ = time = centerX = centerY = centerZ = radius = expcpX = expcpY = expcpZ = expNormalX = expNormalY = expNormalZ = initCurvature
-    = expAngle = v0 = w0 = x0 = y0 = z0 = c1 = c2 = c3 = c4 = c5 = c6 = tau = CFL = writestepsFraction = planePolarAngle
-    = planeAzimuthalAngle =  fieldAzimuthalAngle = alpha = paraboloidStretchX = paraboloidStretchZ = paraboloidHeightMinimum
-    = ellipsoidStretchX = ellipsoidStretchY = ellipsoidStretchZ = 0;
+    lenX = lenY = lenZ = time = centerX = centerY = centerZ = radius = expcpX = expcpY = expcpZ = expNormalX = expNormalY = expNormalZ = initCurvature = expAngle = v0 = w0 = x0 = y0 = z0 = c1 = c2 = c3 = c4 = c5 = c6 = tau = CFL = writestepsFraction = planePolarAngle = planeAzimuthalAngle = fieldAzimuthalAngle = alpha = paraboloidStretchX = paraboloidStretchZ = paraboloidHeightMinimum = ellipsoidStretchX = ellipsoidStretchY = ellipsoidStretchZ = 0;
 
     bool writeField = false, calculateCurvature = true;
     bool applySourceTerm = false;
     int applyMollifier = 0;
-		double mollifier_width1 = 0.0;
-		double mollifier_width2 = 0.0;
+    double mollifier_width1 = 0.0;
+    double mollifier_width2 = 0.0;
 
     bool calculateEvaluationQuantities = true;
     std::string trackedContactPoint = "left", fieldName = "", outputDirectory = "";
@@ -71,22 +68,27 @@ int main(int argc, char **argv) {
 
     // Read data from Inputfile
     std::ifstream inFileStream("Inputfile");
-    if(!inFileStream.good()){
+    if (!inFileStream.good())
+    {
         std::cout << "Error: File 'Inputfile' not found in current folder.\n";
         exit(-1);
     }
 
     std::string line, varName, value, endMessage;
 
-    try {
-        while(std::getline(inFileStream, line)) {
+    try
+    {
+        while (std::getline(inFileStream, line))
+        {
             std::istringstream linestream(line);
-            if(std::getline(linestream, varName, '=')) {
+            if (std::getline(linestream, varName, '='))
+            {
                 // In case a line is commented out
                 if (varName.substr(0, 2) == "//")
                     continue;
 
-                if (std::getline(linestream, value)) {
+                if (std::getline(linestream, value))
+                {
                     if (varName == "numX")
                         numX = std::stoi(value);
                     else if (varName == "numY")
@@ -94,7 +96,7 @@ int main(int argc, char **argv) {
                     else if (varName == "numZ")
                         numZ = std::stoi(value);
                     else if (varName == "lenX")
-                        lenX =  std::stod(value);
+                        lenX = std::stod(value);
                     else if (varName == "lenY")
                         lenY = std::stod(value);
                     else if (varName == "lenZ")
@@ -104,7 +106,7 @@ int main(int argc, char **argv) {
                     else if (varName == "CFL")
                         CFL = std::stod(value);
                     else if (varName == "writestepsFraction")
-                        writestepsFraction =std::stod(value);
+                        writestepsFraction = std::stod(value);
                     else if (varName == "writeField")
                         std::stringstream(value) >> std::boolalpha >> writeField;
                     else if (varName == "v0")
@@ -122,7 +124,7 @@ int main(int argc, char **argv) {
                     else if (varName == "c5")
                         c5 = std::stod(value);
                     else if (varName == "c6")
-                        c6= std::stod(value);
+                        c6 = std::stod(value);
                     else if (varName == "x0")
                         x0 = std::stod(value);
                     else if (varName == "y0")
@@ -131,13 +133,15 @@ int main(int argc, char **argv) {
                         z0 = std::stod(value);
                     else if (varName == "tau")
                         tau = std::stod(value);
-                    else if (varName == "field") {
+                    else if (varName == "field")
+                    {
                         fieldName = value;
                         if (fieldName == "strawberryField" && fieldAzimuthalAngle != 0)
                             throw std::invalid_argument("Error: field is strawberryField and fieldAzimuthalAngle != 0. "
                                                         "It is currently not possible to rotate the strawberry field.");
                     }
-                    else if (varName == "fieldAzimuthalAngle") {
+                    else if (varName == "fieldAzimuthalAngle")
+                    {
                         fieldAzimuthalAngle = std::stod(value);
                         if (fieldName == "strawberryField" && fieldAzimuthalAngle != 0)
                             throw std::invalid_argument("Error: field is strawberryField and fieldAzimuthalAngle != 0. "
@@ -145,7 +149,8 @@ int main(int argc, char **argv) {
                     }
                     else if (varName == "alpha")
                         alpha = std::stod(value);
-                    else if (varName == "geometryType" || varName == "initShape") {
+                    else if (varName == "geometryType" || varName == "initShape")
+                    {
                         if (value == "sphere")
                             initShape = InitShape::sphere;
                         else if (value == "plane")
@@ -163,25 +168,37 @@ int main(int argc, char **argv) {
                         centerY = std::stod(value);
                     else if (varName == "centerZ")
                         centerZ = std::stod(value);
-                    else if (varName == "radius") {
+                    else if (varName == "radius")
+                    {
 
-                        if (initShape == InitShape::sphere) {
+                        if (initShape == InitShape::sphere)
+                        {
                             radius = std::stod(value);
-                        } else {
+                        }
+                        else
+                        {
                             throw std::invalid_argument("Given radius while not initializing sphere.");
                         }
                     }
-                    else if (varName == "planePolarAngle") {
-                        if (initShape == InitShape::plane) {
+                    else if (varName == "planePolarAngle")
+                    {
+                        if (initShape == InitShape::plane)
+                        {
                             planePolarAngle = std::stod(value);
-                        } else {
+                        }
+                        else
+                        {
                             throw std::invalid_argument("Given plane angle while not initializing plane.");
                         }
                     }
-                    else if (varName == "planeAzimuthalAngle") {
-                        if (initShape == InitShape::plane) {
+                    else if (varName == "planeAzimuthalAngle")
+                    {
+                        if (initShape == InitShape::plane)
+                        {
                             planeAzimuthalAngle = std::stod(value);
-                        } else {
+                        }
+                        else
+                        {
                             throw std::invalid_argument("Given plane angle while not initializing plane.");
                         }
                     }
@@ -203,16 +220,18 @@ int main(int argc, char **argv) {
                         expcpY = std::stod(value);
                     else if (varName == "expcpZ")
                         expcpZ = std::stod(value);
-                    else if (varName == "expAngle") {
+                    else if (varName == "expAngle")
+                    {
                         if (numZ == 1)
                             expAngle = std::stod(value);
                         else
                             throw std::invalid_argument("Input parameter expAngle is not applicable in 3D. Instead define the expected normal vector "
                                                         "by setting the parameters expNormalX, expNormalY and expNormalZ.");
                     }
-                    else if (varName == "expNormalX" || varName == "expNormalY" || varName == "expNormalZ") {
+                    else if (varName == "expNormalX" || varName == "expNormalY" || varName == "expNormalZ")
+                    {
                         endMessage = "WARNING: Parameters expNormalX / expNormalY / expNormalZ are deprecated.\n In 3D, the expected normal vector "
-                                      "is instead calculated from the given contact point and the shape arguments. In 2D, expAngle is still used.";
+                                     "is instead calculated from the given contact point and the shape arguments. In 2D, expAngle is still used.";
                     }
                     else if (varName == "trackedContactPoint")
                         trackedContactPoint = value;
@@ -222,24 +241,26 @@ int main(int argc, char **argv) {
                         std::stringstream(value) >> std::boolalpha >> calculateCurvature;
                     else if (varName == "applySourceTerm")
                         std::stringstream(value) >> std::boolalpha >> applySourceTerm;
-										else if (varName == "mollifier_width1")
-														mollifier_width1 = std::stod(value);
-									  else if (varName == "mollifier_width2")
-														mollifier_width2 = std::stod(value);
-										else if (varName == "applyMollifier")
-		                    		applyMollifier = std::stoi(value);
+                    else if (varName == "mollifier_width1")
+                        mollifier_width1 = std::stod(value);
+                    else if (varName == "mollifier_width2")
+                        mollifier_width2 = std::stod(value);
+                    else if (varName == "applyMollifier")
+                        applyMollifier = std::stoi(value);
                     else if (varName == "calculateEvaluationQuantities")
                         std::stringstream(value) >> std::boolalpha >> calculateEvaluationQuantities;
                     else if (varName == "threads")
                         threads = std::stoi(value);
                     else
                         throw std::invalid_argument("Input parameter \"" + varName + "\" not recognized.");
-                    }
+                }
                 else
                     throw std::invalid_argument("Input parameter \"" + varName + "\" is not set.");
             }
         }
-    } catch (std::invalid_argument &e) {
+    }
+    catch (std::invalid_argument &e)
+    {
         std::cout << e.what() << std::endl;
         return 1;
     }
@@ -247,100 +268,120 @@ int main(int argc, char **argv) {
     static struct option long_options[] = {
         {"resolution", required_argument, nullptr, 'r'},
         {"field", required_argument, nullptr, 'f'},
-        {"CFL",required_argument , nullptr, 'c'},
+        {"CFL", required_argument, nullptr, 'c'},
         {"output", required_argument, nullptr, 'o'},
         {"threads", required_argument, nullptr, 't'},
         {"writeField", required_argument, nullptr, 'w'},
-        {nullptr, 0, nullptr, 0}
-    };
+        {nullptr, 0, nullptr, 0}};
 
     int opt;
-    extern char* optarg;
+    extern char *optarg;
     // Parse command line arguments with GNU getopt
-    while (true) {
+    while (true)
+    {
         int option_index;
         opt = getopt_long(argc, argv, "f:r:c:o:t:w:", long_options, &option_index);
 
-        if (opt == -1)      //If there are no more options or arguments left, exit the loop
+        if (opt == -1) // If there are no more options or arguments left, exit the loop
             break;
 
-        switch(opt) {
-            case 'f': {
-                fieldName = optarg;
-                break;
-            }
-            case 'r': {
-                double resolution = std::stod(optarg);
-                numX = numX * resolution;
-                numY = numY * resolution;
-                if (numZ != 1)
-                    numZ = numZ * resolution;
-                break;
-            }
-            case 'c': {
-                CFL = std::stod(optarg);
-                break;
-            }
-            case 'o': {
-                outputDirectory = optarg;
-                if (outputDirectory.back() != '/')
-                    outputDirectory = outputDirectory + '/';
-                break;
-            }
-            case 't': {
-                threads = std::stoi(optarg);
-                break;
-            }
+        switch (opt)
+        {
+        case 'f':
+        {
+            fieldName = optarg;
+            break;
+        }
+        case 'r':
+        {
+            double resolution = std::stod(optarg);
+            numX = numX * resolution;
+            numY = numY * resolution;
+            if (numZ != 1)
+                numZ = numZ * resolution;
+            break;
+        }
+        case 'c':
+        {
+            CFL = std::stod(optarg);
+            break;
+        }
+        case 'o':
+        {
+            outputDirectory = optarg;
+            if (outputDirectory.back() != '/')
+                outputDirectory = outputDirectory + '/';
+            break;
+        }
+        case 't':
+        {
+            threads = std::stoi(optarg);
+            break;
+        }
 
-            case 'w': {
-                std::stringstream(optarg) >> std::boolalpha >> writeField;
-		break;
-            }
+        case 'w':
+        {
+            std::stringstream(optarg) >> std::boolalpha >> writeField;
+            break;
+        }
 
-            default:
-                abort();
-
+        default:
+            abort();
         }
     }
 
-    while (optind < argc) {
+    while (optind < argc)
+    {
         std::cout << "non-option argument" << std::string(argv[optind]) << std::endl;
         optind++;
     }
 
-  	//Parallel computing
-  	omp_set_num_threads(threads);
+    // Parallel computing
+    omp_set_num_threads(threads);
 
     field = new VelocityField(fieldName, v0, w0, x0, y0, z0, c1, c2, c3, c4, c5, c6,
-                              tau, 0, lenX, 0, lenY, 0, lenZ, lenX/numX,lenY/numY,lenZ/numZ, fieldAzimuthalAngle/180*M_PI, alpha, outputDirectory);
+                              tau, 0, lenX, 0, lenY, 0, lenZ, lenX / numX, lenY / numY, lenZ / numZ, fieldAzimuthalAngle / 180 * M_PI, alpha, outputDirectory);
 
-    double dx = lenX/numX;
-    double dy = lenY/numY;
-    double dz = lenZ/numZ;
+    double dx = lenX / numX;
+    double dy = lenY / numY;
+    double dz = lenZ / numZ;
 
-    std::vector<double> shapeParams;  // This will be populated below, depending on the chosen inital shape and used in LevelSet::expectedNormalVector
+    std::vector<double> shapeParams; // This will be populated below, depending on the chosen inital shape and used in LevelSet::expectedNormalVector
 
-    try {
-        if (initShape == InitShape::sphere) {
+    try
+    {
+        if (initShape == InitShape::sphere)
+        {
             if (initCurvature != 0)
                 throw std::invalid_argument("Given initCurvature when initializing a sphere. This is not necessary as it can be calculated form the radius.");
-            if (numZ == 1) {
-                initCurvature = -1/radius;
-            } else {
-                initCurvature = -2/radius;
+            if (numZ == 1)
+            {
+                initCurvature = -1 / radius;
             }
-            shapeParams = {};    // No additional parameters needed for the sphere
-        } else if (initShape == InitShape::plane) {
+            else
+            {
+                initCurvature = -2 / radius;
+            }
+            shapeParams = {}; // No additional parameters needed for the sphere
+        }
+        else if (initShape == InitShape::plane)
+        {
             if (initCurvature != 0)
                 throw std::invalid_argument("Given non-zero initCurvature when initializing a plane.");
             initCurvature = 0;
             shapeParams = {planePolarAngle / 180 * M_PI, planeAzimuthalAngle / 180 * M_PI};
-        } else if (initShape == InitShape::paraboloid) {
+        }
+        else if (initShape == InitShape::paraboloid)
+        {
             shapeParams = {paraboloidStretchX, paraboloidStretchZ};
-        } else if (initShape == InitShape::ellipsoid) {
+        }
+        else if (initShape == InitShape::ellipsoid)
+        {
             shapeParams = {ellipsoidStretchX, ellipsoidStretchY, ellipsoidStretchZ};
         }
-    }  catch (std::invalid_argument& e) {
+    }
+    catch (std::invalid_argument &e)
+    {
         std::cout << e.what() << std::endl;
     }
 
@@ -350,20 +391,22 @@ int main(int argc, char **argv) {
     Matrix expNormalVecGrad; // This will be used to calculate the curvature derivative at t = 0
 
     double dt = 0.0;
-    if ( numZ == 1 && expNormalX == 0 && expNormalY == 0 && expNormalZ == 0 ) {
-      // 2D case
-      dt = CFL*std::min(dx,dy)/field->getMaxNormValue();
+    if (numZ == 1 && expNormalX == 0 && expNormalY == 0 && expNormalZ == 0)
+    {
+        // 2D case
+        dt = CFL * std::min(dx, dy) / field->getMaxNormValue();
     }
-    else {
-      // 3D case
-      dt = CFL*std::min(std::min(dx,dy),dz)/field->getMaxNormValue();
+    else
+    {
+        // 3D case
+        dt = CFL * std::min(std::min(dx, dy), dz) / field->getMaxNormValue();
     }
 
-    int timesteps = time/dt;
-    int writesteps = ceil(writestepsFraction*timesteps);
+    int timesteps = time / dt;
+    int writesteps = ceil(writestepsFraction * timesteps);
 
     LevelSet Phi(numX, numY, numZ, dx, dy, dz, field, trackedContactPoint, dt, timesteps,
-    expCP, expAngle, initCurvature, initShape, shapeParams, center, outputDirectory);
+                 expCP, expAngle, initCurvature, initShape, shapeParams, center, outputDirectory);
 
     expNormalVecGrad = Phi.expectedNormalVectorGradient(expCP);
 
@@ -397,8 +440,9 @@ int main(int argc, char **argv) {
         sysRet = system(temp.data());
     temp = "mkdir " + outputDirectory + "data";
     sysRet = system(temp.data());
-    if (sysRet == 256) {
-    	std::cout << "Overwriting folder \"data\".\n";
+    if (sysRet == 256)
+    {
+        std::cout << "Overwriting folder \"data\".\n";
     }
 
     std::ofstream positionFile(outputDirectory + "position.csv");
@@ -424,21 +468,26 @@ int main(int argc, char **argv) {
     std::ofstream MainXmfFile(outputDirectory + "data/Phi.xmf");
     std::ofstream tauXmfFile(outputDirectory + "data/Tau.xmf");
 
-
-
     // main loop
-    for (int i = 0; i < timesteps; ++i) {
-        if (!calculateEvaluationQuantities) {
+    for (int i = 0; i < timesteps; ++i)
+    {
+        if (!calculateEvaluationQuantities)
+        {
             std::cout << "Calculation of evaluation quantities has been disabled.\n";
         }
         std::cout << "Step " << i << std::endl;
-        //Write field to file
-        if (writeField && i % (int)ceil((double)timesteps/writesteps) == 0) {
-            try {
+        // Write field to file
+        if (writeField && i % (int)ceil((double)timesteps / writesteps) == 0)
+        {
+            try
+            {
                 Phi.writeToFile(dt, i, timesteps, writesteps, &MainXmfFile, &tauXmfFile);
-            } catch (std::runtime_error& e) {
+            }
+            catch (std::runtime_error &e)
+            {
                 std::string str = e.what();
-                if (str.compare("Exit_Normal_Vector_0") == 0) {
+                if (str.compare("Exit_Normal_Vector_0") == 0)
+                {
                     std::cout << "WARNING: Normal vector with norm 0 encountered. Exiting.\n";
                     positionFile.flush();
                     angleFile.flush();
@@ -449,17 +498,22 @@ int main(int argc, char **argv) {
             }
         }
 
-	    // Calculate the reference position of the contact point
+        // Calculate the reference position of the contact point
         Vector newCPReference = positionTheoretical[i];
 
         // Get the the new contact point
         Vector newCPActual;
-        if (calculateEvaluationQuantities) {
-            try {
+        if (calculateEvaluationQuantities)
+        {
+            try
+            {
                 newCPActual = Phi.getContactPoint(i);
-            } catch (std::runtime_error &e) {
+            }
+            catch (std::runtime_error &e)
+            {
                 std::string str = e.what();
-                if (str.compare("CP_Exit_Simulation_Plane") == 0) {
+                if (str.compare("CP_Exit_Simulation_Plane") == 0)
+                {
                     std::cout << "WARNING: Contact point left simulation plane during evolution time. Exiting.\n";
                     positionFile.flush();
                     angleFile.flush();
@@ -471,12 +525,17 @@ int main(int argc, char **argv) {
         }
 
         // Evaluate the Contact Angle numerically based on Phi
-        if (calculateEvaluationQuantities) {
-            try {
+        if (calculateEvaluationQuantities)
+        {
+            try
+            {
                 angleActual[i] = Phi.getContactAngleInterpolated(i);
-            } catch (std::runtime_error &e) {
+            }
+            catch (std::runtime_error &e)
+            {
                 std::string str = e.what();
-                if (str.compare("Exit_Normal_Vector_0") == 0) {
+                if (str.compare("Exit_Normal_Vector_0") == 0)
+                {
                     std::cout << "WARNING: Normal vector with norm 0 encountered. Exiting.\n";
                     positionFile.flush();
                     angleFile.flush();
@@ -488,18 +547,21 @@ int main(int argc, char **argv) {
         }
 
         // Output to command line and positionFile
-        std::cout << "Time: " << std::to_string(i*dt) << "\n";
+        std::cout << "Time: " << std::to_string(i * dt) << "\n";
 
-
-
-        if (calculateEvaluationQuantities) {
-            if (numZ == 1) {
-                positionFile << i*dt << ", " << newCPActual[0] << ", " << newCPReference[0] << std::endl;
-            } else {
-                positionFile << i*dt << ", "
+        if (calculateEvaluationQuantities)
+        {
+            if (numZ == 1)
+            {
+                positionFile << i * dt << ", " << newCPActual[0] << ", " << newCPReference[0] << std::endl;
+            }
+            else
+            {
+                positionFile << i * dt << ", "
                              << newCPReference[0] << ", " << newCPReference[1] << ", " << newCPReference[2] << std::endl;
             }
-            std::cout << "Position " << "x, z  = " << newCPReference[0] << ", " << newCPReference[2] << "\n";
+            std::cout << "Position "
+                      << "x, z  = " << newCPReference[0] << ", " << newCPReference[2] << "\n";
             std::cout << "Actual: " << std::to_string(angleActual[i] / (2 * M_PI) * 360) + "\n";
             angleFile << std::to_string(i * dt) << ", "
                       << angleActual[i] / (2 * M_PI) * 360 << ", "
@@ -508,40 +570,38 @@ int main(int argc, char **argv) {
             std::cout << "Reference angle: " << angleTheoretical[i] << "\n";
         }
 
-        if (calculateEvaluationQuantities && calculateCurvature) {
+        if (calculateEvaluationQuantities && calculateCurvature)
+        {
 
             curvatureActualDivergence[i] = Phi.getCurvatureInterpolated(i);
             sectionalCurvatureA_Actual[i] = Phi.getSectionalCurvatureInterpolated(i, tangentAReference[i]);
             sectionalCurvatureB_Actual[i] = Phi.getSectionalCurvatureInterpolated(i, tangentBReference[i]);
             sectionalCurvatureC_Actual[i] = Phi.getSectionalCurvatureInterpolated(i, tangentCReference[i]);
 
-            curvatureFile << std::to_string(i*dt) + ", "
-                    + std::to_string(curvatureActualDivergence[i]) + ", "
-                    + std::to_string(curvatureTheoretical[i]) + "\n";
+            curvatureFile << std::to_string(i * dt) + ", " + std::to_string(curvatureActualDivergence[i]) + ", " + std::to_string(curvatureTheoretical[i]) + "\n";
 
             std::cout << "Measured curvature with divergence: " + std::to_string(curvatureActualDivergence[i]) + "\n";
-            std::cout << "Reference curvature: " + std::to_string(curvatureTheoretical[i])  << std::endl;
-            std::cout << "Reference secCurvA: " + std::to_string(sectionalCurvatureAReference[i])  << std::endl;
+            std::cout << "Reference curvature: " + std::to_string(curvatureTheoretical[i]) << std::endl;
+            std::cout << "Reference secCurvA: " + std::to_string(sectionalCurvatureAReference[i]) << std::endl;
 
-            sectionalCurvatureAFile << std::to_string(i*dt) + ", "
-                             + std::to_string(sectionalCurvatureA_Actual[i]) + ", "
-                             + std::to_string(sectionalCurvatureAReference[i]) + "\n";
+            sectionalCurvatureAFile << std::to_string(i * dt) + ", " + std::to_string(sectionalCurvatureA_Actual[i]) + ", " + std::to_string(sectionalCurvatureAReference[i]) + "\n";
 
-            sectionalCurvatureBFile << std::to_string(i*dt) + ", "
-                                       + std::to_string(sectionalCurvatureB_Actual[i]) + ", "
-                                       + std::to_string(sectionalCurvatureBReference[i]) + "\n";
-            sectionalCurvatureCFile << std::to_string(i*dt) + ", "
-                                       + std::to_string(sectionalCurvatureC_Actual[i]) + ", "
-                                       + std::to_string(sectionalCurvatureCReference[i]) + "\n";
+            sectionalCurvatureBFile << std::to_string(i * dt) + ", " + std::to_string(sectionalCurvatureB_Actual[i]) + ", " + std::to_string(sectionalCurvatureBReference[i]) + "\n";
+            sectionalCurvatureCFile << std::to_string(i * dt) + ", " + std::to_string(sectionalCurvatureC_Actual[i]) + ", " + std::to_string(sectionalCurvatureCReference[i]) + "\n";
         }
 
         // Calculate numerical flux through all faces of each cell and update Phi
-        if (applySourceTerm) {
-            try {
+        if (applySourceTerm)
+        {
+            try
+            {
                 Phi.calculateNextTimestepSourceTerm(dt, i, applyMollifier, mollifier_width1, mollifier_width2); // develop source term approach
-            } catch (std::runtime_error& e) {
+            }
+            catch (std::runtime_error &e)
+            {
                 std::string str = e.what();
-                if (str.compare("Exit_Normal_Vector_0") == 0) {
+                if (str.compare("Exit_Normal_Vector_0") == 0)
+                {
                     std::cout << "WARNING: Normal vector with norm 0 encountered. Exiting.\n";
                     positionFile.flush();
                     angleFile.flush();
@@ -551,7 +611,8 @@ int main(int argc, char **argv) {
                 }
             }
         }
-        else{
+        else
+        {
             Phi.calculateNextTimestep(dt, i); // standard implementation without source term
         }
 
@@ -564,7 +625,8 @@ int main(int argc, char **argv) {
         gradientNormAtContactPoint.flush();
     }
 
-    if (numZ > 1) {
+    if (numZ > 1)
+    {
         curvatureDerivativeFile << "0, "
                                 << std::to_string((curvatureActualDivergence[1] - curvatureActualDivergence[0]) / dt) + ", "
                                 << std::to_string(Phi.referenceCurvatureDeriv3D(initCurvature, expNormalVecGrad)) + "\n";
@@ -582,7 +644,6 @@ int main(int argc, char **argv) {
     std::chrono::duration<double> duration = end - start;
     std::cout << "Total runtime: " << duration.count() << "s" << std::endl;
     std::cout << endMessage;
-
 
     return 0;
 }

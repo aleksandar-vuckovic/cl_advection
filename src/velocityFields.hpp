@@ -11,8 +11,8 @@ Vector quadraticField(double x, double y, double z, double v0, double c1, double
 Matrix gradQuadraticField(double x, double y, double z, double v0, double c1, double c2, double c3);
 array<double, 6> partialsQuadraticField(double x, double y, double z, double v0, double c1, double c2, double c3);
 Vector strawberryField(double x, double y, double z, double v0, double w0, double x0, double y0, double z0,
-                     double c1, double c2, double c3, double c4, double c5, double c6);
+                       double c1, double c2, double c3, double c4, double c5, double c6);
 Matrix gradStrawberryField(double x, double y, double z, double v0, double w0, double x0, double y0, double z0,
-                     double c1, double c2, double c3, double c4, double c5, double c6);
+                           double c1, double c2, double c3, double c4, double c5, double c6);
 
 #endif /* FIELDS_HPP_ */

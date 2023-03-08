@@ -1,8 +1,8 @@
 #ifndef CLASS_LEVELSET
 #define CLASS_LEVELSET
 
-#include <sstream>    // Stringstream
-#include <fstream>    // Filestream
+#include <sstream> // Stringstream
+#include <fstream> // Filestream
 #include <Eigen/Dense>
 
 #include "Field.hpp"
@@ -12,19 +12,20 @@
 
 #include <omp.h>
 
-class LevelSet : Field<double> {
+class LevelSet : Field<double>
+{
 private:
     // A pointer to the VelocityField acting on the LevelSet field.
-    VelocityField* field;
+    VelocityField *field;
 
     // Decides which contact point to track. Only applicable in 2D.
     std::string trackedCP, outputDirectory;
 
     /**
-    *   Reference data..
-    *   This is needed, since many other reference solvers are coupled, and all of them require this data,
-    *   leading to a high number in nested loops.
-    **/
+     *   Reference data..
+     *   This is needed, since many other reference solvers are coupled, and all of them require this data,
+     *   leading to a high number in nested loops.
+     **/
     std::vector<Vector> positionReference;
     std::vector<Vector> normalReference;
     std::vector<Vector> tangentAReference;
@@ -42,11 +43,10 @@ private:
     std::vector<double> shapeParams;
     Vector initCenter;
 
-
 public:
     LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz, VelocityField *field,
-            std::string trackedCP, double dt, int timesteps, Vector expCP, double expAngle,
-            double initCurvature, InitShape shape, std::vector<double> shapeParams, Vector initCenter, std::string outputDirectory);
+             std::string trackedCP, double dt, int timesteps, Vector expCP, double expAngle,
+             double initCurvature, InitShape shape, std::vector<double> shapeParams, Vector initCenter, std::string outputDirectory);
 
     Vector getInitCP(Vector expcp, double epsilon);
     void referenceContactPointExplicitEuler(double dt, int timesteps, Vector initCP);
@@ -57,7 +57,7 @@ public:
     void referenceNormalExplicitEuler(double dt, int timestep, Vector n_sigma_init);
     Vector referenceNormalExplicitEulerSingle(double dt, int last_timestep, std::vector<Vector> backwardsPoints);
     void referenceAngleLinearField(double dt, int timesteps, double theta0);
-    Vector getNormalVector(array<int, 3> cell,  bool useInterpolation = true, bool normalizeVector = true, bool findCPin2D = true) const;
+    Vector getNormalVector(array<int, 3> cell, bool useInterpolation = true, bool normalizeVector = true, bool findCPin2D = true) const;
     Vector getNormalVector(int i, int j, int k) const;
     Vector getTangentialVector(Vector normal) const;
     double getContactAngleInterpolated(int timestep);
@@ -84,7 +84,7 @@ public:
 
     std::vector<Vector> getPositionReference() const;
     std::vector<double> getAngleReference() const;
-    const std::vector<double>& getCurvatureReference() const;
+    const std::vector<double> &getCurvatureReference() const;
 
     void referenceTangentExplicitEuler(double dt, int last_timestep, Vector tangent_init);
 

@@ -9,9 +9,10 @@
 #include <vector>
 
 template <class T>
-class Field {
-    private:
-    //Used to store the data of the field
+class Field
+{
+private:
+    // Used to store the data of the field
     std::vector<T> data;
 
 protected:
@@ -21,13 +22,14 @@ protected:
     ///@}
 
     double dx, dy, dz;
+
 public:
     Field(int numX, int numY, int numZ, double dx, double dy, double dz);
-    T& at(int i, int j, int k);
-    const T& at(int i, int j, int k) const;
-    const std::vector<T>& getData() const;
-
+    T &at(int i, int j, int k);
+    const T &at(int i, int j, int k) const;
+    const std::vector<T> &getData() const;
 };
+
 #include "Field.cpp"
 
 #endif

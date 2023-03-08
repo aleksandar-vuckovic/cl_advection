@@ -8,10 +8,11 @@
 
 using std::array;
 
-class VelocityField {
+class VelocityField
+{
 private:
-    //@{
-    /** The space the velocity field is defined on */
+	//@{
+	/** The space the velocity field is defined on */
 	double xmin, xmax, ymin, ymax, zmin, zmax;
 	//@}
 
@@ -22,22 +23,22 @@ private:
 
 	//@{
 	/** The parameters of the velocity field */
-    double v0, w0, x0, y0, z0, c1, c2, c3, c4, c5, c6, tau, alpha;
+	double v0, w0, x0, y0, z0, c1, c2, c3, c4, c5, c6, tau, alpha;
 	const Vector n_gamma, n_y;
 	//@}
 
-    /// The kind of velocity field, either navier, navier with cosine modulation, shear or strawberry.
-    std::string name, outputDirectory;
-	///The maximum absolute value of the field on the space it is defined on.
+	/// The kind of velocity field, either navier, navier with cosine modulation, shear or strawberry.
+	std::string name, outputDirectory;
+	/// The maximum absolute value of the field on the space it is defined on.
 	double maxAbsoluteValue;
 
 public:
-    VelocityField(std::string name, double v0, double w0, double x0, double y0, double z0,
-                             double c1, double c2, double c3, double c4, double c5, double c6, double tau,
-                             double xmin, double xmax, double ymin, double ymax, double zmin, double zmax,
-                             double dx, double dy, double dz, double azimuthalAngle, double alpha, std::string outputDirectory);
-    Vector at(double t, double x, double y, double z);
-    Matrix gradAt(double t, double x, double y, double z);
+	VelocityField(std::string name, double v0, double w0, double x0, double y0, double z0,
+				  double c1, double c2, double c3, double c4, double c5, double c6, double tau,
+				  double xmin, double xmax, double ymin, double ymax, double zmin, double zmax,
+				  double dx, double dy, double dz, double azimuthalAngle, double alpha, std::string outputDirectory);
+	Vector at(double t, double x, double y, double z);
+	Matrix gradAt(double t, double x, double y, double z);
 	Vector secondPartial(double t, double x, double y, double z, Vector tau);
 	void writeToFile(double t);
 	double getXMax();

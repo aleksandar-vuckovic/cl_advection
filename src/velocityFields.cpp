@@ -13,9 +13,10 @@
  * @param v0 The scaling factor of the shear field
  * @return The velocity vector at the given point
  */
-Vector shearField(double x, double y, double z, double v0) {
-    Vector tempReturn = {-sin(M_PI*x)*cos(M_PI*y), cos(M_PI*x)*sin(M_PI*y), 0};
-	return v0*tempReturn;
+Vector shearField(double x, double y, double z, double v0)
+{
+    Vector tempReturn = {-sin(M_PI * x) * cos(M_PI * y), cos(M_PI * x) * sin(M_PI * y), 0};
+    return v0 * tempReturn;
 }
 
 /**
@@ -26,14 +27,15 @@ Vector shearField(double x, double y, double z, double v0) {
  * @param v0 The scaling factor of the shear field
  * @return The jacobian matrix at the given point
  */
-Matrix gradShearField(double x, double y, double z, double v0) {
+Matrix gradShearField(double x, double y, double z, double v0)
+{
     Matrix tempReturn;
-    tempReturn[0] = {-M_PI*cos(M_PI*x)*cos(M_PI*y), M_PI*sin(M_PI*x)*sin(M_PI*y), 0};
-    tempReturn[1] = {-M_PI*sin(M_PI*x)*sin(M_PI*y), M_PI*cos(M_PI*x)*cos(M_PI*y), 0};
+    tempReturn[0] = {-M_PI * cos(M_PI * x) * cos(M_PI * y), M_PI * sin(M_PI * x) * sin(M_PI * y), 0};
+    tempReturn[1] = {-M_PI * sin(M_PI * x) * sin(M_PI * y), M_PI * cos(M_PI * x) * cos(M_PI * y), 0};
     tempReturn[2] = {0, 0, 0};
 
-    tempReturn[0] = v0*tempReturn[0];
-    tempReturn[1] = v0*tempReturn[1];
+    tempReturn[0] = v0 * tempReturn[0];
+    tempReturn[1] = v0 * tempReturn[1];
     return tempReturn;
 }
 
@@ -45,15 +47,16 @@ Matrix gradShearField(double x, double y, double z, double v0) {
  * \f$\partial_x^2 v_x, \partial_x\partial_y vx, \partial_y^2 v_y, \partial_x^2 v_y, \partial_x\partial_y v_y, \partial_y^2_v_y\f$.
  *
  */
-array<double, 6> partialsShearField(double x, double y, double z, double v0) {
+array<double, 6> partialsShearField(double x, double y, double z, double v0)
+{
 
-    double dxdx_vx = v0*M_PI*M_PI*sin(M_PI*x)*cos(M_PI*y);
-    double dxdy_vx = v0*M_PI*M_PI*cos(M_PI*x)*sin(M_PI*y);
-    double dydy_vx = v0*M_PI*M_PI*sin(M_PI*x)*cos(M_PI*y);
+    double dxdx_vx = v0 * M_PI * M_PI * sin(M_PI * x) * cos(M_PI * y);
+    double dxdy_vx = v0 * M_PI * M_PI * cos(M_PI * x) * sin(M_PI * y);
+    double dydy_vx = v0 * M_PI * M_PI * sin(M_PI * x) * cos(M_PI * y);
 
-    double dxdx_vy = -v0*M_PI*M_PI*cos(M_PI*x)*sin(M_PI*y);
-    double dxdy_vy = -v0*M_PI*M_PI*sin(M_PI*x)*cos(M_PI*y);
-    double dydy_vy = -v0*M_PI*M_PI*cos(M_PI*x)*sin(M_PI*y);
+    double dxdx_vy = -v0 * M_PI * M_PI * cos(M_PI * x) * sin(M_PI * y);
+    double dxdy_vy = -v0 * M_PI * M_PI * sin(M_PI * x) * cos(M_PI * y);
+    double dydy_vy = -v0 * M_PI * M_PI * cos(M_PI * x) * sin(M_PI * y);
 
     return {dxdx_vx, dxdy_vx, dydy_vx, dxdx_vy, dxdy_vy, dydy_vy};
 }
@@ -68,8 +71,9 @@ array<double, 6> partialsShearField(double x, double y, double z, double v0) {
  * @param c2 A parameter of the field
  * @return The velocity vector at the given point
  */
-Vector navierField(double x, double y, double z, double v0, double c1, double c2) {
-	return { v0 + c1*x + c2*y, -c1*y, 0};
+Vector navierField(double x, double y, double z, double v0, double c1, double c2)
+{
+    return {v0 + c1 * x + c2 * y, -c1 * y, 0};
 }
 
 /**
@@ -81,12 +85,13 @@ Vector navierField(double x, double y, double z, double v0, double c1, double c2
  * @param c1, c2 Parameters of the navier field
  * @return The jacobian matrix at the given point
  */
-Matrix gradNavierField(double x, double y, double z, double v0, double c1, double c2) {
+Matrix gradNavierField(double x, double y, double z, double v0, double c1, double c2)
+{
     Matrix tempReturn;
-	tempReturn[0] = {c1, c2, 0};
-	tempReturn[1] = {0, -c1, 0};
-	tempReturn[2] = {0, 0, 0};
-	return tempReturn;
+    tempReturn[0] = {c1, c2, 0};
+    tempReturn[1] = {0, -c1, 0};
+    tempReturn[2] = {0, 0, 0};
+    return tempReturn;
 }
 
 /**
@@ -98,8 +103,9 @@ Matrix gradNavierField(double x, double y, double z, double v0, double c1, doubl
  * @param c2, c3, c4 Parameters of the quadratic of the field
  * @return The velocity vector at the given point
  */
-Vector quadraticField(double x, double y, double z, double v0, double c1, double c2, double c3) {
-    return {v0 + c1*x + c2*y + c3*y*y, -c1*y};
+Vector quadraticField(double x, double y, double z, double v0, double c1, double c2, double c3)
+{
+    return {v0 + c1 * x + c2 * y + c3 * y * y, -c1 * y};
 }
 
 /**
@@ -111,9 +117,10 @@ Vector quadraticField(double x, double y, double z, double v0, double c1, double
  * @param c2, c3, c4 Parameters of the quadratic field
  * @return The jacobian matrix at the given point
  */
-Matrix gradQuadraticField(double x, double y, double z, double v0, double c1, double c2, double c3) {
+Matrix gradQuadraticField(double x, double y, double z, double v0, double c1, double c2, double c3)
+{
     Matrix tempReturn;
-    tempReturn[0] = {c1, c2 + 2*c3*y, 0};
+    tempReturn[0] = {c1, c2 + 2 * c3 * y, 0};
     tempReturn[1] = {0, -c1, 0};
     tempReturn[2] = {0, 0, 0};
     return tempReturn;
@@ -127,11 +134,12 @@ Matrix gradQuadraticField(double x, double y, double z, double v0, double c1, do
  * \f$\partial_x^2 v_x, \partial_x\partial_y vx, \partial_y^2 v_y, \partial_x^2 v_y, \partial_x\partial_y v_y, \partial_y^2_v_y\f$.
  *
  */
-array<double, 6> partialsQuadraticField(double x, double y, double z, double v0, double c1, double c2, double c3) {
+array<double, 6> partialsQuadraticField(double x, double y, double z, double v0, double c1, double c2, double c3)
+{
 
     double dxdx_vx = 0;
     double dxdy_vx = 0;
-    double dydy_vx = 2*c3;
+    double dydy_vx = 2 * c3;
 
     double dxdx_vy = 0;
     double dxdy_vy = 0;
@@ -150,12 +158,14 @@ array<double, 6> partialsQuadraticField(double x, double y, double z, double v0,
  * @return The velocity vector at the given point
  */
 Vector strawberryField(double x, double y, double z, double v0, double w0, double x0, double y0, double z0,
-                     double c1, double c2, double c3, double c4, double c5, double c6) {
-    return {v0 + c1 * (x - x0) + c2*(y-y0) + c3*(z - z0), -(c1 + c6)*y, w0 + c4*(x - x0) + c5*(y - y0) + c6*(z - z0) };
+                       double c1, double c2, double c3, double c4, double c5, double c6)
+{
+    return {v0 + c1 * (x - x0) + c2 * (y - y0) + c3 * (z - z0), -(c1 + c6) * y, w0 + c4 * (x - x0) + c5 * (y - y0) + c6 * (z - z0)};
 }
 
 Matrix gradStrawberryField(double x, double y, double z, double v0, double w0, double x0, double y0, double z0,
-                           double c1, double c2, double c3, double c4, double c5, double c6) {
+                           double c1, double c2, double c3, double c4, double c5, double c6)
+{
     Matrix tempReturn;
     tempReturn[0] = {c1, c2, c3};
     tempReturn[1] = {0, -(c1 + c6), 0};
