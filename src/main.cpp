@@ -47,7 +47,7 @@ int main(int argc, char **argv) {
     int numX, numY, numZ, threads;
     numX = numY = numZ = 0;
     threads = 1;
-    
+
     double lenX, lenY, lenZ, time, centerX, centerY, centerZ, radius, expcpX, expcpY, expcpZ, expAngle, expNormalX, expNormalY, expNormalZ, initCurvature;
     double v0, w0, x0, y0, z0, c1, c2, c3, c4, c5, c6, tau, CFL, writestepsFraction, planePolarAngle, planeAzimuthalAngle, fieldAzimuthalAngle, alpha;
     double paraboloidStretchX, paraboloidStretchZ, paraboloidHeightMinimum;
@@ -55,10 +55,16 @@ int main(int argc, char **argv) {
 
     lenX = lenY = lenZ = time = centerX = centerY = centerZ = radius = expcpX = expcpY = expcpZ = expNormalX = expNormalY = expNormalZ = initCurvature
     = expAngle = v0 = w0 = x0 = y0 = z0 = c1 = c2 = c3 = c4 = c5 = c6 = tau = CFL = writestepsFraction = planePolarAngle
-    = planeAzimuthalAngle =  fieldAzimuthalAngle = alpha = paraboloidStretchX = paraboloidStretchZ = paraboloidHeightMinimum 
+    = planeAzimuthalAngle =  fieldAzimuthalAngle = alpha = paraboloidStretchX = paraboloidStretchZ = paraboloidHeightMinimum
     = ellipsoidStretchX = ellipsoidStretchY = ellipsoidStretchZ = 0;
-    
+
     bool writeField = false, calculateCurvature = true;
+    bool applySourceTerm = false;
+    int applyMollifier = 0;
+		double mollifier_width1 = 0.0;
+		double mollifier_width2 = 0.0;
+
+    bool calculateEvaluationQuantities = true;
     std::string trackedContactPoint = "left", fieldName = "", outputDirectory = "";
     InitShape initShape = InitShape::sphere;
     VelocityField *field = nullptr;
@@ -214,6 +220,16 @@ int main(int argc, char **argv) {
                         initCurvature = std::stod(value);
                     else if (varName == "calculateCurvature")
                         std::stringstream(value) >> std::boolalpha >> calculateCurvature;
+                    else if (varName == "applySourceTerm")
+                        std::stringstream(value) >> std::boolalpha >> applySourceTerm;
+										else if (varName == "mollifier_width1")
+														mollifier_width1 = std::stod(value);
+									  else if (varName == "mollifier_width2")
+														mollifier_width2 = std::stod(value);
+										else if (varName == "applyMollifier")
+		                    		applyMollifier = std::stoi(value);
+                    else if (varName == "calculateEvaluationQuantities")
+                        std::stringstream(value) >> std::boolalpha >> calculateEvaluationQuantities;
                     else if (varName == "threads")
                         threads = std::stoi(value);
                     else
@@ -341,12 +357,12 @@ int main(int argc, char **argv) {
     else {
       // 3D case
       dt = CFL*std::min(std::min(dx,dy),dz)/field->getMaxNormValue();
-    } 
+    }
 
     int timesteps = time/dt;
     int writesteps = ceil(writestepsFraction*timesteps);
 
-    LevelSet Phi(numX, numY, numZ, dx, dy, dz, field, trackedContactPoint, dt, timesteps, 
+    LevelSet Phi(numX, numY, numZ, dx, dy, dz, field, trackedContactPoint, dt, timesteps,
     expCP, expAngle, initCurvature, initShape, shapeParams, center, outputDirectory);
 
     expNormalVecGrad = Phi.expectedNormalVectorGradient(expCP);
@@ -384,7 +400,7 @@ int main(int argc, char **argv) {
     if (sysRet == 256) {
     	std::cout << "Overwriting folder \"data\".\n";
     }
-    
+
     std::ofstream positionFile(outputDirectory + "position.csv");
     positionFile.precision(16);
     std::ofstream angleFile(outputDirectory + "contactAngle.csv");
@@ -399,8 +415,8 @@ int main(int argc, char **argv) {
     sectionalCurvatureBFile.precision(16);
     std::ofstream sectionalCurvatureCFile(outputDirectory + "sectionalCurvatureC.csv");
     sectionalCurvatureCFile.precision(16);
-    std::ofstream minimumGradient(outputDirectory + "minimumGradient.csv");
-    minimumGradient.precision(16);
+    std::ofstream gradientNormAtContactPoint(outputDirectory + "gradientNormAtContactPoint.csv");
+    gradientNormAtContactPoint.precision(16);
 
     double sumAtStart = Phi.sumLevelSet();
 
@@ -412,10 +428,25 @@ int main(int argc, char **argv) {
 
     // main loop
     for (int i = 0; i < timesteps; ++i) {
+        if (!calculateEvaluationQuantities) {
+            std::cout << "Calculation of evaluation quantities has been disabled.\n";
+        }
         std::cout << "Step " << i << std::endl;
         //Write field to file
         if (writeField && i % (int)ceil((double)timesteps/writesteps) == 0) {
-            Phi.writeToFile(dt, i, timesteps, writesteps, &MainXmfFile, &tauXmfFile);
+            try {
+                Phi.writeToFile(dt, i, timesteps, writesteps, &MainXmfFile, &tauXmfFile);
+            } catch (std::runtime_error& e) {
+                std::string str = e.what();
+                if (str.compare("Exit_Normal_Vector_0") == 0) {
+                    std::cout << "WARNING: Normal vector with norm 0 encountered. Exiting.\n";
+                    positionFile.flush();
+                    angleFile.flush();
+                    if (calculateCurvature)
+                        curvatureFile.flush();
+                    break;
+                }
+            }
         }
 
 	    // Calculate the reference position of the contact point
@@ -423,43 +454,61 @@ int main(int argc, char **argv) {
 
         // Get the the new contact point
         Vector newCPActual;
-        try {
-            newCPActual = Phi.getContactPoint(i);
-        } catch (std::runtime_error& e) {
-            std::string str = e.what();
-            if (str.compare("CP_Exit_Simulation_Plane") == 0) {
-                std::cout << "WARNING: Contact point left simulation plane during evolution time. Exiting.\n";
-                positionFile.flush();
-                angleFile.flush();
-                if (calculateCurvature)
-                    curvatureFile.flush();
-                break;
+        if (calculateEvaluationQuantities) {
+            try {
+                newCPActual = Phi.getContactPoint(i);
+            } catch (std::runtime_error &e) {
+                std::string str = e.what();
+                if (str.compare("CP_Exit_Simulation_Plane") == 0) {
+                    std::cout << "WARNING: Contact point left simulation plane during evolution time. Exiting.\n";
+                    positionFile.flush();
+                    angleFile.flush();
+                    if (calculateCurvature)
+                        curvatureFile.flush();
+                    break;
+                }
             }
         }
 
         // Evaluate the Contact Angle numerically based on Phi
-        angleActual[i] = Phi.getContactAngleInterpolated(i);
+        if (calculateEvaluationQuantities) {
+            try {
+                angleActual[i] = Phi.getContactAngleInterpolated(i);
+            } catch (std::runtime_error &e) {
+                std::string str = e.what();
+                if (str.compare("Exit_Normal_Vector_0") == 0) {
+                    std::cout << "WARNING: Normal vector with norm 0 encountered. Exiting.\n";
+                    positionFile.flush();
+                    angleFile.flush();
+                    if (calculateCurvature)
+                        curvatureFile.flush();
+                    break;
+                }
+            }
+        }
 
         // Output to command line and positionFile
         std::cout << "Time: " << std::to_string(i*dt) << "\n";
 
-        if (numZ == 1) {
-            positionFile << i*dt << ", " << newCPActual[0] << ", " << newCPReference[0] << std::endl;
-        } else {
-            positionFile << i*dt << ", "
-                         << newCPReference[0] << ", " << newCPReference[1] << ", " << newCPReference[2] << std::endl;
+
+
+        if (calculateEvaluationQuantities) {
+            if (numZ == 1) {
+                positionFile << i*dt << ", " << newCPActual[0] << ", " << newCPReference[0] << std::endl;
+            } else {
+                positionFile << i*dt << ", "
+                             << newCPReference[0] << ", " << newCPReference[1] << ", " << newCPReference[2] << std::endl;
+            }
+            std::cout << "Position " << "x, z  = " << newCPReference[0] << ", " << newCPReference[2] << "\n";
+            std::cout << "Actual: " << std::to_string(angleActual[i] / (2 * M_PI) * 360) + "\n";
+            angleFile << std::to_string(i * dt) << ", "
+                      << angleActual[i] / (2 * M_PI) * 360 << ", "
+                      << angleTheoretical[i] << "\n";
+            gradientNormAtContactPoint << i * dt << ", " << Phi.getGradPhiNormAtContactPoint(i) << "\n";
+            std::cout << "Reference angle: " << angleTheoretical[i] << "\n";
         }
-        std::cout << "Position " << "x, z  = " << newCPReference[0] << ", " << newCPReference[2] << "\n";
 
-        std::cout << "Actual: " << std::to_string(angleActual[i]/(2*M_PI)*360) + "\n";
-		angleFile << std::to_string(i*dt) << ", "
-				  << angleActual[i]/(2*M_PI)*360 << ", "
-				  << angleTheoretical[i] << "\n";
-		std::cout << "Reference: " << angleTheoretical[i] << "\n"; 
-                
-        minimumGradient << i*dt << ", " << Phi.getMinimalGradientNorm() << "\n";
-
-        if (calculateCurvature) {
+        if (calculateEvaluationQuantities && calculateCurvature) {
 
             curvatureActualDivergence[i] = Phi.getCurvatureInterpolated(i);
             sectionalCurvatureA_Actual[i] = Phi.getSectionalCurvatureInterpolated(i, tangentAReference[i]);
@@ -485,9 +534,26 @@ int main(int argc, char **argv) {
                                        + std::to_string(sectionalCurvatureC_Actual[i]) + ", "
                                        + std::to_string(sectionalCurvatureCReference[i]) + "\n";
         }
-        
+
         // Calculate numerical flux through all faces of each cell and update Phi
-        Phi.calculateNextTimestep(dt, i);
+        if (applySourceTerm) {
+            try {
+                Phi.calculateNextTimestepSourceTerm(dt, i, applyMollifier, mollifier_width1, mollifier_width2); // develop source term approach
+            } catch (std::runtime_error& e) {
+                std::string str = e.what();
+                if (str.compare("Exit_Normal_Vector_0") == 0) {
+                    std::cout << "WARNING: Normal vector with norm 0 encountered. Exiting.\n";
+                    positionFile.flush();
+                    angleFile.flush();
+                    if (calculateCurvature)
+                        curvatureFile.flush();
+                    break;
+                }
+            }
+        }
+        else{
+            Phi.calculateNextTimestep(dt, i); // standard implementation without source term
+        }
 
         positionFile.flush();
         angleFile.flush();
@@ -495,7 +561,7 @@ int main(int argc, char **argv) {
         curvatureDerivativeFile.flush();
         sectionalCurvatureAFile.flush();
         sectionalCurvatureBFile.flush();
-        minimumGradient.flush();
+        gradientNormAtContactPoint.flush();
     }
 
     if (numZ > 1) {

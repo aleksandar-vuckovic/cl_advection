@@ -56,7 +56,7 @@ VelocityField::VelocityField(std::string name, double v0, double w0, double x0, 
 	this->dz = dz;
     this->outputDirectory = outputDirectory;
 
-    if (name == "shearField" || name == "navierField" || name == "timeDependentNavierField" || name == "quadraticField" || name == "strawberryField") {
+    if (name == "shearField" || name == "timeDependentshearField" || name == "navierField" || name == "timeDependentNavierField" || name == "quadraticField" || name == "strawberryField") {
 		this->name = name;
 	} else {
 		throw std::invalid_argument("No available field was chosen.");
@@ -94,7 +94,11 @@ Vector VelocityField::at(double t, double x, double y, double z) {
 	Vector vec;
 	if (name == "shearField") {
 		vec = shearField(x_tilde, y, z, v0);
-        vec = vec[0]*n_gamma + vec[1]*n_y;
+        vec = vec[0]*n_gamma + vec[1]*n_y; // TODO mafri check this line
+        } else if (name == "timeDependentshearField") {
+        	vec = shearField(x_tilde, y, z, v0);
+	        vec = vec[0]*n_gamma + vec[1]*n_y; // TODO mafri check this line
+	        vec = cos(M_PI*t/tau) * vec;
 	} else if (name == "navierField") {
 		vec = navierField(x_tilde, y, z, v0, c1, c2);
         vec = vec[0]*n_gamma + vec[1]*n_y;
@@ -123,6 +127,8 @@ Matrix VelocityField::gradAt(double t, double x, double y, double z) {
 	Matrix mat;
 	if (name == "shearField") {
         mat = gradShearField(x_tilde, y, z, v0);
+        } else if (name == "timeDependentshearField") {
+        mat = cos(M_PI*t/tau)*gradShearField(x_tilde, y, z, v0);
 	} else if (name == "navierField") {
         mat = gradNavierField(x_tilde, y, z, v0, c1, c2);
 	} else if (name == "timeDependentNavierField") {

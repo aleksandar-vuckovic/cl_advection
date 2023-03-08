@@ -41,12 +41,12 @@ Matrix gradShearField(double x, double y, double z, double v0) {
  * Partial derivatives of the shear field.
  * @param x, y, z The coordinates of the point.
  * @param v0 The scaling factor of the shear field
- * @return Partial derivatives in the order 
+ * @return Partial derivatives in the order
  * \f$\partial_x^2 v_x, \partial_x\partial_y vx, \partial_y^2 v_y, \partial_x^2 v_y, \partial_x\partial_y v_y, \partial_y^2_v_y\f$.
- * 
+ *
  */
 array<double, 6> partialsShearField(double x, double y, double z, double v0) {
-    
+
     double dxdx_vx = v0*M_PI*M_PI*sin(M_PI*x)*cos(M_PI*y);
     double dxdy_vx = v0*M_PI*M_PI*cos(M_PI*x)*sin(M_PI*y);
     double dydy_vx = v0*M_PI*M_PI*sin(M_PI*x)*cos(M_PI*y);
@@ -123,12 +123,12 @@ Matrix gradQuadraticField(double x, double y, double z, double v0, double c1, do
  * Partial derivatives of the quadratic field.
  * @param x, y, z The coordinates of the point.
  * @param v0 Value of the quadratic field x-component at the origin
- * @return Partial derivatives in the order 
+ * @return Partial derivatives in the order
  * \f$\partial_x^2 v_x, \partial_x\partial_y vx, \partial_y^2 v_y, \partial_x^2 v_y, \partial_x\partial_y v_y, \partial_y^2_v_y\f$.
- * 
+ *
  */
 array<double, 6> partialsQuadraticField(double x, double y, double z, double v0, double c1, double c2, double c3) {
-    
+
     double dxdx_vx = 0;
     double dxdy_vx = 0;
     double dydy_vx = 2*c3;
@@ -151,7 +151,7 @@ array<double, 6> partialsQuadraticField(double x, double y, double z, double v0,
  */
 Vector strawberryField(double x, double y, double z, double v0, double w0, double x0, double y0, double z0,
                      double c1, double c2, double c3, double c4, double c5, double c6) {
-    return {v0 + c1 * (x - x0) + c2*y + c3*(z - z0), -(c1 + c6)*y, w0 + c4*(x - x0) + c5*(y - y0) + c6*(z - z0) };
+    return {v0 + c1 * (x - x0) + c2*(y-y0) + c3*(z - z0), -(c1 + c6)*y, w0 + c4*(x - x0) + c5*(y - y0) + c6*(z - z0) };
 }
 
 Matrix gradStrawberryField(double x, double y, double z, double v0, double w0, double x0, double y0, double z0,
@@ -162,4 +162,3 @@ Matrix gradStrawberryField(double x, double y, double z, double v0, double w0, d
     tempReturn[2] = {c4, c5, c6};
     return tempReturn;
 }
-

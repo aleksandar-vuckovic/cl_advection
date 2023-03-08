@@ -18,7 +18,7 @@
 LevelSet::LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz, VelocityField *field,
         std::string trackedCP, double dt, int timesteps, Vector expCP, double expAngle,
         double initCurvature, InitShape shape, std::vector<double> shapeParams, Vector initCenter, std::string outputDirectory)
-        : Field<double>(numX, numY, numZ, dx, dy, dz), 
+        : Field<double>(numX, numY, numZ, dx, dy, dz),
           positionReference(timesteps), normalReference(timesteps),
           tangentAReference(timesteps),tangentBReference(timesteps), tangentCReference(timesteps),
           angleReference(timesteps), curvatureReference(timesteps),
@@ -34,9 +34,9 @@ LevelSet::LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz
 		// Calculate reference data
         if (numZ == 1 && ( field->getName() == "navierField" || field->getName() == "timeDependentNavierField") )
             contactPointLinearField(dt, timesteps, field->getC1(), expCP[0], field->getV0());
-        else 
+        else
             referenceContactPointExplicitEuler(dt, timesteps, expCP);
-            
+
         referenceNormalExplicitEuler(dt, timesteps, expNormalVec);
         referenceTangentExplicitEuler(dt, timesteps, expNormalVec);
         referenceCurvatureExplicitEuler(dt, timesteps, initCurvature, "sectionalCurvature");
@@ -108,7 +108,7 @@ std::vector<Vector> LevelSet::referenceContactPointBackwards(double dt, int last
  * @return The position of the contact point in arbitrary units
  */
 void LevelSet::contactPointLinearField(double dt, int last_timestep, double c1, double x0, double v0) {
-    double t = 0;  
+    double t = 0;
     for (int i = 0; i < last_timestep; i++) {
         t = i*dt;
         if (field->getName() == "navierField") {
@@ -139,13 +139,13 @@ Vector LevelSet::getContactPoint(int timestep, bool indexOnly /* = false */) con
     if (numZ == 1) {
         if (trackedCP == "left") {
             double initSign = this->at(0, 0, 0)/std::abs(this->at(0, 0, 0));
-            
+
             if (initSign < 0)
                 throw std::runtime_error("CP_Exit_Simulation_Plane");
 
             for (int i = 0; i < numX; i++) {
                 if (this->at(i, 0, 0)*initSign < 0) {
-                    
+
                     if (indexOnly)
                         return {double(i) + 0.5, 0, 0}; //Add 0.5 to compensate floating-point errors
                     double alpha = this->at(i,0,0)-this->at(i - 1, 0, 0);
@@ -179,11 +179,11 @@ Vector LevelSet::getContactPoint(int timestep, bool indexOnly /* = false */) con
             }
         }
         throw std::runtime_error("CP_Exit_Simulation_Plane");
-    } 
-    
+    }
+
     else {
         const Vector ref = positionReference[timestep];
-         if (ref[0] < 0 || ref[1] < 0 || ref[2] < 0 || 
+         if (ref[0] < 0 || ref[1] < 0 || ref[2] < 0 ||
              ref[0] > this->numX*dx || ref[1] > this->numY*dy || ref[2] > this->numZ*dz) {
                  throw std::runtime_error("CP_Exit_Simulation_Plane");
              }
@@ -205,7 +205,7 @@ Vector LevelSet::getContactPoint(int timestep, bool indexOnly /* = false */) con
 
 /**
  * Get the current indices of the contact point.
- * 
+ *
  * This is a wrapper function for LevelSet::getContactPoint.
  * @param timestep The timestep
  * @return The indices of the contact point.
@@ -217,16 +217,20 @@ array<int, 3> LevelSet::getContactPointIndices(int timestep) const {
 
 /**
  * Calculate the normal vector.
- * 
+ *
  * This function uses finite differences to calculate the normal vector of the Level set field at cell
  * @param cell The indices of the contact point.
- * @param cellIsCP Whether cell is the index-vector of the contact point.
+ * @param cellIsCP Whether cell is the index-vector of the contact point (default is true).
+ * @param normalizeVector Whether the resulting gradient vector is normalized (default is true).
+ * @param findCPin2D Whether to take the passed coordinates and calculate the normal there or whether to find
+ * the contact point automatically (using the change in sign). Only applicable in 2D.
  * @return The normal vector at cell.
  */
-Vector LevelSet::getNormalVector(array<int, 3> cell, bool useInterpolation /* = true */) const {
+Vector LevelSet::getNormalVector(array<int, 3> cell, bool useInterpolation /* = true */, bool normalizeVector /* = true */, bool findCPin2D /* = true */) const {
     double normalX = 0, normalY = 0, normalZ = 0;
 
-    if (numZ == 1 && useInterpolation) {
+
+    if (numZ == 1 && findCPin2D && useInterpolation) {
 
         if (trackedCP == "left") {
              // find root of phi, alpha: coefficient for convex combination
@@ -268,28 +272,56 @@ Vector LevelSet::getNormalVector(array<int, 3> cell, bool useInterpolation /* = 
 
     } else {
         if (cell[0] > 0 && cell[0] < numX - 1) {
-                normalX = (this->at(cell[0] + 1, cell[1], cell[2]) - this->at(cell[0] - 1, cell[1], cell[2]))/(2*dx);
+                normalX =    (this->at(cell[0] + 1, cell[1], cell[2])
+                            - this->at(cell[0] - 1, cell[1], cell[2]))/(2*dx);
         } else if (cell[0] == 0) {
-                normalX = (-1*this->at(cell[0] + 2, cell[1], cell[2]) +4*this->at(cell[0] + 1, cell[1], cell[2]) -3*this->at(cell[0], cell[1], cell[2]))/(2*dx);
+                normalX = (-1*this->at(cell[0] + 2, cell[1], cell[2])
+                           +4*this->at(cell[0] + 1, cell[1], cell[2])
+                           -3*this->at(cell[0], cell[1], cell[2]))/(2*dx);
         } else {
-                normalX = (this->at(cell[0] - 2, cell[1], cell[2]) -4*this->at(cell[0] - 1, cell[1], cell[2]) +3*this->at(cell[0], cell[1], cell[2]))/(2*dx);
+                normalX = (   this->at(cell[0] - 2, cell[1], cell[2])
+                           -4*this->at(cell[0] - 1, cell[1], cell[2])
+                           +3*this->at(cell[0], cell[1], cell[2]))/(2*dx);
         }
 
-        normalY = (-1*this->at(cell[0], cell[1] + 2, cell[2]) +4*this->at(cell[0], cell[1] + 1, cell[2]) -3*this->at(cell[0], cell[1], cell[2]))/(2*dy);
+        if (cell[1] > 0 && cell[1] < numY - 1) {
+            normalY =   ( this->at(cell[0], cell[1] + 1, cell[2])
+                        - this->at(cell[0], cell[1] - 1, cell[2])) / (2 * dy);
+        } else if (cell[1] == 0) {
+            normalY = (-1*this->at(cell[0], cell[1] + 2, cell[2])
+                       +4*this->at(cell[0], cell[1] + 1, cell[2])
+                       -3*this->at(cell[0], cell[1], cell[2])) / (2 * dy);
+        } else {
+            normalY =    (this->at(cell[0], cell[1] - 2, cell[2])
+                       -4*this->at(cell[0], cell[1] - 1, cell[2])
+                       +3*this->at(cell[0], cell[1], cell[2])) / (2 * dy);
+        }
 
         if (numZ > 1) {
             if (cell[2] > 0 && cell[2] < numZ - 1) {
-                    normalZ = (this->at(cell[0], cell[1], cell[2] + 1) - this->at(cell[0], cell[1], cell[2] - 1))/(2*dz);
+                    normalZ =   (this->at(cell[0], cell[1], cell[2] + 1)
+                               - this->at(cell[0], cell[1], cell[2] - 1))/(2*dz);
             } else if (cell[2] == 0) {
-                    normalZ = (-1*this->at(cell[0], cell[1], cell[2] + 2) +4*this->at(cell[0], cell[1], cell[2] + 1) -3*this->at(cell[0], cell[1], cell[2]))/(2*dz);
+                    normalZ =(-1*this->at(cell[0], cell[1], cell[2] + 2)
+                              +4*this->at(cell[0], cell[1], cell[2] + 1)
+                              -3*this->at(cell[0], cell[1], cell[2]))/(2*dz);
             } else {
-                    normalZ = (this->at(cell[0], cell[1], cell[2] - 2) -4*this->at(cell[0], cell[1], cell[2] - 1) +3*this->at(cell[0], cell[1], cell[2]))/(2*dz);
+                    normalZ =   (this->at(cell[0], cell[1], cell[2] - 2)
+                              -4*this->at(cell[0], cell[1], cell[2] - 1)
+                              +3*this->at(cell[0], cell[1], cell[2]))/(2*dz);
             }
         }
     }
 
     Vector normal = {normalX, normalY, normalZ};
-    normal = normal/abs(normal);
+
+    //TODO Mathis: What if grad phi is numerically zero?
+    if(abs(normal)<1E-15){
+        throw std::runtime_error("Exit_Normal_Vector_0");
+    }
+
+    if (normalizeVector)
+        normal = normal/abs(normal);
     return normal;
 }
 
@@ -324,7 +356,7 @@ Vector LevelSet::getTangentialVector(Vector normal) const {
 //        tau1 = 1;
 //        tau2 = -(normal[2]*normal[2] / (normal[0]*normal[1]) + normal[0]/normal[1]);
 //        tau3 = normal[2] / normal[0];   // TODO: What happens when normal[0] == 0 ? Check again.
-        tau = cross(normal, {0, -1, 0});
+        tau = cross(normal, {0, 0, 1});
     } else {
 //        tau1 = 0;
 //        tau2 = 1;
@@ -344,7 +376,7 @@ Vector LevelSet::getTangentialVector(Vector normal) const {
 /**
  * Calculate the contact angle.
  * This function uses finite differences to calculate the normal vector of the Level set field at cell and
- * thus calculate the contact angle. This is a wrapper function for LevelSet::getNormalVector. 
+ * thus calculate the contact angle. This is a wrapper function for LevelSet::getNormalVector.
  *
  * @param timestep The timestep when the contact angle is calculated.
  * @return The contact angle in degrees
@@ -463,7 +495,7 @@ LevelSet::referenceCurvatureExplicitEuler(double dt, int last_timestep, double i
         double curvature = initCurvature;
         for (int i = 0; i < last_timestep; i++) {
             curvatureReference[i] = curvature;
-            Vector CP = positionReference[i];        
+            Vector CP = positionReference[i];
             Vector normal = normalReference[i];
             Vector tau = getTangentialVector(normal);
             // temp is the second derivative of v in the tau direction
@@ -488,7 +520,7 @@ LevelSet::referenceCurvatureExplicitEuler(double dt, int last_timestep, double i
             for (int x = -local; x <= local; x++)
                 for (int y = 0; y <= local; y++)
                     for (int z = -sidelengthZ/2; z <= sidelengthZ/2; z++) {
-                        Vector temp = CP + Vector({d*x, d*y, d*z}); 
+                        Vector temp = CP + Vector({d*x, d*y, d*z});
 
                         if (temp[0] < 0 || temp[0] > numX*dx || temp[1] < 0 || temp[1] > numY*dy || temp[2] < 0 || temp[2] > numZ*dz)
                             continue;
@@ -1123,12 +1155,15 @@ double LevelSet::getCurvatureInterpolated(int timestep) const {
  * @param timestep The index of the timestep
  * @param total_timesteps The total number of timesteps
  * @param total_writesteps The total number of steps that will be written to disk
- * @param xmfFile A pointer to the XMF file.
+ * @param mainXmfFile A pointer to the XMF file.
  */
-void LevelSet::writeToFile(double dt, int timestep, int total_timesteps, int total_writesteps, std::ofstream *xmfFile, std::ofstream *tauXmfFile) {
+void
+LevelSet::writeToFile(double dt, int timestep, int total_timesteps, int total_writesteps, std::ofstream *mainXmfFile,
+                      std::ofstream *tauXmfFile) {
     int Npoints = numX*numY*numZ;
     double *pointCoordinates = new double[Npoints*3];
     double *pointPhiValues = new double[Npoints];
+    double *pointRValues = new double[Npoints];
 
     int index = 0;
 
@@ -1142,12 +1177,22 @@ void LevelSet::writeToFile(double dt, int timestep, int total_timesteps, int tot
                     index += 3;
                 }
                 pointPhiValues[i + j*numX + k*numX*numY] = this->at(i, j, k);
+                Vector normalVector;
+                try {
+                    normalVector = getNormalVector({i, j, k}, false, true, false);
+                } catch (std::runtime_error& e) {
+                    std::string str = e.what();
+                    if (str.compare("Exit_Normal_Vector_0")) {
+                        normalVector = {0, 0, 0};
+                    }
+                }
+                pointRValues[i + j*numX + k*numX*numY] = (field->gradAt(dt*timestep, i*dx, j*dy, k*dz) * normalVector) * normalVector;
             }
         }
 
     // If it is the first iteration, create coordinate file
     if (timestep == 0) {
-        *xmfFile    << "<?xml version=\"1.0\" ?>\n"
+        *mainXmfFile   << "<?xml version=\"1.0\" ?>\n"
                        "<!DOCTYPE Xdmf SYSTEM \"Xdmf.dtd\" [\n"
                        "<!ENTITY Npoints \"" + std::to_string(Npoints) + "\">\n"
                        "<!ENTITY numX \"" + std::to_string(numX) + "\">\n"
@@ -1167,14 +1212,14 @@ void LevelSet::writeToFile(double dt, int timestep, int total_timesteps, int tot
                          "<Time TimeType=\"List\">\n"
                          "<DataItem Format=\"XML\" NumberType=\"Float\" Dimensions=\""+ std::to_string(total_writesteps) + "\">\n";
 
-        *xmfFile << temp;
+        *mainXmfFile << temp;
         *tauXmfFile << temp;
 
         for (int i = 0; i < total_writesteps; i++) {
-            *xmfFile << std::to_string(i*((double)total_timesteps/total_writesteps)*dt) << " ";
+            *mainXmfFile << std::to_string(i*((double)total_timesteps/total_writesteps)*dt) << " ";
             *tauXmfFile << std::to_string(i*((double)total_timesteps/total_writesteps)*dt) << " ";
         }
-        *xmfFile <<"</DataItem>\n" << "</Time>\n";
+        *mainXmfFile <<"</DataItem>\n" << "</Time>\n";
         *tauXmfFile <<"</DataItem>\n" << "</Time>\n";
 
         //Write field coordinates into binary file
@@ -1191,9 +1236,15 @@ void LevelSet::writeToFile(double dt, int timestep, int total_timesteps, int tot
 	fwrite(pointPhiValues, sizeof(double), Npoints, PhiFile);
 	fclose(PhiFile);
 
+    FILE *rFile;
+    std::string filenameRFile = outputDirectory + "data/r_t="+ std::to_string(timestep*dt)+".bin";
+    rFile = fopen(filenameRFile.data(), "wb");
+    fwrite(pointRValues, sizeof(double), Npoints, rFile);
+    fclose(rFile);
+
     // TODO: Testen ob wirklich Reihenfolge numX,numY,numZ in NumberOfElements und Dimensions bei Topology und DataItem vertauscht ist
 
-     *xmfFile << "<Grid GridType=\"Uniform\">\n"
+     *mainXmfFile << "<Grid GridType=\"Uniform\">\n"
              << "<Topology TopologyType=\"3DCoRectMesh\" NumberOfElements=\"&numZ; &numY; &numX;\"/>\n"
              << "<Geometry GeometryType=\"ORIGIN_DXDYDZ\"> \n"
              << "<DataItem Format=\"XML\" NumberType=\"Float\" Dimensions=\"3\">"
@@ -1207,17 +1258,22 @@ void LevelSet::writeToFile(double dt, int timestep, int total_timesteps, int tot
              << "<DataItem Format=\"Binary\" NumberType=\"Float\" Precision=\"8\"  Endian=\"Little\" Dimensions=\"&numZ; &numY; &numX;\">\n"
 			 << "Phi_t=" + std::to_string(timestep*dt) +".bin\n"
 			 << "</DataItem></Attribute>\n"
+             << "<Attribute Name =\"sourceTermField\" AttributeType=\"Scalar\" Center=\"Node\">\n"
+             << "<DataItem Format=\"Binary\" NumberType=\"Float\" Precision=\"8\"  Endian=\"Little\" Dimensions=\"&numZ; &numY; &numX;\">\n"
+             << "r_t=" + std::to_string(timestep*dt) +".bin\n"
+             << "</DataItem></Attribute>\n"
              << "<Attribute Name =\"VelocityField\" AttributeType=\"Vector\" Center=\"Node\">\n"
              << "<DataItem Format=\"Binary\" NumberType=\"Float\" Precision=\"8\" Endian=\"Little\" Dimensions=\"&numZ; &numY; &numX; 3\">\n";
 
+
     if (field->getName() == "timeDependentNavierField") {
-		*xmfFile << "Vel_t=" + std::to_string(timestep*dt) +".bin\n";
+		*mainXmfFile << "Vel_t=" + std::to_string(timestep * dt) + ".bin\n";
     }
     else {
-		*xmfFile << "Vel_t=" + std::to_string(0*dt) +".bin\n";
+		*mainXmfFile << "Vel_t=" + std::to_string(0 * dt) + ".bin\n";
     }
 
-        *xmfFile << "</DataItem></Attribute>\n"
+        *mainXmfFile << "</DataItem></Attribute>\n"
                  << "</Grid>\n";
 
     *tauXmfFile  << "<Grid>\n"
@@ -1234,6 +1290,7 @@ void LevelSet::writeToFile(double dt, int timestep, int total_timesteps, int tot
 
     delete[] pointCoordinates;
     delete[] pointPhiValues;
+    delete[] pointRValues;
 
     //Write velocity field
     if (field->getName() == "timeDependentNavierField")
@@ -1297,14 +1354,25 @@ double LevelSet::sumLevelSet() {
  * @param radius The radius of the droplet
  */
 void LevelSet::initSphere(Vector center, double radius) {
+
+    if(numZ>1){
+
     for (int k = 0; k < numZ; k++)
         for (int j = 0; j < numY; j++)
             for (int i = 0; i < numX; i++)
-                at(i, j, k) = pow(i*dx - center[0], 2) + pow(j*dy - center[1], 2) + pow(k*dz - center[2], 2) - pow(radius, 2);
+                at(i, j, k) = sqrt(pow(i*dx - center[0], 2) + pow(j*dy - center[1], 2) + pow(k*dz - center[2], 2)) - radius; // use actual signed distance function for a sphere
+    }
+    else if(numZ==1){
+          for (int j = 0; j < numY; j++)
+              for (int i = 0; i < numX; i++)
+                  at(i, j, 0) = sqrt(pow(i*dx - center[0], 2) + pow(j*dy - center[1], 2)) - radius; // use actual signed distance function for a sphere
+
+    }
+
 }
 
 /** Initialize a plane.
- * 
+ *
  *  @param refPoint The reference point of the plane in degrees.
  *  @param angleA The angle between the initialized plane and the x-z-plane (= polar angle of normal vector) in deg.
  *  @param angleB The angle of rotation around the y-axis (= azimuthal angle) in deg.
@@ -1313,12 +1381,12 @@ void LevelSet::initPlane(Vector refPoint, double polarAngle, double azimuthalAng
     polarAngle = polarAngle/180*M_PI;
     azimuthalAngle = azimuthalAngle/180*M_PI;
     Vector normal = {sin(polarAngle) * cos(azimuthalAngle), cos(polarAngle), sin(polarAngle)* sin(azimuthalAngle)};
-    
+
     for (int k = 0; k < numZ; k++)
         for (int j = 0; j < numY; j++)
             for (int i = 0; i < numX; i++)
                 at(i, j, k) = normal * (Vector({i*dx, j*dy, k*dz}) - refPoint);
-            
+
 }
 
 /** Initialize a paraboloid.
@@ -1355,7 +1423,7 @@ void LevelSet::initEllipsoid(Vector refPoint, double stretchX, double stretchY, 
 Vector LevelSet::expectedNormalVector(Vector contactPoint) {
      std::vector<double>& params = shapeParams;
      Vector& refPoint = initCenter;
- 
+
     Vector normal = {0, 0, 0};
 
     if (shape == InitShape::sphere) {
@@ -1374,7 +1442,7 @@ Vector LevelSet::expectedNormalVector(Vector contactPoint) {
         double stretchZ = params.at(2);
         normal = { stretchX * (contactPoint[0] - refPoint[0]), stretchY * (contactPoint[1] - refPoint[1]), stretchZ * (contactPoint[2] - refPoint[2]) };
     }
-    
+
     return normal/abs(normal);
 }
 
@@ -1383,7 +1451,7 @@ Matrix LevelSet::expectedNormalVectorGradient(Vector contactPoint) {
     Vector vec0;
     Vector vec1;
     Vector vec2;
-    
+
     double x = contactPoint[0];
     double y = 0;
     double z = contactPoint[2];
@@ -1414,8 +1482,8 @@ Matrix LevelSet::expectedNormalVectorGradient(Vector contactPoint) {
         double stretchZ = params.at(2);
         double n_abs = sqrt(pow(stretchX * (x - x0), 2) + pow(stretchY * (y - y0), 2) + pow(stretchZ * (z - z0), 2));
 
-        vec0 = { stretchX / n_abs - pow(stretchX, 3) * pow(x - x0, 2) / pow(n_abs, 3), 
-                 stretchX * pow(stretchY, 2) * (x - x0) * (y - y0) / pow(n_abs, 3), 
+        vec0 = { stretchX / n_abs - pow(stretchX, 3) * pow(x - x0, 2) / pow(n_abs, 3),
+                 stretchX * pow(stretchY, 2) * (x - x0) * (y - y0) / pow(n_abs, 3),
                  stretchX * pow(stretchZ, 2) * (x - x0) * (z - z0) / pow(n_abs, 3) };
         vec1 = { -pow(stretchX, 2) * stretchY * (x - x0) * (y - y0) / pow(n_abs, 3),
                  stretchY / n_abs - pow(stretchY, 3) * pow(y - y0, 2) / pow(n_abs, 3),
@@ -1498,6 +1566,7 @@ void LevelSet::calculateNextTimestep(double dt, int timestep) {
                     switch(dir) {
                     case 0:
                         sp = field->at(timestep*dt, (i + 0.5)*dx, (j + 1)*dy, (k + 0.5)*dz) * upNormal;
+
                         if (j == numY - 1) {
                             flux += sp*tempPhi.at(i, j, k)*dx*dz;
                         }
@@ -1569,21 +1638,240 @@ void LevelSet::calculateNextTimestep(double dt, int timestep) {
     }
 }
 
-double LevelSet::getMinimalGradientNorm() {
-    double minimum;
-    for (int i = 1; i < numX - 1; i++) {
-        for (int j = 1; j < numY - 1; j++) {
-            for (int k = 1; k < numZ - 1; k++) {
-                double x = (at(i + 1, j, k) - at(i - 1, j, k)) / 2*dx;
-                double y = (at(i, j + 1, k) - at(i, j - 1, k)) / 2*dy;
-                double z = (at(i, j, k + 1) - at(i, j, k - 1)) / 2*dz;
-                double value = sqrt(x*x + y*y + z*z);
-                if ((i == 1 && j == 1 && k == 1) || value < minimum)
-                    minimum = value;
+/**
+ * Calculate the next timestep at a given time and evolves the field using
+ * our new surface term approach to preserve the norm of the gradient at the
+ * zero level set
+ *
+ * For the flux calculation, the upwind method is used to ensure stability. Furthermore we impose
+ * the Neumann boundary condition onto the field
+ *
+ * @param dt The width of the timestep by which to evolve the field
+ * @param timestep The index of the timestep
+ */
+void LevelSet::calculateNextTimestepSourceTerm(double dt, int timestep, int applyMollifier, double mollifier_width1, double mollifier_width2) {
+    LevelSet tempPhi(*this);
+
+    const Vector upNormal = {0, 1, 0};
+    const Vector downNormal = {0,-1, 0};
+    const Vector leftNormal = {-1, 0, 0};
+    const Vector rightNormal = {1, 0, 0};
+    const Vector frontNormal = {0, 0, 1};
+    const Vector backNormal = {0, 0, -1};
+
+    Vector reconstructedNormal = {0,0,0};
+    Vector reconstructedGradient = {0,0,0};
+
+    // loop over all cells
+#pragma omp parallel shared(tempPhi)
+    {
+#pragma omp for collapse(3)
+        for (int k = 0; k < numZ; k++) {
+            for (int j = 0; j < numY; j++) {
+                for (int i = 0; i < numX; i++) {
+
+                    //Calculate the flux of phi over the cell faces
+                    double flux = 0;
+                    double sp = 0;
+                    double source = 0;
+
+                    for (int dir = 0; dir < 6; dir++) {
+
+                        switch(dir) {
+                            case 0:
+                                sp = field->at(timestep*dt, (i + 0.5)*dx, (j + 1)*dy, (k + 0.5)*dz) * upNormal;
+                                if (j == numY - 1) {
+                                    flux += sp*tempPhi.at(i, j, k)*dx*dz;
+                                }
+                                else{
+                                    flux += (fmax(sp,0.0)*tempPhi.at(i, j, k) + fmin(sp, 0.0) * tempPhi.at(i, j + 1, k)) * dx * dz;
+                                }
+                                break;
+
+                            case 1:
+                                sp = field->at(timestep*dt, (i + 0.5) * dx, j * dy, (k + 0.5) * dz) * downNormal;
+                                if (j == 0 ) {
+                                    flux += sp * tempPhi.at(i, j, k) * dx * dz;
+                                }
+                                else{
+                                    flux += (fmax(sp,0.0)*tempPhi.at(i, j, k) + fmin(sp, 0.0) * tempPhi.at(i, j - 1, k)) * dx * dz;
+                                }
+                                break;
+
+                            case 2:
+                                sp = field->at(timestep*dt, i * dx, (j + 0.5) * dy, (k + 0.5) * dz) * leftNormal;
+                                if (i == 0) {
+                                    flux += sp * tempPhi.at(i, j, k) * dy * dz;
+                                }
+                                else{
+                                    flux += (fmax(sp,0.0)*tempPhi.at(i, j, k) + fmin(sp, 0.0) * tempPhi.at(i - 1, j, k)) * dy * dz;
+                                }
+                                break;
+
+                            case 3:
+                                sp = field->at(timestep*dt, (i + 1) * dx, (j + 0.5) * dy, (k + 0.5) * dz) * rightNormal;
+                                if (i == numX - 1) {
+                                    flux += sp * tempPhi.at(i, j, k) * dy * dz;
+                                }
+                                else{
+                                    flux += (fmax(sp,0.0)*tempPhi.at(i, j, k) + fmin(sp, 0.0) * tempPhi.at(i + 1, j, k)) * dy * dz;
+                                }
+                                break;
+
+                            case 4:
+                                if (numZ == 1)
+                                    break; // only relevant for 3D
+                                sp = field->at(timestep*dt, (i + 0.5) * dx, (j + 0.5) * dy, (k + 1) * dz) * frontNormal;
+                                if (k == numZ - 1) {
+                                    flux += sp * tempPhi.at(i, j, k) * dx * dy;
+                                }
+                                else{
+                                    flux += (fmax(sp,0.0)*tempPhi.at(i, j, k) + fmin(sp, 0.0) * tempPhi.at(i, j, k + 1)) * dx * dy;
+                                }
+                                break;
+
+                            case 5:
+                                if (numZ == 1)
+                                    break; // only relevant for 3D
+                                sp = field->at(timestep*dt, (i + 0.5) * dx, (j + 0.5) * dy, k * dz) * backNormal;
+                                if (k == 0) {
+                                    flux += sp * tempPhi.at(i, j, k) * dx * dy;
+                                }
+                                else{
+                                    flux += (fmax(sp,0.0)*tempPhi.at(i, j, k) + fmin(sp, 0.0) * tempPhi.at(i, j, k - 1)) * dx * dy;
+                                }
+                                break;
+                        }
+                    }
+
+                    // Compute the local gradient (2D)
+                    if(i==0){
+                      //reconstructedGradient[0] = (tempPhi.at(i+1,j,k)-tempPhi.at(i,j,k))/(dx); //1st order forward differencing
+                      reconstructedGradient[0] = (-tempPhi.at(i+2,j,k)+4.0*tempPhi.at(i+1,j,k)-3.0*tempPhi.at(i,j,k))/(2.0*dx); // 2nd order forward differencing
+                    }
+                    else if(i==numX-1){
+                      //reconstructedGradient[0] = (tempPhi.at(i,j,k)-tempPhi.at(i-1,j,k))/(dx); //1st order backward differencing
+                      reconstructedGradient[0] = (3.0*tempPhi.at(i,j,k)-4.0*tempPhi.at(i-1,j,k)+tempPhi.at(i-2,j,k))/(2.0*dx); //2nd order backward differencing
+                    }
+                    else {
+                      //reconstructedGradient[0] = (tempPhi.at(i+1,j,k)-tempPhi.at(i,j,k))/dx; // quickfix: use first-order also away from the boundary for consistency
+                      reconstructedGradient[0] = (tempPhi.at(i+1,j,k)-tempPhi.at(i-1,j,k))/(2.0*dx); // 2nd order central
+                    }
+
+                    if(j==0){
+                      //reconstructedGradient[1] = (tempPhi.at(i,j+1,k)-tempPhi.at(i,j,k))/(dy); //1st order forward differencing
+                      reconstructedGradient[1] = (-tempPhi.at(i,j+2,k)+4.0*tempPhi.at(i,j+1,k)-3.0*tempPhi.at(i,j,k))/(2.0*dy); // 2nd order forward differencing
+                    }
+                    else if(j==numY-1){
+                      //reconstructedGradient[1] = (tempPhi.at(i,j,k)-tempPhi.at(i,j-1,k))/(dy); //1st order backward differencing
+                      reconstructedGradient[1] = (3.0*tempPhi.at(i,j,k)-4.0*tempPhi.at(i,j-1,k)+tempPhi.at(i,j-2,k))/(2.0*dy); //2nd order backward differencing
+                    }
+                    else {
+                      //reconstructedGradient[1] = (tempPhi.at(i,j+1,k)-tempPhi.at(i,j,k))/(dy); // quickfix: use first-order also away from the boundary for consistency
+                      reconstructedGradient[1] = (tempPhi.at(i,j+1,k)-tempPhi.at(i,j-1,k))/(2.0*dy); // 2nd order central
+                    }
+
+                    if(numZ > 2){
+
+                    if(k==0){
+                      //reconstructedGradient[2] = (tempPhi.at(i,j,k+1)-tempPhi.at(i,j,k))/(dz); //1st order forward differencing
+                      reconstructedGradient[2] = (-tempPhi.at(i,j,k+2)+4.0*tempPhi.at(i,j,k+1)-3.0*tempPhi.at(i,j,k))/(2.0*dz); // 2nd order forward differencing
+                    }
+                    else if(k==numZ-1){
+                      //reconstructedGradient[2] = (tempPhi.at(i,j,k)-tempPhi.at(i,j,k-1))/(dz); //1st order backward differencing
+                      reconstructedGradient[2] = (3.0*tempPhi.at(i,j,k)-4.0*tempPhi.at(i,j,k-1)+tempPhi.at(i,j,k-2))/(2.0*dz); //2nd order backward differencing
+                    }
+                    else {
+                      //reconstructedGradient[2] = (tempPhi.at(i,j,k+1)-tempPhi.at(i,j,k))/dz; // quickfix: use first-order also away from the boundary for consistency
+                      reconstructedGradient[2] = (tempPhi.at(i,j,k+1)-tempPhi.at(i,j,k-1))/(2.0*dz);  // 2nd order central
+                    }
+
+                    }
+                    else{
+                      // 2D case
+                      reconstructedGradient[2] = 0;
+                    }
+
+
+                    // Normalize the Normal vector (including regularization)
+                    reconstructedNormal = reconstructedGradient/(abs(reconstructedGradient)+1E-12);
+                    //////////
+
+                    // Compute source term
+                    source = (field->gradAt(timestep*dt, (i + 0.5)*dx, (j + 0.5)*dy, (k + 0.5)*dz)*reconstructedNormal)*reconstructedNormal*(-1.0);
+
+                    // Dieter's restoring method
+                    //source = source + (1.0 - abs(reconstructedNormal));  // Dieter's restoring method
+
+                    // Apply Mollifier
+                    if(applyMollifier==1){
+                      source = source*mollifier1(tempPhi.at(i,j,k),mollifier_width1,mollifier_width2);
+                    }
+                    else if(applyMollifier==2){
+                      source = source*mollifier2(tempPhi.at(i,j,k),mollifier_width1);
+                    }
+
+                    // explicit update
+                    this->at(i, j, k) = this->at(i, j, k)*(1.0-source*dt) - dt / (dx * dy * dz) * flux;
+
+                    // implicit update
+                    //this->at(i, j, k) = (this->at(i, j, k) - dt / (dx * dy * dz) * flux)/(1+source*dt);
+
+                }
             }
         }
+
     }
-    return minimum;
+}
+
+double mollifier1(double x, double w1, double w2) {
+  // w1 is the width of the plateau
+  // w2 is the width before the mollifier is close to 0 (here 10^-3).
+
+  double s=1.0; // help variable
+
+  s = std::log(1000)/pow((w2-w1),2);
+
+    if (x >= 0) {
+          if (x < w1) {
+              return 1.0;
+          } else {
+              return exp(- s*pow(x-w1, 2));
+          }
+      } else {
+          return mollifier1(-x,w1,w2);
+      }
+}
+
+double mollifier2(double x, double w) {
+
+  return std::exp(-std::pow(x / w, 2));
+
+}
+
+double LevelSet::getGradPhiNormAtContactPoint(int timestep) {
+    array<int, 3> cell = getContactPointIndices(timestep);
+    if (numZ == 1) {
+        Vector gradPhi = getNormalVector(cell, true, false);
+        double gradPhiNorm = abs(gradPhi);
+        return gradPhiNorm;
+    } else {
+        Vector contactPoint = positionReference[timestep];
+        double x = contactPoint[0];
+        double y = contactPoint[1];
+        double z = contactPoint[2];
+        int i = floor(x/dx);
+        int j = ceil(y/dy);
+        int k = floor(z/dz);
+
+        double lambda = x/dx - i;
+        double mu = z/dz - k;
+
+        Vector gradPhi = (1 - mu) * ((1 - lambda) * getNormalVector({i, j, k}, false, false) + lambda*getNormalVector({i + 1, j, k}, false, false))
+                         + mu * ((1 - lambda) * getNormalVector({i, j, k + 1}, false, false) + lambda*getNormalVector({i + 1, j, k + 1}, false, false));
+        double gradPhiNorm = abs(gradPhi);
+        return gradPhiNorm;
+    }
 }
 
 

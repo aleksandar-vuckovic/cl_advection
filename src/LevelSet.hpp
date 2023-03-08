@@ -23,7 +23,7 @@ private:
     /**
     *   Reference data..
     *   This is needed, since many other reference solvers are coupled, and all of them require this data,
-    *   leading to a high number in nested loops. 
+    *   leading to a high number in nested loops.
     **/
     std::vector<Vector> positionReference;
     std::vector<Vector> normalReference;
@@ -42,6 +42,7 @@ private:
     std::vector<double> shapeParams;
     Vector initCenter;
 
+
 public:
     LevelSet(int numX, int numY, int numZ, double dx, double dy, double dz, VelocityField *field,
             std::string trackedCP, double dt, int timesteps, Vector expCP, double expAngle,
@@ -56,7 +57,7 @@ public:
     void referenceNormalExplicitEuler(double dt, int timestep, Vector n_sigma_init);
     Vector referenceNormalExplicitEulerSingle(double dt, int last_timestep, std::vector<Vector> backwardsPoints);
     void referenceAngleLinearField(double dt, int timesteps, double theta0);
-    Vector getNormalVector(array<int, 3> cell,  bool useInterpolation = true) const;
+    Vector getNormalVector(array<int, 3> cell,  bool useInterpolation = true, bool normalizeVector = true, bool findCPin2D = true) const;
     Vector getNormalVector(int i, int j, int k) const;
     Vector getTangentialVector(Vector normal) const;
     double getContactAngleInterpolated(int timestep);
@@ -79,6 +80,7 @@ public:
     Vector normalVector2D(double initAngle);
     static Vector normalVector2D(double initAngle, std::string trackedCP);
     void calculateNextTimestep(double dt, int timestep);
+    void calculateNextTimestepSourceTerm(double dt, int timestep, int applyMollifier, double mollifier_width1, double mollifier_width2);
 
     std::vector<Vector> getPositionReference() const;
     std::vector<double> getAngleReference() const;
@@ -102,9 +104,12 @@ public:
 
     std::vector<double> getSectionalCurvatureCReference() const;
 
-    double getMinimalGradientNorm();
+    double getGradPhiNormAtContactPoint(int timestep);
 };
 
 Vector normalVector2D(double initAngle, std::string trackedCP);
+double bumpCutoff(double x);
+double mollifier1(double x, double w1, double w2);
+double mollifier2(double x, double w);
 
 #endif
