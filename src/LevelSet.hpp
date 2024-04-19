@@ -71,7 +71,7 @@ public:
     void writeToFile(double dt, int timestep, int total_timesteps, int total_writesteps, std::ofstream *mainXmfFile, std::ofstream *tauXmfFile);
     void writeTangentialVectorToFile(double dt, int timestep);
     double sumLevelSet();
-    void initSphere(Vector center, double radius);
+    void initSphere(Vector center, double radius, InitSphereMethod method);
     void initPlane(Vector refPoint, double polarAngle, double azimuthalAngle);
     void initParaboloid(Vector refPoint, double stretchX, double stretchY, double heightMinimum);
     void initEllipsoid(Vector refPoint, double stretchX, double stretchY, double stretchZ);

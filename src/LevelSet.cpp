@@ -1375,23 +1375,59 @@ double LevelSet::sumLevelSet()
  * @param center The center of the droplet
  * @param radius The radius of the droplet
  */
-void LevelSet::initSphere(Vector center, double radius)
+void LevelSet::initSphere(Vector center, double radius, InitSphereMethod method /* = signedDistance*/)
 {
 
-    if (numZ > 1)
-    {
+    if (method == InitSphereMethod::signedDistance) {
+        if (numZ > 1)
+        {
 
-        for (int k = 0; k < numZ; k++)
+            for (int k = 0; k < numZ; k++)
+                for (int j = 0; j < numY; j++)
+                    for (int i = 0; i < numX; i++)
+                        at(i, j, k) = sqrt(pow(i * dx - center[0], 2) + pow(j * dy - center[1], 2) + pow(k * dz - center[2], 2)) - radius; // use actual signed distance function for a sphere
+        }
+        else if (numZ == 1)
+        {
             for (int j = 0; j < numY; j++)
                 for (int i = 0; i < numX; i++)
-                    at(i, j, k) = sqrt(pow(i * dx - center[0], 2) + pow(j * dy - center[1], 2) + pow(k * dz - center[2], 2)) - radius; // use actual signed distance function for a sphere
+                    at(i, j, 0) = sqrt(pow(i * dx - center[0], 2) + pow(j * dy - center[1], 2)) - radius; // use actual signed distance function for a sphere
+        }
+    } else if (method == InitSphereMethod::legacySignedSquaredDistance) {
+        if (numZ > 1)
+        {
+
+            for (int k = 0; k < numZ; k++)
+                for (int j = 0; j < numY; j++)
+                    for (int i = 0; i < numX; i++)
+                        at(i, j, k) = pow(i * dx - center[0], 2) + pow(j * dy - center[1], 2) + pow(k * dz - center[2], 2) - pow(radius, 2); // use actual signed distance function for a sphere
+        }
+        else if (numZ == 1)
+        {
+            for (int j = 0; j < numY; j++)
+                for (int i = 0; i < numX; i++)
+                    at(i, j, 0) = pow(i * dx - center[0], 2) + pow(j * dy - center[1], 2) - pow(radius, 2); // use actual signed distance function for a sphere
+        }
+    } else if (method == InitSphereMethod::legacySignedScaledSquaredDistance) {
+        if (numZ > 1)
+        {
+
+            for (int k = 0; k < numZ; k++)
+                for (int j = 0; j < numY; j++)
+                    for (int i = 0; i < numX; i++)
+                        at(i, j, k) = pow(i * dx - center[0], 2) / radius + pow(j * dy - center[1], 2) / radius + pow(k * dz - center[2], 2) - radius; // use actual signed distance function for a sphere
+        }
+        else if (numZ == 1)
+        {
+            for (int j = 0; j < numY; j++)
+                for (int i = 0; i < numX; i++)
+                    at(i, j, 0) = pow(i * dx - center[0], 2) / radius + pow(j * dy - center[1], 2) / radius - radius; // use actual signed distance function for a sphere
+        }
+    } else {
+        std::invalid_argument("Should not get here. Invalid InitSphereMethod passed.");
     }
-    else if (numZ == 1)
-    {
-        for (int j = 0; j < numY; j++)
-            for (int i = 0; i < numX; i++)
-                at(i, j, 0) = sqrt(pow(i * dx - center[0], 2) + pow(j * dy - center[1], 2)) - radius; // use actual signed distance function for a sphere
-    }
+
+
 }
 
 /** Initialize a plane.

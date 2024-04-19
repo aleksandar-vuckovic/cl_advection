@@ -9,4 +9,11 @@ enum class InitShape
     ellipsoid
 };
 
+enum class InitSphereMethod
+{
+    signedDistance,
+    legacySignedSquaredDistance,
+    legacySignedScaledSquaredDistance,
+};
+
 #endif // ENUMS_HPP

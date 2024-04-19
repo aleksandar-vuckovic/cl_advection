@@ -64,6 +64,7 @@ int main(int argc, char **argv)
     bool calculateEvaluationQuantities = true;
     std::string trackedContactPoint = "left", fieldName = "", outputDirectory = "";
     InitShape initShape = InitShape::sphere;
+    InitSphereMethod initSphereMethod = InitSphereMethod::signedDistance;
     VelocityField *field = nullptr;
 
     // Read data from Inputfile
@@ -161,6 +162,17 @@ int main(int argc, char **argv)
                             initShape = InitShape::ellipsoid;
                         else
                             throw std::invalid_argument("No valid initialization shape chosen. Please choose either sphere, plane, paraboloid or ellipsoid.");
+                    }
+                    else if (varName == "initSphereMethod") {
+                        if (value == "signedDistance")
+                            initSphereMethod = InitSphereMethod::signedDistance;
+                        else if (value == "legacySignedSquaredDistance")
+                            initSphereMethod = InitSphereMethod::legacySignedSquaredDistance;
+                        else if (value == "legacySignedScaledSquaredDistance")
+                            initSphereMethod = InitSphereMethod::legacySignedScaledSquaredDistance;
+                        else
+                            throw std::invalid_argument("No valid initialization method chosen for initShape \"sphere\". Please choose \"signedDistance\", \"legacySignedSquaredDistance\" or \"legacySignedScaledSquaredDistance\"");
+
                     }
                     else if (varName == "centerX")
                         centerX = std::stod(value);
@@ -426,7 +438,7 @@ int main(int argc, char **argv)
     std::vector<double> sectionalCurvatureC_Actual(timesteps);
 
     if (initShape == InitShape::sphere)
-        Phi.initSphere(center, radius);
+        Phi.initSphere(center, radius, initSphereMethod);
     else if (initShape == InitShape::plane)
         Phi.initPlane(center, planePolarAngle, planeAzimuthalAngle);
     else if (initShape == InitShape::paraboloid)
