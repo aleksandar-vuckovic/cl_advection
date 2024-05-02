@@ -4,17 +4,17 @@ This demonstrator software uses a Finite Volume based discretization of the hype
 
 Within the level set method (see, e.g. [5]), the interface is represented as the zero contour of some smooth function, i.e. the interface at time t is given as the set
 
-\f[ \Sigma(t) = \{x \in \Omega: \phi(t,x) = 0 \}. \f]
+$$ \Sigma(t) = \{x \in \Omega: \phi(t,x) = 0 \}. $$
 
 The interface is advected by a prescribed velocity field v according to the evolution equation
 
-\f[ \partial_t \phi + v \cdot \nabla \phi = 0. \f]
+$$ \partial_t \phi + v \cdot \nabla \phi = 0. $$
 
 This problem emerges from the discretization of continuum models for dynamic wetting, where the velocity field is a solution of the two-phase Navier Stokes equations. Here we are interested in the time evolution of both the *contact line*, i.e. the line of contact of the interface and the domain boundary, and the *contact angle* which is the angle of intersection between the interface and the boundary. In the Journal publications [2] and [3], we proved a fundamental kinematic relationship between the rate of change of the contact angle and the transporting velocity field. The kinematic evolution equation serves as a reference to validate the numerical solution of the level set equation in terms of the contact line position and the contact angle. 
 
 The method is capable of solving the transport equation in both two and three dimensions, while the automatic evaluation of the contact angle over time is currently only implemented for the two-dimensional case.
 
-**Note**: A html version of this documentation is available, see [readme.html].
+**Note**: A html version of this documentation is available, see [readme.html](readme.html).
 
 ### Authors of the software
 * Mathis Fricke (fricke@mma.tu-darmstadt.de), Mathematical Modeling and Analysis, TU Darmstadt, Germany
@@ -108,20 +108,20 @@ To add a new velocity field, add itself and its Jacobian matrix to the files *ve
 
 In the following, we will consider three examples and verify the numerical results with the kinematic evolution equation (see [2],[3])
 
-\f[ \dfrac{D n_{\Sigma}}{Dt} = - (\nabla v)^{\intercal} n_{\Sigma} + \langle \nabla v \cdot n_{\Sigma}, n_{\Sigma} \rangle \, n_{\Sigma}, \f]
+$$ \dfrac{D n_{\Sigma}}{Dt} = - (\nabla v)^{\intercal} n_{\Sigma} + \langle \nabla v \cdot n_{\Sigma}, n_{\Sigma} \rangle \, n_{\Sigma}, $$
 
-where \f$ n_{\Sigma} \f$ is the normal vector at the contact point and \f$ \dfrac{D}{Dt} \f$ is the Lagrangian derivative.
+where $n_{\Sigma}$ is the normal vector at the contact point and $\dfrac{D}{Dt}$ is the Lagrangian derivative.
 
 ### Navier slip type field (src/testcases/navier)
 The Navier slip field is given by
 
-\f[ v(x,y) = (v_0 + c_1 x + c_2 y, -c_1 y), \f]
+$$ v(x,y) = (v_0 + c_1 x + c_2 y, -c_1 y), $$
 
-where \f$v_0, c_1\f$ and \f$c_2 \f$ correspond to v0, c1 and c2 defined above. As it is evident from the plots of the contact angle and position, the results of the simulation are in agreement with the analytic solution. The latter is given by
+where $v_0, c_1$ and $c_2$ correspond to v0, c1 and c2 defined above. As it is evident from the plots of the contact angle and position, the results of the simulation are in agreement with the analytic solution. The latter is given by
 
-\f[ x_1(t) = x_1^0 e^{c_1 t} + \dfrac{v_0}{c_1} (e^{c_1 t} - 1), \qquad \theta (t) = \dfrac{\pi}{2} + \arctan(-\cot\theta_0 e^{2c_1 t} \pm c_2 \dfrac{e^{2c_1 t} - 1}{2c_1}), \quad c_1 \neq 0, \f]
+$$ x_1(t) = x_1^0 e^{c_1 t} + \dfrac{v_0}{c_1} (e^{c_1 t} - 1), \qquad \theta (t) = \dfrac{\pi}{2} + \arctan(-\cot\theta_0 e^{2c_1 t} \pm c_2 \dfrac{e^{2c_1 t} - 1}{2c_1}), \quad c_1 \neq 0, $$
 
-where \f$ ``-``\f$ is used for the left contact point and \f$ ``+``\f$ is for the right contact point.
+where $``-``$ is used for the left contact point and $``+``$ is for the right contact point.
 
 Further, one observes from the plots of the errors that the numerical solution converges to the analytical solution with first-order accuracy.
 
@@ -137,7 +137,7 @@ Further, one observes from the plots of the errors that the numerical solution c
 
 The vortex-in-a-box field, also known as the shear field, is given by
 
-\f[ v(x,y) = (-\sin(\pi x)\cos(\pi y), \cos(\pi x) \sin(\pi y) ). \f]
+$$ v(x,y) = (-\sin(\pi x)\cos(\pi y), \cos(\pi x) \sin(\pi y) ). $$
 
 Similarly to the Navier field above, we again find that the numerical results agree well with the reference solution. For the reference solution, we solved the equation above numerically with the explicit euler method.
 
@@ -154,16 +154,16 @@ Similarly to the Navier field above, we again find that the numerical results ag
 ### Time-dependent field (src/testcases/timeDependentNavier)
 The time-depentent Navier field is given by
 
-\f[ v(x,y) = \dfrac{\cos(\pi t)}{\tau} \cdot (v_0 + c_1 x + c_2 y, -c_y y). \f]
+$$ v(x,y) = \dfrac{\cos(\pi t)}{\tau} \cdot (v_0 + c_1 x + c_2 y, -c_y y). $$
 
 As expected, both the values in the contact angle and the position oscillate with a constant period. The results for the contact angle and position agree well with the analytical solution
 
-\f[ x_1(t) = x_1^0 e^{c_1 s(t)} + \dfrac{v_0}{c_1} (e^{c_1 s(t)} - 1), \f]
-\f[ \theta (t) = \dfrac{\pi}{2} + \arctan(-\cot\theta_0 e^{2c_1 s(t)} \pm c_2 \dfrac{e^{2c_1 s(t)} - 1}{2c_1}), \quad c_1 \neq 0,\f]
+$$ x_1(t) = x_1^0 e^{c_1 s(t)} + \dfrac{v_0}{c_1} (e^{c_1 s(t)} - 1), $$
+$$ \theta (t) = \dfrac{\pi}{2} + \arctan(-\cot\theta_0 e^{2c_1 s(t)} \pm c_2 \dfrac{e^{2c_1 s(t)} - 1}{2c_1}), \quad c_1 \neq 0,$$
 
 where
 
-\f[ s(t) = \dfrac{\tau}{\pi}\sin(\dfrac{\pi}{\tau}t). \f]
+$$ s(t) = \dfrac{\tau}{\pi}\sin(\dfrac{\pi}{\tau}t). $$
 
 Again, we can verify linear convergence of the results.
 
