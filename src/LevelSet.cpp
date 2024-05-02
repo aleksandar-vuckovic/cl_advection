@@ -1046,8 +1046,6 @@ double LevelSet::getSectionalCurvature(array<int, 3> cell, Vector tau)
 
     Matrix gradNormal = {row1, row2, row3};
 
-    double testVar = -1 * (gradNormal * tau) * tau;
-
     return -1 * (gradNormal * tau) * tau;
 }
 
