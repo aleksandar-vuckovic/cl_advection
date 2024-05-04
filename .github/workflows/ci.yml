@@ -1,82 +1,117 @@
+name: GitHub Actions CI Test Pipeline
+on:
+  push:
+    branches:
+      - main
+
 jobs:
   build:
     runs-on: ubuntu-latest
-    stage: build
     steps:
-      - run:
-        - cd src/
-        - make                    # Build the main executable
-        - cd testcaseScripts/
-        - make                    # Build the testcase scripts
-        - cd ../../
-    artifacts:
-      paths:
-      - src/cl_advection
-      - src/testcaseScripts
+      - uses: actions/checkout@v4
+      - run: |
+         sudo apt install libeigen3-dev
+         cd src/
+         make                    # Build the main executable
+         cd testcaseScripts/
+         make                    # Build the testcase scripts
+         cd ../../
+      - uses: actions/upload-artifact@v4
+        with:
+          name: src
+          path: src   
+
   
   execute:
     runs-on: ubuntu-latest
     needs: [build]
     steps:
-      - run:
-        - toplevel=$PWD
-        - cd $toplevel/src/testcases/2D/curvature/convergenceAnalysis/shear/shear_200
-        - $toplevel/src/cl_advection -t 4 -w false -o $toplevel/src/testcases/2D/curvature/convergenceAnalysis/shear/shear_200
-        - $toplevel/src/cl_advection -t 4 -w false -r 0.5 -o  $toplevel/src/testcases/2D/curvature/convergenceAnalysis/shear/shear_100
-        - $toplevel/src/cl_advection -t 4 -w false -r 0.25 -o  $toplevel/src/testcases/2D/curvature/convergenceAnalysis/shear/shear_50
-        - $toplevel/src/cl_advection -t 4 -w false -r 0.125 -o  $toplevel/src/testcases/2D/curvature/convergenceAnalysis/shear/shear_25
+      - uses: actions/download-artifact@master
+        with:
+          name: src
+          path: src
+      - run: |
+         exe=$(readlink -f src/cl_advection)
+         chmod +x $exe
+         toplevel=$(readlink -f .)
+         cd $toplevel/src/testcases/2D/curvature/convergenceAnalysis/shear/shear_200
+         $exe -t 4 -w false -o $toplevel/src/testcases/2D/curvature/convergenceAnalysis/shear/shear_200
+         $exe -t 4 -w false -r 0.5 -o  $toplevel/src/testcases/2D/curvature/convergenceAnalysis/shear/shear_100
+         $exe -t 4 -w false -r 0.25 -o  $toplevel/src/testcases/2D/curvature/convergenceAnalysis/shear/shear_50
+         $exe -t 4 -w false -r 0.125 -o  $toplevel/src/testcases/2D/curvature/convergenceAnalysis/shear/shear_25
 
-        - cd $toplevel/src/testcases/2D/curvature/convergenceAnalysis/shear/shear_200											
-        - $toplevel/src/cl_advection -t 4 -w false -f navierField -o  $toplevel/src/testcases/2D/curvature/convergenceAnalysis/navier/navier_200					
-        - $toplevel/src/cl_advection -t 4 -w false -f navierField -r 0.5 -o  $toplevel/src/testcases/2D/curvature/convergenceAnalysis/navier/navier_100				
-        - $toplevel/src/cl_advection -t 4 -w false -f navierField -r 0.25 -o  $toplevel/src/testcases/2D/curvature/convergenceAnalysis/navier/navier_50			      
-        - $toplevel/src/cl_advection -t 4 -w false -f navierField -r 0.125 -o  $toplevel/src/testcases/2D/curvature/convergenceAnalysis/navier/navier_25				
+         cd $toplevel/src/testcases/2D/curvature/convergenceAnalysis/shear/shear_200											
+         $exe -t 4 -w false -f navierField -o  $toplevel/src/testcases/2D/curvature/convergenceAnalysis/navier/navier_200					
+         $exe -t 4 -w false -f navierField -r 0.5 -o  $toplevel/src/testcases/2D/curvature/convergenceAnalysis/navier/navier_100				
+         $exe -t 4 -w false -f navierField -r 0.25 -o  $toplevel/src/testcases/2D/curvature/convergenceAnalysis/navier/navier_50			      
+         $exe -t 4 -w false -f navierField -r 0.125 -o  $toplevel/src/testcases/2D/curvature/convergenceAnalysis/navier/navier_25				
 
-        - cd $toplevel/src/testcases/3D/curvature/convergenceAnalysis/shear/shear_200
-        - $toplevel/src/cl_advection -t 4 -w false -o $toplevel/src/testcases/3D/curvature/convergenceAnalysis/shear/shear_200
-        - $toplevel/src/cl_advection -t 4 -w false -r 0.5 -o $toplevel/src/testcases/3D/curvature/convergenceAnalysis/shear/shear_100
-        - $toplevel/src/cl_advection -t 4 -w false -r 0.25 -o $toplevel/src/testcases/3D/curvature/convergenceAnalysis/shear/shear_50
-        - $toplevel/src/cl_advection -t 4 -w false -r 0.125 -o $toplevel/src/testcases/3D/curvature/convergenceAnalysis/shear/shear_25
-
-        - cd $toplevel/src/testcases/3D/curvature/convergenceAnalysis/shear/shear_200
-        - $toplevel/src/cl_advection -t 4 -w false -f strawberryField -o $toplevel/src/testcases/3D/curvature/convergenceAnalysis/strawberry/strawberry_200
-        - $toplevel/src/cl_advection -t 4 -w false -f strawberryField -r 0.5 -o $toplevel/src/testcases/3D/curvature/convergenceAnalysis/strawberry/strawberry_100
-        - $toplevel/src/cl_advection -t 4 -w false -f strawberryField -r 0.25 -o $toplevel/src/testcases/3D/curvature/convergenceAnalysis/strawberry/strawberry_50
-        - $toplevel/src/cl_advection -t 4 -w false -f strawberryField -r 0.125 -o $toplevel/src/testcases/3D/curvature/convergenceAnalysis/strawberry/strawberry_25
-        
-        - cd $toplevel
+         cd $toplevel/src/testcases/3D/curvature/convergenceAnalysis/shear/shear_200
+         $exe -t 4 -w false -o $toplevel/src/testcases/3D/curvature/convergenceAnalysis/shear/shear_200
+         $exe -t 4 -w false -r 0.5 -o $toplevel/src/testcases/3D/curvature/convergenceAnalysis/shear/shear_100
+         $exe -t 4 -w false -r 0.25 -o $toplevel/src/testcases/3D/curvature/convergenceAnalysis/shear/shear_50
+         $exe -t 4 -w false -r 0.125 -o $toplevel/src/testcases/3D/curvature/convergenceAnalysis/shear/shear_25
+ 
+         cd $toplevel/src/testcases/3D/curvature/convergenceAnalysis/shear/shear_200
+         $exe -t 4 -w false -f strawberryField -o $toplevel/src/testcases/3D/curvature/convergenceAnalysis/strawberry/strawberry_200
+         $exe -t 4 -w false -f strawberryField -r 0.5 -o $toplevel/src/testcases/3D/curvature/convergenceAnalysis/strawberry/strawberry_100
+         $exe -t 4 -w false -f strawberryField -r 0.25 -o $toplevel/src/testcases/3D/curvature/convergenceAnalysis/strawberry/strawberry_50
+         $exe -t 4 -w false -f strawberryField -r 0.125 -o $toplevel/src/testcases/3D/curvature/convergenceAnalysis/strawberry/strawberry_25
       
-    - name: Upload simulation results
-      uses: actions/upload-artifact
-      with:
-        - src/testcases
-        - src/testcaseScripts
-      
+      - name: Upload simulation results
+        uses: actions/upload-artifact@v4
+        with:
+          name: src dir
+          path: src  
+
   shear_2D_test:
     runs-on: ubuntu-latest
     needs: [execute]
     steps:
-      - run:
-        - cd src/testcaseScripts/
-        - ./shear_2D
+      - uses: actions/download-artifact@master
+        with:
+          name: src dir
+          path: src  
+      - run: |
+         cd src/testcaseScripts/
+         chmod +x shear_2D
+         ./shear_2D
 
   navier_2D_test:
     runs-on: ubuntu-latest
+    needs: [execute]
     steps:
-      - run:
-        - cd src/testcaseScripts/
-        - ./navier_2D
+      - uses: actions/download-artifact@master
+        with:
+          name: src dir
+          path: src  
+      - run: |
+         cd src/testcaseScripts/
+         chmod +x navier_2D
+         ./navier_2D
 
   shear_3D_test:
     runs-on: ubuntu-latest
+    needs: [execute]
     steps:
-      - run:
-        - cd src/testcaseScripts/
-        - ./shear_3D
+      - uses: actions/download-artifact@master
+        with:
+          name: src dir
+          path: src  
+      - run: |
+         cd src/testcaseScripts/
+         chmod +x shear_3D
+         ./shear_3D
 
   strawberry_3D_test:
     runs-on: ubuntu-latest
+    needs: [execute]
     steps:
-      - run:
-        - cd src/testcaseScripts/
-        - ./strawberry_3D
+      - uses: actions/download-artifact@master
+        with:
+          name: src dir
+          path: src  
+      - run: |
+         cd src/testcaseScripts/
+         chmod +x strawberry_3D
+         ./strawberry_3D
