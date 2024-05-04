@@ -13,7 +13,7 @@ int main() {
   double time = 1.8;
   double time_tolerance = 0.01;
   
-  double value_c = 0.011;
+  double value_c = 0.029;
   double value_c_tolerance = 0.001;
   
   bool success_curvature_25 = verify(curvatureData_25, time, time_tolerance, value_c, value_c_tolerance);

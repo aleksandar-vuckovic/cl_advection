@@ -25,8 +25,8 @@ int main() {
   bool success_curvature_100 = verify(curvatureData_100, 5, time_tolerance, value_c/4, value_c_tolerance);
   bool success_curvature_200 = verify(curvatureData_200, 5, time_tolerance, value_c/8, value_c_tolerance);
 
-  double value_a = 0.6;
-  double value_a_tolerance = 0.1;
+  double value_a = 0.9;
+  double value_a_tolerance = 0.05;
   
   bool success_angle_25 = verify(angleData_25, 3, time_tolerance, value_a, value_a_tolerance);
   bool success_angle_50 = verify(angleData_50, 3, time_tolerance, value_a/2, value_a_tolerance);

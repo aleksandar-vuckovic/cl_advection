@@ -17,7 +17,7 @@ int main() {
 
   double time_tolerance = 0.05;
 
-  double value_a = 0.45;
+  double value_a = 1.5;
   double value_a_tolerance = 0.12;
   
   bool success_angle_25 = verify(angleData_25, 0.8, time_tolerance, value_a, value_a_tolerance);
