@@ -91,6 +91,13 @@ void LevelSet::referenceContactPointExplicitEuler(double dt, int last_timestep, 
     }
 }
 
+/**
+ * Calculates the evolution of the contact point backwards, i.e. from a given point up to the point at initialization time, for the field formulation curvature.
+ * 
+ * @param dt The time increment per timestep
+ * @param last_timestep The index of the last timestep
+ * @param point The last point of the evolution
+*/
 std::vector<Vector> LevelSet::referenceContactPointBackwards(double dt, int last_timestep, Vector point)
 {
     Vector &temp = point;
@@ -109,7 +116,8 @@ std::vector<Vector> LevelSet::referenceContactPointBackwards(double dt, int last
 /**
  * Calculate the contact point position for the navier field using the analytic solution.
  *
- * @param t The time at which to calculate the contact point position
+ * @param dt The time increment per timestep
+ * @param last_timestep The index of the last timestep
  * @param c1 A parameter of the navier field
  * @param x0 The initial position of the contact point
  * @param v0 A parameter of the navier field
@@ -146,7 +154,7 @@ void LevelSet::contactPointLinearField(double dt, int last_timestep, double c1, 
  * In 3D, it returns the coordinates of the point according to the reference ODE. In other words, it is assumed that in 3D,
  * the solution of the ODE exactly matches the actual contact point.
  *
- * @param point A point in the space of the Level set field.
+ * @param timestep A time step index for which to return the contact point
  * @param indexOnly Whether to return only the indices of the point or its actual coordinates. Default is false.
  * @return The contact point
  */
@@ -443,7 +451,7 @@ double LevelSet::getContactAngleInterpolated(int timestep)
 /**
  * Calculate the contact angle at a given time using the explicit Euler method.
  *
- * @param dt The length of a timestep
+ * @param dt The time increment per timestep
  * @param timestep The index of the timestep
  * @param n_sigma_init The initial normal vector of the interface
  * @param CP The current position of the contact point
@@ -463,6 +471,13 @@ void LevelSet::referenceNormalExplicitEuler(double dt, int last_timestep, Vector
     }
 }
 
+/**
+ * Calculate the contact angle evolution for the field formulation curvature derivative.
+ *
+ * @param dt The time increment per timestep
+ * @param last_timestep The index of the timestep
+ * @param backwardsPoints The contact point evolution from an explicit euler calculation backwards in time
+ */
 Vector LevelSet::referenceNormalExplicitEulerSingle(double dt, int last_timestep, std::vector<Vector> backwardsPoints)
 {
     Vector n_sigma = expectedNormalVector(backwardsPoints[backwardsPoints.size() - 1]);
@@ -527,7 +542,7 @@ void LevelSet::referenceAngleLinearField(double dt, int last_timestep, double th
  * Currently, there are two different implementations in the 3D case: One based on the field-formulation of the normal vector,
  * and another (newer) based on sectional curvatures. TODO: Test both and decide which to keep.
  *
- * @param dt The length of a timestep
+ * @param dt The time increment per timestep
  * @param last_timestep The index of the last timestep.
  * @param initCurvature The initial curvature at time t == 0
  * @param CP The coordinates of the contact point
@@ -722,6 +737,12 @@ void LevelSet::referenceCurvatureExplicitEuler(double dt, int last_timestep, dou
     }
 }
 
+/**
+ * Calculate the reference evolution of the tangent vector to the normal vector.
+ * @param dt The time increment per timestep
+ * @param last_timestep The timestep until which to calculate the evolution
+ * @param normal_init The initial normal vector
+ */
 void LevelSet::referenceTangentExplicitEuler(double dt, int last_timestep, Vector normal_init)
 {
     Vector tangentA = getTangentialVector(normal_init);
@@ -764,6 +785,7 @@ void LevelSet::referenceTangentExplicitEuler(double dt, int last_timestep, Vecto
 /**
  * @brief LevelSet::referenceCurvatureDeriv3D Calculate the curvature derivative at time t = 0 in 3D.
  * @param initCurvature The initial curvature. (= -1/R)
+ * @param expNormalVectorGrad The normal vector gradient for at initialization. "Expected" means that, if the gradient is set to be fixed due to the source term, it should always equal to the value at initialization time.
  */
 double LevelSet::referenceCurvatureDeriv3D(double initCurvature, Matrix expNormalVectorGrad)
 {
@@ -944,6 +966,12 @@ double LevelSet::getCurvature(array<int, 3> cell) const
     return kappa;
 }
 
+/**
+ * Calculate the sectional curvature at the contact point.
+ *
+ * @param cell The cell indices where to calculate the curvature.
+ * @param tau The tangential vector for which to calculate the curvature.
+ */
 double LevelSet::getSectionalCurvature(array<int, 3> cell, Vector tau)
 {
     // TODO: This function is (with exception of the last few lines) an exact copy-paste of getCurvature. TODO fix.
@@ -1049,6 +1077,12 @@ double LevelSet::getSectionalCurvature(array<int, 3> cell, Vector tau)
     return -1 * (gradNormal * tau) * tau;
 }
 
+/**
+ * Calculate the sectional curvature at the contact point using linear interpolation.
+ *
+ * @param timestep The timestep for which to calculate the curvature (can be a previous timestep).
+ * @param tau The tangential vector for which to calculate the curvature.
+ */
 double LevelSet::getSectionalCurvatureInterpolated(int timestep, Vector tau)
 {
     Vector contactPoint = positionReference[timestep];
@@ -1074,6 +1108,11 @@ double LevelSet::getCurvature(int i, int j, int k) const
     return getCurvature(cell);
 }
 
+/**
+ * Calculate the curvature at the contact point using linear interpolation.
+ *
+ * @param timestep timestep for which to calculate the curvature (can be a previous timestep).
+ */
 double LevelSet::getCurvatureInterpolated(int timestep) const
 {
 
@@ -1153,11 +1192,12 @@ double LevelSet::getCurvatureInterpolated(int timestep) const
  * Write the XMF file to disk, as well as the grid of the Level set field. This is done only once.
  * At each point in time, write the Level set field to disk and call VelocityField::writeToFile to write its values as well.
  *
- * @param dt The width of a timestep
+ * @param dt The time increment per timestep
  * @param timestep The index of the timestep
  * @param total_timesteps The total number of timesteps
  * @param total_writesteps The total number of steps that will be written to disk
- * @param mainXmfFile A pointer to the XMF file.
+ * @param mainXmfFile A pointer to the main XMF file for the levelset field.
+ * @param tauXmfFile A pointer to the XMF file for the tangential vector.
  */
 void LevelSet::writeToFile(double dt, int timestep, int total_timesteps, int total_writesteps, std::ofstream *mainXmfFile,
                            std::ofstream *tauXmfFile)
@@ -1327,7 +1367,8 @@ void LevelSet::writeToFile(double dt, int timestep, int total_timesteps, int tot
  * simply calling this function is not enough for visualization. Thus, this function is called within
  * LevelSet::writeToFile, which does write an XMF file.
  *
- * @param t The time
+ * @param dt The time increment per timestep
+ * @param timestep The timestep for which the tangential vector will be written to file.
  */
 void LevelSet::writeTangentialVectorToFile(double dt, int timestep)
 {
@@ -1372,6 +1413,7 @@ double LevelSet::sumLevelSet()
  *
  * @param center The center of the droplet
  * @param radius The radius of the droplet
+ * @param method The method of initialization of the droplet
  */
 void LevelSet::initSphere(Vector center, double radius, InitSphereMethod method /* = signedDistance*/)
 {
@@ -1431,8 +1473,8 @@ void LevelSet::initSphere(Vector center, double radius, InitSphereMethod method 
 /** Initialize a plane.
  *
  *  @param refPoint The reference point of the plane in degrees.
- *  @param angleA The angle between the initialized plane and the x-z-plane (= polar angle of normal vector) in deg.
- *  @param angleB The angle of rotation around the y-axis (= azimuthal angle) in deg.
+ *  @param polarAngle The angle between the initialized plane and the x-z-plane in deg.
+ *  @param azimuthalAngle The angle of rotation around the y-axis in deg.
  */
 void LevelSet::initPlane(Vector refPoint, double polarAngle, double azimuthalAngle)
 {
@@ -1465,6 +1507,9 @@ void LevelSet::initParaboloid(Vector refPoint, double stretchX, double stretchZ,
 
 /** Initialize an ellipsoid.
  * @param refPoint The reference point
+ * @param stretchX An ellipsoid parameter
+ * @param stretchY An ellipsoid parameter
+ * @param stretchZ An ellipsoid parameter
  * @
  */
 void LevelSet::initEllipsoid(Vector refPoint, double stretchX, double stretchY, double stretchZ)
@@ -1513,6 +1558,11 @@ Vector LevelSet::expectedNormalVector(Vector contactPoint)
     return normal / abs(normal);
 }
 
+/**
+ * The derivative of the normal vector at a given contact point at initalization..
+ * 
+ * @param contactPoint The contactpoint for which to calculate the normal vector gradient at initalization.
+*/
 Matrix LevelSet::expectedNormalVectorGradient(Vector contactPoint)
 {
     std::vector<double> &params = shapeParams;
@@ -1595,7 +1645,8 @@ Vector LevelSet::normalVector2D(double initAngle)
  * Given the contact angle, calculate the normal vector.
  *
  * This function is only applicable in 2D. This is the non-member variant of normalVector2D(initAngle).
- * @param initAngle The angle in radiants.
+ * @param initAngle The angle in radiants
+ * @param trackedCP String which is either "left" or "right" depending on which contact point is tracked
  */
 Vector normalVector2D(double initAngle, std::string trackedCP)
 {
