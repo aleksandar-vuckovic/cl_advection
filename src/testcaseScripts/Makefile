@@ -1,17 +1,17 @@
 default: all
 
 shear_2D: shear_2D.cpp helpers.hpp
-	g++ -g shear_2D.cpp helpers.hpp -o shear_2D
+	$(CXX) -g shear_2D.cpp helpers.hpp -o shear_2D
 
 navier_2D: navier_2D.cpp helpers.hpp
-	g++ -g navier_2D.cpp helpers.hpp -o navier_2D
+	$(CXX) -g navier_2D.cpp helpers.hpp -o navier_2D
 
 
 shear_3D: shear_3D.cpp helpers.hpp
-	g++ -g shear_3D.cpp helpers.hpp -o shear_3D
+	$(CXX) -g shear_3D.cpp helpers.hpp -o shear_3D
 
 strawberry_3D: strawberry_3D.cpp helpers.hpp
-	g++ -g strawberry_3D.cpp helpers.hpp -o strawberry_3D
+	$(CXX) -g strawberry_3D.cpp helpers.hpp -o strawberry_3D
 
 all: shear_2D navier_2D shear_3D strawberry_3D
 
